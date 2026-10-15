@@ -2,8 +2,8 @@ extends CharacterBody3D
 class_name Player
 
 # Player Script (res://scripts/player.gd)
-# Features full simultaneous Run & Gun (moving and shooting without slowdown),
-# Watermelon Boy character meshes, fruit hero customization, base building, and co-op revive.
+# Features strict button-only firing (camera swipes never shoot),
+# Run & Gun simultaneous move+shoot, Melon Boy textures, building, and revive.
 
 signal health_changed(current: float, max_val: float)
 signal downed_state_changed(is_down: bool)
@@ -14,7 +14,7 @@ signal weapon_switched(weapon_node: Weapon)
 
 var max_hp: float = 130.0
 var current_hp: float = 130.0
-var move_speed: float = 7.2
+var move_speed: float = 7.5
 var gravity: float = 18.0
 var is_down: bool = false
 var revive_timer: float = 0.0
@@ -141,21 +141,27 @@ func _handle_camera_and_input(_delta: float) -> void:
 		velocity.z = 0
 		return
 	
-	# Rotate horizontally with finger drag
+	# Smooth Camera swipe look
 	if look_input != Vector2.ZERO:
 		rotate_y(-look_input.x)
 		if camera_pivot:
 			camera_pivot.rotation.x = clamp(camera_pivot.rotation.x - look_input.y, deg_to_rad(-60), deg_to_rad(45))
 		look_input = Vector2.ZERO
 	
-	# PC Keyboard fallback
-	if input_vector == Vector2.ZERO:
+	# PC Keyboard fallback for WASD
+	if input_vector == Vector2.ZERO and not OS.has_feature("mobile"):
 		var x = Input.get_action_raw_strength("move_right") - Input.get_action_raw_strength("move_left")
 		var y = Input.get_action_raw_strength("move_backward") - Input.get_action_raw_strength("move_forward")
 		input_vector = Vector2(x, y).normalized()
 	
-	# Simultaneous Run & Gun: Can shoot while moving in any direction!
-	if (Input.is_action_pressed("fire") or is_firing) and (not building_system or not building_system.is_build_mode):
+	# STRICT BUTTON-ONLY FIRING:
+	# On mobile, ONLY fire if the on-screen FIRE button is pressed (is_firing == true)!
+	# Swiping the camera will NEVER trigger shooting.
+	var should_fire = is_firing
+	if not OS.has_feature("mobile") and Input.is_action_pressed("fire") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		should_fire = true
+	
+	if should_fire and (not building_system or not building_system.is_build_mode):
 		try_fire()
 	
 	if Input.is_action_just_pressed("reload"):
@@ -185,7 +191,7 @@ func _process_movement(_delta: float) -> void:
 		velocity.x = move_dir.x * move_speed
 		velocity.z = move_dir.z * move_speed
 		
-		# In Run & Gun: When shooting, model always aims straight forward with the camera
+		# Smooth model alignment:
 		if model:
 			if is_firing:
 				model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.35)

@@ -182,14 +182,59 @@ func _spawn_minion() -> void:
 	minion.global_position = rand_spawn.global_position + offset
 	enemies_container.add_child(minion, true)
 
+var current_boss_phase: int = 0
+
 func _start_boss_battle() -> void:
+	current_boss_phase = 1
 	GameManager.current_state = GameManager.GameState.BOSS_FIGHT
 	GameManager.wave_updated.emit(GameManager.max_waves + 1, GameManager.max_waves, 1)
 	rpc("_sync_wave_info", GameManager.max_waves + 1, GameManager.max_waves, 1)
 	
+	_spawn_boss(1)
+
+func _spawn_boss(boss_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	
 	var boss = boss_scene.instantiate()
 	boss.global_position = boss_spawn_marker.global_position if boss_spawn_marker else Vector3(0, 0, -22)
 	enemies_container.add_child(boss, true)
+	
+	# Apply preset across all peers
+	boss.rpc("apply_boss_preset", boss_id)
+	
+	if boss_id == 1:
+		rpc("_broadcast_hud_alert", "⚠️ WARNING: TITAN DESTROYER APPROACHES! ⚠️\n(البيج بوس الأول يقترب - استعدوا للمعركة!)", Color(1.0, 0.7, 0.2))
+	else:
+		rpc("_broadcast_hud_alert", "💀 ALERT: APOCALYPSE MEGA TITAN HAS RISEN! 💀\n(البيج بوس الثاني الخارق يظهر الآن - احذروا الكور المدمرة!)", Color(1.0, 0.15, 0.15))
+	
+	boss.boss_defeated.connect(func():
+		_on_boss_stage_cleared(boss_id)
+	)
+
+func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
+	if cleared_boss_id == 1:
+		rpc("_broadcast_hud_alert", "💥 BOSS 1 DESTROYED! 💥\n⚠️ AN ANCIENT MEGA TITAN AWAKENS! (البيج بوس الثاني قادم!) ⚠️", Color(1.0, 0.85, 0.1))
+		_reward_materials_all(150)
+		
+		get_tree().create_timer(4.5).timeout.connect(func():
+			if multiplayer.is_server():
+				current_boss_phase = 2
+				_spawn_boss(2)
+		)
+	elif cleared_boss_id == 2:
+		rpc("_broadcast_hud_alert", "🏆 ALL TITANS OBLITERATED! YOU SAVED CYBERFORT! 🏆", Color(0.2, 1.0, 0.3))
+
+@rpc("call_local", "reliable")
+func _broadcast_hud_alert(msg: String, col: Color) -> void:
+	if hud and hud.alert_label:
+		hud.alert_label.text = msg
+		hud.alert_label.modulate = col
+		hud.alert_label.visible = true
+		get_tree().create_timer(4.0).timeout.connect(func():
+			if is_instance_valid(hud) and hud.alert_label and hud.alert_label.text == msg:
+				hud.alert_label.visible = false
+		)
 
 @rpc("call_local", "reliable")
 func _sync_wave_info(w: int, max_w: int, left: int) -> void:

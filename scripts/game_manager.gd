@@ -13,7 +13,7 @@ enum GameState {
 }
 
 signal state_changed(new_state: GameState)
-signal boss_health_updated(current_hp: float, max_hp: float)
+signal boss_health_updated(current_hp: float, max_hp: float, boss_name: String)
 signal wave_updated(current_wave: int, max_waves: int, enemies_left: int)
 signal game_over_triggered(is_victory: bool)
 

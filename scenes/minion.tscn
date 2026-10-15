@@ -1,64 +1,106 @@
-[gd_scene load_steps=8 format=3 uid="uid://cminion001scene"]
+[gd_scene load_steps=12 format=3 uid="uid://cminion001scene"]
 
 [ext_resource type="Script" path="res://scripts/minion.gd" id="1_minion"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_minion"]
-radius = 0.6
+radius = 0.7
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_metal"]
-albedo_color = Color(0.18, 0.2, 0.24, 1)
-metallic = 0.8
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shell"]
+albedo_color = Color(0.12, 0.14, 0.18, 1)
+metallic = 0.85
 roughness = 0.3
 
-[sub_resource type="SphereMesh" id="SphereMesh_body"]
-material = SubResource("StandardMaterial3D_metal")
-radius = 0.45
-height = 0.9
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+material = SubResource("StandardMaterial3D_shell")
+size = Vector3(0.9, 0.55, 1.1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_red_glow"]
-albedo_color = Color(1, 0.1, 0.1, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eye"]
+albedo_color = Color(1, 0.1, 0.3, 1)
 emission_enabled = true
-emission = Color(1, 0.1, 0.1, 1)
-emission_energy_multiplier = 4.0
+emission = Color(1, 0.15, 0.4, 1)
+emission_energy_multiplier = 5.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_eye"]
-material = SubResource("StandardMaterial3D_red_glow")
-radius = 0.15
-height = 0.3
+material = SubResource("StandardMaterial3D_eye")
+radius = 0.18
+height = 0.35
 
-[sub_resource type="BoxMesh" id="BoxMesh_blade"]
-material = SubResource("StandardMaterial3D_metal")
-size = Vector3(0.1, 0.1, 0.8)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cannon"]
+albedo_color = Color(0.2, 0.25, 0.32, 1)
+metallic = 0.9
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_launcher"]
+material = SubResource("StandardMaterial3D_cannon")
+top_radius = 0.14
+bottom_radius = 0.12
+height = 0.65
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg_upper"]
+material = SubResource("StandardMaterial3D_shell")
+size = Vector3(0.12, 0.45, 0.12)
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg_lower"]
+material = SubResource("StandardMaterial3D_shell")
+size = Vector3(0.08, 0.5, 0.08)
 
 [node name="Minion" type="CharacterBody3D"]
 collision_layer = 2
-collision_mask = 3
+collision_mask = 7
 script = ExtResource("1_minion")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
 shape = SubResource("SphereShape3D_minion")
 
 [node name="Model" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
 
-[node name="Body" type="MeshInstance3D" parent="Model"]
-mesh = SubResource("SphereMesh_body")
+[node name="Torso" type="MeshInstance3D" parent="Model"]
+mesh = SubResource("BoxMesh_torso")
 
 [node name="Eye" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -0.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.52)
 mesh = SubResource("SphereMesh_eye")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="Model/Eye"]
-light_color = Color(1, 0.1, 0.1, 1)
-light_energy = 2.0
-omni_range = 3.0
+light_color = Color(1, 0.15, 0.4, 1)
+light_energy = 2.5
+omni_range = 3.5
 
-[node name="LeftBlade" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, -0.4, -0.1, -0.3)
-mesh = SubResource("BoxMesh_blade")
+[node name="Launcher" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0.35, 0.15)
 
-[node name="RightBlade" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 0.4, -0.1, -0.3)
-mesh = SubResource("BoxMesh_blade")
+[node name="LauncherMesh" type="MeshInstance3D" parent="Model/Launcher"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.25)
+mesh = SubResource("CylinderMesh_launcher")
 
+[node name="Muzzle" type="Marker3D" parent="Model/Launcher"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.6)
+
+[node name="LegFL" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.45, -0.1, -0.35)
+
+[node name="Upper" type="MeshInstance3D" parent="Model/LegFL"]
+transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, -0.15, -0.15, 0)
+mesh = SubResource("BoxMesh_leg_upper")
+
+[node name="LegFR" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, -0.1, -0.35)
+
+[node name="Upper" type="MeshInstance3D" parent="Model/LegFR"]
+transform = Transform3D(0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0, 0, 1, 0.15, -0.15, 0)
+mesh = SubResource("BoxMesh_leg_upper")
+
+[node name="LegBL" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.45, -0.1, 0.35)
+
+[node name="Upper" type="MeshInstance3D" parent="Model/LegBL"]
+transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, -0.15, -0.15, 0)
+mesh = SubResource("BoxMesh_leg_upper")
+
+[node name="LegBR" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, -0.1, 0.35)
+
+[node name="Upper" type="MeshInstance3D" parent="Model/LegBR"]
+transform = Transform3D(0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0, 0, 1, 0.15, -0.15, 0)
+mesh = SubResource("BoxMesh_leg_upper")

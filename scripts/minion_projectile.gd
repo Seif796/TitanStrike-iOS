@@ -38,3 +38,4 @@ func _on_body_entered(body: Node) -> void:
 		queue_free()
 	elif body is StaticBody3D or body is CSGShape3D:
 		queue_free()
+

@@ -67,11 +67,13 @@ func show_downed_alert(is_down: bool) -> void:
 		else:
 			alert_label.visible = false
 
-func _on_boss_health_updated(current: float, max_val: float) -> void:
+func _on_boss_health_updated(current: float, max_val: float, boss_title: String = "") -> void:
 	if boss_container:
 		boss_container.visible = true
 		boss_bar.max_value = max_val
 		boss_bar.value = current
+		if boss_title != "" and boss_name_label:
+			boss_name_label.text = boss_title
 		if current <= 0:
 			boss_container.visible = false
 
@@ -88,7 +90,7 @@ func _on_game_over(is_victory: bool) -> void:
 		if is_victory:
 			end_title.text = "🏆 VICTORY! 🏆"
 			end_title.modulate = Color.GREEN
-			end_desc.text = "You and your co-op squad eliminated the Titan Boss!"
+			end_desc.text = "You and your co-op squad eliminated both Titan Bosses!"
 		else:
 			end_title.text = "💀 DEFEAT 💀"
 			end_title.modulate = Color.RED

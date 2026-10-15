@@ -11,11 +11,18 @@ var target_player: Node3D = null
 var homing_strength: float = 2.0
 var lifetime: float = 6.0
 
-func setup(pos: Vector3, dir: Vector3, dmg: float = 35.0, target: Node3D = null) -> void:
+func setup(pos: Vector3, dir: Vector3, dmg: float = 35.0, target: Node3D = null, spd: float = 16.0, scale_mul: float = 1.0) -> void:
 	global_position = pos
 	direction = dir.normalized()
 	damage = dmg
 	target_player = target
+	speed = spd
+	if scale_mul != 1.0:
+		scale = Vector3(scale_mul, scale_mul, scale_mul)
+		var light = get_node_or_null("OmniLight3D")
+		if light:
+			light.light_energy = 7.0
+			light.light_color = Color(1.0, 0.1, 0.1)
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
@@ -37,6 +44,9 @@ func _on_body_entered(body: Node) -> void:
 	
 	if body.is_in_group("players") and body.has_method("take_damage"):
 		body.take_damage(damage)
+		queue_free()
+	elif body is Structure:
+		body.take_damage(damage * 1.5)
 		queue_free()
 	elif body is StaticBody3D or body is CSGShape3D:
 		queue_free()
