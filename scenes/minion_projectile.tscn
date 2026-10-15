@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://cminionproj001"]
+
+[ext_resource type="Script" path="res://scripts/minion_projectile.gd" id="1_mproj"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_proj"]
+radius = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spore"]
+albedo_color = Color(0.8, 0.1, 0.9, 1)
+emission_enabled = true
+emission = Color(0.9, 0.2, 1, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_ball"]
+material = SubResource("StandardMaterial3D_spore")
+radius = 0.3
+height = 0.6
+
+[node name="MinionProjectile" type="Area3D"]
+collision_layer = 8
+collision_mask = 7
+script = ExtResource("1_mproj")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_proj")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_ball")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(0.9, 0.2, 1, 1)
+light_energy = 2.5
+omni_range = 4.0

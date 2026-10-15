@@ -2,17 +2,21 @@ extends CharacterBody3D
 class_name Minion
 
 # Minion Script (res://scripts/minion.gd)
-# Aggressive drone/crawler enemy that swarms players.
+# Swarm enemy that now throws glowing energy balls at players from a distance and attacks in melee!
 
-@export var max_hp: float = 60.0
-var current_hp: float = 60.0
-var move_speed: float = 5.0
-var damage: float = 15.0
-var attack_cooldown: float = 1.2
+@export var max_hp: float = 75.0
+var current_hp: float = 75.0
+var move_speed: float = 5.2
+var melee_damage: float = 16.0
+var ranged_damage: float = 18.0
+
+var attack_cooldown: float = 1.8
 var can_attack: bool = true
 
 var target_player: Player = null
 var sync_pos: Vector3 = Vector3.ZERO
+
+var projectile_scene = preload("res://scenes/minion_projectile.tscn")
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -42,14 +46,19 @@ func _server_process(delta: float) -> void:
 	
 	look_at_safe(global_position + dir)
 	
-	if dist > 2.0:
+	# Ranged ball throwing when at medium distance (4m to 16m)! ("المينيونز تحذف كور")
+	if dist > 3.0 and dist <= 18.0 and can_attack:
+		_throw_ball(target_player.global_position)
+	elif dist <= 2.5 and can_attack:
+		_melee_attack()
+	
+	# Keep chasing or maneuvering
+	if dist > 3.0:
 		velocity.x = dir.x * move_speed
 		velocity.z = dir.z * move_speed
 	else:
-		velocity.x = 0
-		velocity.z = 0
-		if can_attack:
-			_attack_target()
+		velocity.x = move_toward(velocity.x, 0, move_speed)
+		velocity.z = move_toward(velocity.z, 0, move_speed)
 	
 	move_and_slide()
 
@@ -65,12 +74,31 @@ func _find_target() -> void:
 				closest = p
 	target_player = closest
 
-func _attack_target() -> void:
+# --- ATTACKS ---
+
+func _throw_ball(target_pos: Vector3) -> void:
 	can_attack = false
-	if is_instance_valid(target_player):
-		target_player.take_damage(damage)
+	rpc("_spawn_throw_visuals", target_pos)
 	
 	get_tree().create_timer(attack_cooldown).timeout.connect(func():
+		can_attack = true
+	)
+
+@rpc("call_local", "reliable")
+func _spawn_throw_visuals(target_pos: Vector3) -> void:
+	if projectile_scene:
+		var proj = projectile_scene.instantiate()
+		var spawn_pos = global_position + Vector3(0, 0.8, 0)
+		var dir = (target_pos + Vector3(0, 0.8, 0) - spawn_pos).normalized()
+		proj.setup(spawn_pos, dir, ranged_damage)
+		get_tree().current_scene.add_child(proj)
+
+func _melee_attack() -> void:
+	can_attack = false
+	if is_instance_valid(target_player):
+		target_player.take_damage(melee_damage)
+	
+	get_tree().create_timer(1.2).timeout.connect(func():
 		can_attack = true
 	)
 
@@ -94,4 +122,3 @@ func look_at_safe(target: Vector3) -> void:
 @rpc("unreliable")
 func _sync_minion_pos(pos: Vector3) -> void:
 	sync_pos = pos
-
