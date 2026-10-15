@@ -75,3 +75,4 @@ func _play_turret_shot(target_pos: Vector3) -> void:
 		var dir = (target_pos - barrel.global_position).normalized()
 		b.setup(barrel.global_position, dir, 45.0, damage, builder_peer_id, Color.CYAN)
 		get_tree().current_scene.add_child(b)
+

@@ -150,3 +150,4 @@ func _spawn_local_structure(st_type: StructureType, pos: Vector3, rot_y: float, 
 		if instance is Structure:
 			instance.builder_peer_id = p_id
 		get_tree().current_scene.add_child(instance)
+

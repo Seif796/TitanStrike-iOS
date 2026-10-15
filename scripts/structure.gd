@@ -37,3 +37,4 @@ func take_damage(amount: float, _attacker_id: int = 0) -> void:
 func _destroy() -> void:
 	# Small explosion / crumbling effect
 	queue_free()
+

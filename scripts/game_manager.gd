@@ -1,7 +1,7 @@
 extends Node
 
 # GameManager Autoload (res://scripts/game_manager.gd)
-# Controls match flow, waves, boss activation, revive checks, and game win/lose states.
+# Controls match flow, waves, classes, and forces landscape orientation.
 
 enum GameState {
 	MENU,
@@ -26,30 +26,31 @@ var boss_node: Node = null
 # Class definitions
 const CLASSES: Dictionary = {
 	0: {
-		"name": "Assault (المقتحم)",
+		"name": "Phantom (النينجا السايبراني)",
 		"hp": 120,
-		"speed": 6.5,
-		"role": "Balanced combat specialist with high sustained DPS.",
-		"color": Color(0.2, 0.6, 1.0) # Blue
+		"speed": 7.0,
+		"role": "Cyber ninja with high agility, pulse rifle, and precision building.",
+		"color": Color(0, 0.85, 1.0) # Neon Cyan
 	},
 	1: {
-		"name": "Heavy (المدرّع)",
-		"hp": 200,
-		"speed": 5.0,
-		"role": "Armored tank with explosive firepower and high survivability.",
-		"color": Color(0.9, 0.4, 0.1) # Orange
+		"name": "Juggernaut (المدرّع الثقيل)",
+		"hp": 220,
+		"speed": 5.2,
+		"role": "Heavy armored mech warrior with extreme defense and heavy plasma firepower.",
+		"color": Color(1.0, 0.35, 0.1) # Fiery Orange
 	},
 	2: {
-		"name": "Scout (القناص)",
-		"hp": 90,
-		"speed": 8.0,
-		"role": "Agile sniper with deadly critical shots and evasion.",
-		"color": Color(0.2, 0.9, 0.4) # Green
+		"name": "Tactician (المهندس التكتيكي)",
+		"hp": 130,
+		"speed": 6.2,
+		"role": "Combat engineer equipped with advanced defense walls and auto-turrets.",
+		"color": Color(0.2, 0.95, 0.5) # Neon Green
 	}
 }
 
 func _ready() -> void:
-	pass
+	# Force landscape orientation immediately on startup
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
 
 @rpc("call_local", "reliable")
 func start_game_scene() -> void:
@@ -86,4 +87,3 @@ func check_all_players_down() -> void:
 	
 	if not any_alive:
 		rpc("trigger_game_over", false)
-

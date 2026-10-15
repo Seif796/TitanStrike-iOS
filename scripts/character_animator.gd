@@ -80,3 +80,4 @@ func _physics_process(delta: float) -> void:
 			right_leg.rotation.x = deg_to_rad(20)
 		if body_mesh:
 			body_mesh.position.y = 0.95
+

@@ -46,9 +46,25 @@ jobs:
           mkdir -p build/ios
           godot --headless --export-release "iOS" build/ios/TitanStrike.xcodeproj
           
-          # Check if Xcode project was generated
           echo "=== Export folder contents ==="
           ls -la build/ios
+
+      - name: Force iOS Landscape Orientation in Info.plist
+        run: |
+          echo "=== Configuring Info.plist for Landscape ONLY ==="
+          PLIST_FILES=$(find build/ios -name "*-Info.plist" -o -name "Info.plist")
+          for plist in $PLIST_FILES; do
+            echo "Patching: $plist"
+            /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" "$plist" || true
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$plist"
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationLandscapeLeft" "$plist"
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string UIInterfaceOrientationLandscapeRight" "$plist"
+            
+            /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations~ipad" "$plist" || true
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad array" "$plist"
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad:0 string UIInterfaceOrientationLandscapeLeft" "$plist"
+            /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad:1 string UIInterfaceOrientationLandscapeRight" "$plist"
+          done
 
       - name: Build Xcode Project to App
         run: |
