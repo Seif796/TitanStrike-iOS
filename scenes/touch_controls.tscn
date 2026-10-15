@@ -1,49 +1,73 @@
-[gd_scene load_steps=6 format=3 uid="uid://ctouch001ctrl"]
+[gd_scene load_steps=8 format=3 uid="uid://ctouch001ctrl"]
 
 [ext_resource type="Script" path="res://scripts/touch_controls.gd" id="1_touch"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_joystick_base"]
-bg_color = Color(0.15, 0.18, 0.25, 0.45)
-corner_radius_top_left = 80
-corner_radius_top_right = 80
-corner_radius_bottom_right = 80
-corner_radius_bottom_left = 80
+bg_color = Color(0.12, 0.16, 0.22, 0.5)
+corner_radius_top_left = 75
+corner_radius_top_right = 75
+corner_radius_bottom_right = 75
+corner_radius_bottom_left = 75
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
-border_color = Color(0.3, 0.6, 1, 0.5)
+border_color = Color(0, 0.8, 1, 0.6)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_knob"]
-bg_color = Color(0.2, 0.7, 1, 0.75)
-corner_radius_top_left = 30
-corner_radius_top_right = 30
-corner_radius_bottom_right = 30
-corner_radius_bottom_left = 30
+bg_color = Color(0, 0.9, 1, 0.85)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fire_btn"]
-bg_color = Color(0.9, 0.2, 0.2, 0.7)
-corner_radius_top_left = 50
-corner_radius_top_right = 50
-corner_radius_bottom_right = 50
-corner_radius_bottom_left = 50
+bg_color = Color(1, 0.2, 0.25, 0.8)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
-border_color = Color(1, 0.5, 0.5, 0.9)
+border_color = Color(1, 0.6, 0.6, 0.9)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_btn"]
-bg_color = Color(0.2, 0.25, 0.35, 0.75)
-corner_radius_top_left = 35
-corner_radius_top_right = 35
-corner_radius_bottom_right = 35
-corner_radius_bottom_left = 35
+bg_color = Color(0.18, 0.22, 0.32, 0.8)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.5, 0.7, 1, 0.7)
+border_color = Color(0.4, 0.7, 1, 0.7)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_build_btn"]
+bg_color = Color(0.1, 0.65, 0.8, 0.85)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 1, 0.9, 0.9)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_place_btn"]
+bg_color = Color(0.1, 0.85, 0.35, 0.85)
+corner_radius_top_left = 45
+corner_radius_top_right = 45
+corner_radius_bottom_right = 45
+corner_radius_bottom_left = 45
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.5, 1, 0.6, 0.9)
 
 [node name="TouchControls" type="Control"]
 layout_mode = 3
@@ -59,25 +83,25 @@ script = ExtResource("1_touch")
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_right = 500.0
+offset_right = 480.0
 grow_vertical = 2
 mouse_filter = 1
 
 [node name="JoystickBase" type="Panel" parent="LeftZone"]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 460.0
-offset_right = 240.0
-offset_bottom = 620.0
+offset_left = 75.0
+offset_top = 475.0
+offset_right = 225.0
+offset_bottom = 625.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_joystick_base")
 
 [node name="Knob" type="Panel" parent="LeftZone/JoystickBase"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 50.0
-offset_right = 110.0
-offset_bottom = 110.0
+offset_left = 47.0
+offset_top = 47.0
+offset_right = 103.0
+offset_bottom = 103.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_knob")
 
@@ -87,12 +111,38 @@ anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -550.0
+offset_left = -580.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 1
 
-[node name="FireBtn" type="Button" parent="RightZone"]
+[node name="BuildToggleBtn" type="Button" parent="RightZone"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -370.0
+offset_right = -50.0
+offset_bottom = -310.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_build_btn")
+text = "🔨 BUILD"
+
+[node name="CombatBar" type="Control" parent="RightZone"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="FireBtn" type="Button" parent="RightZone/CombatBar"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -109,24 +159,24 @@ theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("StyleBoxFlat_fire_btn")
 text = "FIRE"
 
-[node name="ReloadBtn" type="Button" parent="RightZone"]
+[node name="ReloadBtn" type="Button" parent="RightZone/CombatBar"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -270.0
-offset_right = -70.0
-offset_bottom = -190.0
+offset_left = -145.0
+offset_top = -265.0
+offset_right = -75.0
+offset_bottom = -195.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
 text = "🔄"
 
-[node name="SwitchBtn" type="Button" parent="RightZone"]
+[node name="SwitchBtn" type="Button" parent="RightZone/CombatBar"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -142,6 +192,84 @@ grow_vertical = 0
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
 text = "⚔️"
+
+[node name="BuildBar" type="Control" parent="RightZone"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="PlaceBtn" type="Button" parent="RightZone/BuildBar"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -170.0
+offset_right = -50.0
+offset_bottom = -50.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_place_btn")
+text = "✅ PLACE"
+
+[node name="WallBtn" type="Button" parent="RightZone/BuildBar"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -170.0
+offset_right = -190.0
+offset_bottom = -100.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
+text = "🧱"
+
+[node name="RampBtn" type="Button" parent="RightZone/BuildBar"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -265.0
+offset_right = -190.0
+offset_bottom = -195.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
+text = "📐"
+
+[node name="TurretBtn" type="Button" parent="RightZone/BuildBar"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -265.0
+offset_right = -80.0
+offset_bottom = -195.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
+text = "🤖"
 
 [node name="CenterZone" type="Control" parent="."]
 layout_mode = 1
@@ -168,4 +296,3 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 18
 text = "❤️ REVIVE SQUAD"
-

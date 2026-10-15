@@ -1,7 +1,7 @@
 extends Node
 
 # NetworkManager Autoload (res://scripts/network_manager.gd)
-# Handles multiplayer hosting, joining, peer synchronization, and player data.
+# Handles Room Creation, Room Joining, peer sync, and automatic match launch when a player joins.
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 4
@@ -12,11 +12,13 @@ signal server_disconnected()
 signal connection_failed()
 signal connection_succeeded()
 signal lobby_updated()
+signal room_launch_countdown(seconds_left: int)
 
 var peer: ENetMultiplayerPeer = null
 var players: Dictionary = {} # peer_id -> { "name": String, "class_id": int, "ready": bool }
 var local_player_name: String = "Player"
-var local_class_id: int = 0 # 0: Assault, 1: Heavy, 2: Scout
+var local_class_id: int = 0
+var room_code: String = "ROOM-1"
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -25,15 +27,15 @@ func _ready() -> void:
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
-# --- HOSTING & JOINING ---
+# --- CREATE ROOM ---
 
-func host_game(player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
+func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
 	local_player_name = player_name
 	local_class_id = class_id
 	peer = ENetMultiplayerPeer.new()
 	var error = peer.create_server(port, MAX_PLAYERS)
 	if error != OK:
-		print("Failed to host game: ", error)
+		print("Failed to create room: ", error)
 		return error
 	
 	multiplayer.multiplayer_peer = peer
@@ -42,10 +44,12 @@ func host_game(player_name: String, class_id: int, port: int = DEFAULT_PORT) -> 
 		"class_id": local_class_id,
 		"ready": true
 	}
-	print("Game hosted on port ", port, " with peer ID 1")
+	print("Room created on port ", port, " with Host peer ID 1")
 	return OK
 
-func join_game(address: String, player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
+# --- JOIN ROOM ---
+
+func join_room(address: String, player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
 	local_player_name = player_name
 	local_class_id = class_id
 	if address.strip_edges() == "":
@@ -54,11 +58,11 @@ func join_game(address: String, player_name: String, class_id: int, port: int = 
 	peer = ENetMultiplayerPeer.new()
 	var error = peer.create_client(address, port)
 	if error != OK:
-		print("Failed to connect to host: ", error)
+		print("Failed to join room: ", error)
 		return error
 	
 	multiplayer.multiplayer_peer = peer
-	print("Connecting to ", address, ":", port)
+	print("Connecting to Room at ", address, ":", port)
 	return OK
 
 func leave_game() -> void:
@@ -71,41 +75,54 @@ func leave_game() -> void:
 # --- MULTIPLAYER CALLBACKS ---
 
 func _on_peer_connected(id: int) -> void:
-	print("Peer connected: ", id)
-	# When a client connects, register local info with host
+	print("Player joined room: ", id)
 	if multiplayer.is_server():
-		# Send existing player list to new peer
+		# Send existing player info to new peer
 		for p_id in players:
 			rpc_id(id, "_register_player", p_id, players[p_id])
+		
+		# Auto-launch match as soon as someone joins! ("اول ما حد يخش يبدا العبه")
+		_start_auto_launch_countdown()
+
+func _start_auto_launch_countdown() -> void:
+	rpc("_sync_launch_countdown", 3)
+	get_tree().create_timer(1.0).timeout.connect(func():
+		rpc("_sync_launch_countdown", 2)
+		get_tree().create_timer(1.0).timeout.connect(func():
+			rpc("_sync_launch_countdown", 1)
+			get_tree().create_timer(1.0).timeout.connect(func():
+				GameManager.rpc("start_game_scene")
+			)
+		)
+	)
+
+@rpc("call_local", "reliable")
+func _sync_launch_countdown(sec: int) -> void:
+	room_launch_countdown.emit(sec)
 
 func _on_peer_disconnected(id: int) -> void:
-	print("Peer disconnected: ", id)
 	if players.has(id):
 		players.erase(id)
 		player_disconnected.emit(id)
 		lobby_updated.emit()
 
 func _on_connected_to_server() -> void:
-	print("Connected to server!")
 	var local_id = multiplayer.get_unique_id()
-	# Register myself with server
 	rpc("_register_player", local_id, {
 		"name": local_player_name,
 		"class_id": local_class_id,
-		"ready": false
+		"ready": true
 	})
 	connection_succeeded.emit()
 
 func _on_connection_failed() -> void:
-	print("Connection to server failed.")
 	connection_failed.emit()
 
 func _on_server_disconnected() -> void:
-	print("Server disconnected.")
 	leave_game()
 	server_disconnected.emit()
 
-# --- RPCs FOR REGISTRATION & LOBBY ---
+# --- REGISTRATION RPC ---
 
 @rpc("any_peer", "call_local", "reliable")
 func _register_player(id: int, info: Dictionary) -> void:
@@ -113,21 +130,8 @@ func _register_player(id: int, info: Dictionary) -> void:
 	player_connected.emit(id, info)
 	lobby_updated.emit()
 
-@rpc("any_peer", "call_local", "reliable")
-func set_player_ready(id: int, is_ready: bool) -> void:
-	if players.has(id):
-		players[id]["ready"] = is_ready
-		lobby_updated.emit()
-
-@rpc("any_peer", "call_local", "reliable")
-func set_player_class(id: int, class_id: int) -> void:
-	if players.has(id):
-		players[id]["class_id"] = class_id
-		lobby_updated.emit()
-
 func get_local_ip() -> String:
 	for ip in IP.get_local_addresses():
 		if ip.begins_with("192.168.") or ip.begins_with("10.") or (ip.begins_with("172.") and int(ip.split(".")[1]) >= 16 and int(ip.split(".")[1]) <= 31):
 			return ip
 	return "127.0.0.1"
-

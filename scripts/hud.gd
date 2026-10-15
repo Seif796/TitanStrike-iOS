@@ -2,10 +2,11 @@ extends CanvasLayer
 class_name HUD
 
 # HUD Script (res://scripts/hud.gd)
-# Displays player health, ammo, boss health bar, waves, and co-op alerts.
+# Displays player health, ammo, nano-materials building stats, boss health bar, waves, and alerts.
 
 @onready var health_bar: ProgressBar = $SafeArea/PlayerStats/HealthBar
 @onready var health_label: Label = $SafeArea/PlayerStats/HealthLabel
+@onready var materials_label: Label = $SafeArea/PlayerStats/MaterialsLabel
 @onready var ammo_label: Label = $SafeArea/WeaponStats/AmmoLabel
 @onready var weapon_label: Label = $SafeArea/WeaponStats/WeaponLabel
 @onready var boss_container: VBoxContainer = $SafeArea/BossContainer
@@ -43,6 +44,10 @@ func update_health(current: float, max_val: float) -> void:
 	if health_label:
 		health_label.text = "HP: %d / %d" % [int(current), int(max_val)]
 
+func update_materials(amount: int) -> void:
+	if materials_label:
+		materials_label.text = "🔨 Nano-Materials: %d" % amount
+
 func update_ammo(current: int, max_mag: int, is_reloading: bool) -> void:
 	if ammo_label:
 		if is_reloading:
@@ -73,9 +78,9 @@ func _on_boss_health_updated(current: float, max_val: float) -> void:
 func _on_wave_updated(wave: int, max_w: int, left: int) -> void:
 	if wave_label:
 		if wave > max_w:
-			wave_label.text = "⚔️ BOSS BATTLE ⚔️"
+			wave_label.text = "⚔️ TITAN BOSS BATTLE ⚔️"
 		else:
-			wave_label.text = "Wave %d / %d | Enemies: %d" % [wave, max_w, left]
+			wave_label.text = "Wave %d / %d | Minions Left: %d" % [wave, max_w, left]
 
 func _on_game_over(is_victory: bool) -> void:
 	if end_screen:
@@ -83,9 +88,8 @@ func _on_game_over(is_victory: bool) -> void:
 		if is_victory:
 			end_title.text = "🏆 VICTORY! 🏆"
 			end_title.modulate = Color.GREEN
-			end_desc.text = "You and your co-op squad defeated the Titan Boss!"
+			end_desc.text = "You and your co-op squad eliminated the Titan Boss!"
 		else:
 			end_title.text = "💀 DEFEAT 💀"
 			end_title.modulate = Color.RED
 			end_desc.text = "All squad members were eliminated by the Titan."
-

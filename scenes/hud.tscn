@@ -70,6 +70,12 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_health")
 value = 100.0
 show_percentage = false
 
+[node name="MaterialsLabel" type="Label" parent="SafeArea/PlayerStats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "🔨 Nano-Materials: 250"
+
 [node name="WeaponStats" type="VBoxContainer" parent="SafeArea"]
 layout_mode = 2
 size_flags_horizontal = 8
@@ -85,7 +91,7 @@ horizontal_alignment = 2
 [node name="AmmoLabel" type="Label" parent="SafeArea/WeaponStats"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "32 / 32"
+text = "35 / 35"
 horizontal_alignment = 2
 
 [node name="TopInfo" type="HBoxContainer" parent="SafeArea"]
@@ -97,7 +103,7 @@ mouse_filter = 2
 [node name="WaveLabel" type="Label" parent="SafeArea/TopInfo"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Wave 1 / 3 | Enemies: 5"
+text = "Wave 1 / 3 | Minions Left: 6"
 
 [node name="BossContainer" type="VBoxContainer" parent="SafeArea"]
 visible = false
@@ -181,4 +187,3 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 20
 text = "Return to Menu"
-

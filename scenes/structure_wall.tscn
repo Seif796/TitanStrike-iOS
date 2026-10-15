@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://cwall001scene"]
+
+[ext_resource type="Script" path="res://scripts/structure.gd" id="1_struct"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall"]
+size = Vector3(4.5, 3.2, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.12, 0.22, 0.35, 0.95)
+metallic = 0.8
+roughness = 0.2
+emission_enabled = true
+emission = Color(0, 0.7, 1, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(4.5, 3.2, 0.4)
+
+[node name="StructureWall" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 7
+script = ExtResource("1_struct")
+structure_type = "Wall"
+max_hp = 350.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+shape = SubResource("BoxShape3D_wall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+mesh = SubResource("BoxMesh_wall")

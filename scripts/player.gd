@@ -2,8 +2,8 @@ extends CharacterBody3D
 class_name Player
 
 # Player Script (res://scripts/player.gd)
-# 3D Third-person / Action Player controller with mobile touch and keyboard support,
-# co-op revive system, multiple classes, and weapon switching.
+# 3D Action Player controller with dynamic procedural animations,
+# base building system, multiple classes, mobile touch controls, and multiplayer sync.
 
 signal health_changed(current: float, max_val: float)
 signal downed_state_changed(is_down: bool)
@@ -12,19 +12,18 @@ signal weapon_switched(weapon_node: Weapon)
 @export var peer_id: int = 1
 @export var class_id: int = 0
 
-var max_hp: float = 100.0
-var current_hp: float = 100.0
-var move_speed: float = 6.0
+var max_hp: float = 120.0
+var current_hp: float = 120.0
+var move_speed: float = 6.5
 var gravity: float = 18.0
 var is_down: bool = false
 var revive_timer: float = 0.0
-const REVIVE_REQUIRED_TIME: float = 3.0
 
 var primary_weapon: Weapon = null
 var secondary_weapon: Weapon = null
 var active_weapon: Weapon = null
 
-# Input vectors (from touch joystick or keyboard)
+# Input vectors
 var input_vector: Vector2 = Vector2.ZERO
 var look_input: Vector2 = Vector2.ZERO
 var is_firing: bool = false
@@ -33,14 +32,14 @@ var is_firing: bool = false
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
 @onready var camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
 @onready var weapons_container: Node3D = $Model/Weapons
-@onready var mesh_body: MeshInstance3D = $Model/BodyMesh
+@onready var chest_plate: MeshInstance3D = $Model/BodyMesh/ChestPlate
 @onready var interact_area: Area3D = $InteractArea
+@onready var building_system: BuildingSystem = $BuildingSystem
 
 var sync_position: Vector3 = Vector3.ZERO
 var sync_rotation_y: float = 0.0
 
 func _enter_tree() -> void:
-	# Set authority based on node name (which matches peer_id)
 	var id_from_name = name.to_int()
 	if id_from_name > 0:
 		peer_id = id_from_name
@@ -54,6 +53,9 @@ func _ready() -> void:
 		camera.current = true
 	else:
 		camera.current = false
+		if building_system:
+			building_system.set_process(false)
+			building_system.set_physics_process(false)
 	
 	_setup_weapons()
 
@@ -67,9 +69,8 @@ func apply_class_stats(c_id: int) -> void:
 	current_hp = max_hp
 	move_speed = data["speed"]
 	
-	# Apply class visual color
-	if mesh_body and mesh_body.material_override is StandardMaterial3D:
-		mesh_body.material_override.albedo_color = data["color"]
+	if chest_plate and chest_plate.material_override is StandardMaterial3D:
+		chest_plate.material_override.albedo_color = data["color"]
 	
 	health_changed.emit(current_hp, max_hp)
 
@@ -97,11 +98,9 @@ func _physics_process(delta: float) -> void:
 		_process_movement(delta)
 		move_and_slide()
 		
-		# Send sync data to other players
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_transform", global_position, rotation.y)
 	else:
-		# Interpolate other players' position
 		global_position = global_position.lerp(sync_position, 15.0 * delta)
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, 15.0 * delta)
 		move_and_slide()
@@ -118,15 +117,15 @@ func _handle_local_input(_delta: float) -> void:
 		var y = Input.get_action_raw_strength("move_backward") - Input.get_action_raw_strength("move_forward")
 		input_vector = Vector2(x, y).normalized()
 	
-	# Aim / Camera rotation with mouse or touch trackpad
+	# Aim / Camera rotation
 	if look_input != Vector2.ZERO:
 		rotate_y(-look_input.x)
 		if camera_pivot:
 			camera_pivot.rotation.x = clamp(camera_pivot.rotation.x - look_input.y, deg_to_rad(-60), deg_to_rad(45))
 		look_input = Vector2.ZERO
 	
-	# Firing
-	if Input.is_action_pressed("fire") or is_firing:
+	# Firing (only when not in build mode)
+	if (Input.is_action_pressed("fire") or is_firing) and (not building_system or not building_system.is_build_mode):
 		try_fire()
 	
 	# Reloading
@@ -136,6 +135,10 @@ func _handle_local_input(_delta: float) -> void:
 	# Switching weapons
 	if Input.is_action_just_pressed("switch_weapon"):
 		switch_weapon()
+	
+	# Toggle Build mode
+	if Input.is_action_just_pressed("toggle_build"):
+		toggle_build_mode()
 	
 	# Revive nearby teammate
 	if Input.is_action_pressed("interact"):
@@ -157,15 +160,15 @@ func _process_movement(_delta: float) -> void:
 		velocity.x = move_dir.x * move_speed
 		velocity.z = move_dir.z * move_speed
 		
-		# Rotate body towards movement or aim
+		# Rotate body towards movement
 		var target_rot = atan2(-move_dir.x, -move_dir.z)
-		rotation.y = lerp_angle(rotation.y, target_rot, 0.2)
+		rotation.y = lerp_angle(rotation.y, target_rot, 0.25)
 	else:
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
 
 func try_fire() -> void:
-	if is_down or not active_weapon:
+	if is_down or not active_weapon or (building_system and building_system.is_build_mode):
 		return
 	
 	var aim_point = _get_aim_target()
@@ -187,8 +190,28 @@ func _get_aim_target() -> Vector3:
 		return result.position
 	return to
 
+# --- BUILDING SYSTEM INTEGRATION ---
+
+func toggle_build_mode() -> bool:
+	if not building_system or is_down:
+		return false
+	var is_building = building_system.toggle_build_mode()
+	if active_weapon:
+		active_weapon.visible = !is_building
+	return is_building
+
+func place_structure() -> void:
+	if building_system and not is_down:
+		building_system.try_place_structure()
+
+func select_structure_type(idx: int) -> void:
+	if building_system and not is_down:
+		building_system.select_structure(idx)
+
+# --- WEAPONS ---
+
 func switch_weapon() -> void:
-	if is_down:
+	if is_down or (building_system and building_system.is_build_mode):
 		return
 	if active_weapon == primary_weapon and secondary_weapon:
 		active_weapon.visible = false
@@ -203,10 +226,10 @@ func switch_weapon() -> void:
 	weapon_switched.emit(active_weapon)
 
 func reload_active_weapon() -> void:
-	if active_weapon and not is_down:
+	if active_weapon and not is_down and (not building_system or not building_system.is_build_mode):
 		active_weapon.start_reload()
 
-# --- HEALTH, DAMAGE & CO-OP REVIVE ---
+# --- HEALTH & CO-OP REVIVE ---
 
 func take_damage(amount: float) -> void:
 	if is_down:
@@ -232,12 +255,11 @@ func _apply_damage(amount: float) -> void:
 func _enter_downed_state() -> void:
 	is_down = true
 	downed_state_changed.emit(true)
-	# Check if all players are down -> Defeat
 	GameManager.check_all_players_down()
 
 func revive() -> void:
 	is_down = false
-	current_hp = max_hp * 0.5 # Revive with 50% health
+	current_hp = max_hp * 0.6
 	health_changed.emit(current_hp, max_hp)
 	downed_state_changed.emit(false)
 
@@ -261,4 +283,3 @@ func _sync_transform(pos: Vector3, rot_y: float) -> void:
 func _sync_shoot(target: Vector3) -> void:
 	if active_weapon:
 		active_weapon._spawn_shot_visuals(target)
-

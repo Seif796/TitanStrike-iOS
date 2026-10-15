@@ -1,9 +1,35 @@
-[gd_scene load_steps=3 format=3 uid="uid://cmainmenu001"]
+[gd_scene load_steps=6 format=3 uid="uid://cmainmenu001"]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_bg"]
-bg_color = Color(0.07, 0.08, 0.12, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.05, 0.07, 0.1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.09, 0.12, 0.18, 0.92)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.8, 1, 0.4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_create"]
+bg_color = Color(0, 0.6, 0.9, 0.9)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_join"]
+bg_color = Color(0.15, 0.75, 0.45, 0.9)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -21,94 +47,178 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_menu_bg")
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 
-[node name="Panel" type="MarginContainer" parent="."]
+[node name="TopBar" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 18.0
+offset_bottom = 98.0
+grow_horizontal = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 34
+text = "🛡️ CYBERFORT: TITAN STRIKE 3D"
+horizontal_alignment = 1
+
+[node name="VoiceBanner" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+text = "🎙️ Welcome to CyberFort 3D! Choose Create Room or Join Room."
+horizontal_alignment = 1
+
+[node name="HBox" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -280.0
-offset_right = 260.0
-offset_bottom = 280.0
+offset_left = -560.0
+offset_top = -240.0
+offset_right = 560.0
+offset_bottom = 290.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="Panel"]
-layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 28
 alignment = 1
 
-[node name="Title" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 38
-text = "TITAN STRIKE 3D"
-horizontal_alignment = 1
-
-[node name="Subtitle" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
-theme_override_font_sizes/font_size = 18
-text = "Co-op Campaign & Boss Hunt"
-horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="Panel/VBox"]
+[node name="LeftCol" type="Control" parent="HBox"]
+custom_minimum_size = Vector2(530, 0)
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-text = "Player Name / اسم اللاعب:"
+[node name="Panel" type="Panel" parent="HBox/LeftCol"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="NameInput" type="LineEdit" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-placeholder_text = "Enter your squad callsign..."
+[node name="VBox" type="VBoxContainer" parent="HBox/LeftCol/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
 
-[node name="ClassLabel" type="Label" parent="Panel/VBox"]
+[node name="SectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
-text = "Select Class / اختر الشخصية:"
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "👤 SELECT YOUR CHARACTER"
 
-[node name="ClassOption" type="OptionButton" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-
-[node name="ClassDesc" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
-theme_override_font_sizes/font_size = 14
-text = "Class description goes here..."
-autowrap_mode = 2
-
-[node name="HostBtn" type="Button" parent="Panel/VBox"]
+[node name="ClassOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "🛡️ Host Squad (سيرفر مضيف)"
 
-[node name="JoinContainer" type="HBoxContainer" parent="Panel/VBox"]
+[node name="ClassDesc" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.8, 0.85, 0.92, 1)
+theme_override_font_sizes/font_size = 15
+text = "Character bio and abilities..."
+autowrap_mode = 2
+
+[node name="ClassStats" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "Health: 120 HP  |  Speed: 6.5 m/s"
+
+[node name="BuildNote" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "🔨 Features full 3D building: Defense Walls, Tactical Ramps & Auto-Turrets!"
+autowrap_mode = 2
+
+[node name="RightCol" type="Control" parent="HBox"]
+custom_minimum_size = Vector2(530, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="HBox/RightCol"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="HBox/RightCol/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="SectionTitle" type="Label" parent="HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "🌐 MULTIPLAYER CO-OP ROOMS"
+
+[node name="NameInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+placeholder_text = "Enter Callsign / اسم اللاعب..."
+
+[node name="HSeparator" type="HSeparator" parent="HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+
+[node name="CreateRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_create")
+text = "➕ CREATE ROOM (إنشاء غرفة)"
+
+[node name="OrLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 13
+text = "— OR JOIN EXISTING ROOM —"
+horizontal_alignment = 1
+
+[node name="JoinBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="IPInput" type="LineEdit" parent="Panel/VBox/JoinContainer"]
-custom_minimum_size = Vector2(0, 45)
+[node name="IPInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox/JoinBox"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Host IP (e.g. 192.168.1.x)"
+placeholder_text = "Host Room IP..."
 
-[node name="JoinBtn" type="Button" parent="Panel/VBox/JoinContainer"]
-custom_minimum_size = Vector2(140, 45)
+[node name="JoinRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox/JoinBox"]
+custom_minimum_size = Vector2(170, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "🔗 Join (دخول)"
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
+text = "🔗 JOIN ROOM"
 
-[node name="StatusLabel" type="Label" parent="Panel/VBox"]
+[node name="StatusLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 autowrap_mode = 2
-

@@ -6,11 +6,11 @@ config_version=5
 
 [application]
 
-config/name="TitanStrike 3D Co-op"
-config/description="3D Co-op Action Campaign & Boss Hunt Game for iOS & PC"
+config/name="CyberFort: Titan Strike 3D"
+config/description="3D Co-op Building & Boss Hunt Game for iOS & PC"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
-boot_splash/bg_color=Color(0.08, 0.09, 0.12, 1)
+boot_splash/bg_color=Color(0.05, 0.07, 0.1, 1)
 config/icon="res://icon.svg"
 
 [autoload]
@@ -22,9 +22,10 @@ GameManager="*res://scripts/game_manager.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/mode=0
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation=6
+window/handheld/orientation=3
 
 [input]
 
@@ -63,14 +64,14 @@ switch_weapon={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":81,"key_label":0,"unicode":113,"echo":false,"script":null)
 ]
 }
+toggle_build={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":66,"key_label":0,"unicode":98,"echo":false,"script":null)
+]
+}
 interact={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":69,"key_label":0,"unicode":101,"echo":false,"script":null)
-]
-}
-dodge={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":32,"key_label":0,"unicode":32,"echo":false,"script":null)
 ]
 }
 
@@ -78,4 +79,3 @@ dodge={
 
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
-

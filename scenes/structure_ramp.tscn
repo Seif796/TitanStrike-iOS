@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://cramp001scene"]
+
+[ext_resource type="Script" path="res://scripts/structure.gd" id="1_struct"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ramp"]
+size = Vector3(3.8, 0.35, 5.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ramp"]
+albedo_color = Color(0.15, 0.2, 0.3, 0.95)
+metallic = 0.8
+roughness = 0.3
+emission_enabled = true
+emission = Color(0, 0.8, 0.6, 1)
+emission_energy_multiplier = 1.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_ramp"]
+material = SubResource("StandardMaterial3D_ramp")
+size = Vector3(3.8, 0.35, 5.5)
+
+[node name="StructureRamp" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 7
+script = ExtResource("1_struct")
+structure_type = "Ramp"
+max_hp = 280.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 1.4, 0)
+shape = SubResource("BoxShape3D_ramp")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 1.4, 0)
+mesh = SubResource("BoxMesh_ramp")

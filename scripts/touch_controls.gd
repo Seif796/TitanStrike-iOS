@@ -2,37 +2,48 @@ extends Control
 class_name TouchControls
 
 # TouchControls Script (res://scripts/touch_controls.gd)
-# Mobile on-screen virtual joystick, camera trackpad, and action buttons for iPhone.
+# Mobile on-screen joystick, camera drag, combat buttons, and Fortnite-style building buttons.
 
 @onready var joystick_base: Control = $LeftZone/JoystickBase
 @onready var joystick_knob: Control = $LeftZone/JoystickBase/Knob
-@onready var fire_btn: Button = $RightZone/FireBtn
-@onready var reload_btn: Button = $RightZone/ReloadBtn
-@onready var switch_btn: Button = $RightZone/SwitchBtn
+
+# Combat buttons
+@onready var fire_btn: Button = $RightZone/CombatBar/FireBtn
+@onready var reload_btn: Button = $RightZone/CombatBar/ReloadBtn
+@onready var switch_btn: Button = $RightZone/CombatBar/SwitchBtn
+
+# Build mode buttons
+@onready var build_toggle_btn: Button = $RightZone/BuildToggleBtn
+@onready var build_bar: Control = $RightZone/BuildBar
+@onready var wall_btn: Button = $RightZone/BuildBar/WallBtn
+@onready var ramp_btn: Button = $RightZone/BuildBar/RampBtn
+@onready var turret_btn: Button = $RightZone/BuildBar/TurretBtn
+@onready var place_btn: Button = $RightZone/BuildBar/PlaceBtn
+
+@onready var combat_bar: Control = $RightZone/CombatBar
 @onready var revive_btn: Button = $CenterZone/ReviveBtn
 
 var joystick_active: bool = false
 var joystick_touch_index: int = -1
 var joystick_center: Vector2 = Vector2.ZERO
-var joystick_radius: float = 80.0
+var joystick_radius: float = 75.0
 
 var look_touch_index: int = -1
 var last_look_pos: Vector2 = Vector2.ZERO
 
 var player_ref: Player = null
+var is_in_build_mode: bool = false
 
 func _ready() -> void:
-	# Hide on desktop unless forced
-	if OS.get_name() != "iOS" and OS.get_name() != "Android":
-		# Keep visible for easy testing or allow mouse interaction
-		pass
-	
 	if joystick_base:
 		joystick_center = joystick_base.size / 2.0
 		_reset_joystick()
 	
 	if revive_btn:
 		revive_btn.visible = false
+	
+	if build_bar:
+		build_bar.visible = false
 	
 	_connect_buttons()
 
@@ -62,11 +73,47 @@ func _connect_buttons() -> void:
 				player_ref.switch_weapon()
 		)
 	
+	if build_toggle_btn:
+		build_toggle_btn.pressed.connect(_on_build_toggle_pressed)
+	
+	if wall_btn:
+		wall_btn.pressed.connect(func():
+			if player_ref:
+				player_ref.select_structure_type(0)
+		)
+	if ramp_btn:
+		ramp_btn.pressed.connect(func():
+			if player_ref:
+				player_ref.select_structure_type(1)
+		)
+	if turret_btn:
+		turret_btn.pressed.connect(func():
+			if player_ref:
+				player_ref.select_structure_type(2)
+		)
+	if place_btn:
+		place_btn.pressed.connect(func():
+			if player_ref:
+				player_ref.place_structure()
+		)
+	
 	if revive_btn:
 		revive_btn.pressed.connect(func():
 			if player_ref:
 				player_ref._try_revive_teammate()
 		)
+
+func _on_build_toggle_pressed() -> void:
+	if not player_ref:
+		return
+	is_in_build_mode = player_ref.toggle_build_mode()
+	
+	if build_bar:
+		build_bar.visible = is_in_build_mode
+	if combat_bar:
+		combat_bar.visible = !is_in_build_mode
+	
+	build_toggle_btn.text = "⚔️ COMBAT" if is_in_build_mode else "🔨 BUILD"
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
@@ -76,7 +123,7 @@ func _input(event: InputEvent) -> void:
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
 	var screen_width = get_viewport_rect().size.x
-	var is_left_half = event.position.x < (screen_width * 0.45)
+	var is_left_half = event.position.x < (screen_width * 0.42)
 	
 	if event.pressed:
 		if is_left_half and joystick_touch_index == -1:
@@ -86,7 +133,6 @@ func _handle_touch(event: InputEventScreenTouch) -> void:
 				joystick_base.global_position = event.position - joystick_center
 			_update_joystick(event.position)
 		elif not is_left_half and look_touch_index == -1:
-			# If touched inside right zone (and not directly on a button)
 			look_touch_index = event.index
 			last_look_pos = event.position
 	else:
@@ -106,7 +152,7 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 		var delta = event.position - last_look_pos
 		last_look_pos = event.position
 		if player_ref:
-			player_ref.look_input = delta * 0.005
+			player_ref.look_input = delta * 0.0055
 
 func _update_joystick(touch_pos: Vector2) -> void:
 	if not joystick_base or not joystick_knob:
@@ -125,4 +171,3 @@ func _update_joystick(touch_pos: Vector2) -> void:
 func _reset_joystick() -> void:
 	if joystick_knob:
 		joystick_knob.position = joystick_center - (joystick_knob.size / 2.0)
-
