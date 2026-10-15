@@ -1,0 +1,102 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ master, main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Godot 4.3 & Export Templates
+        run: |
+          echo "=== Downloading Godot 4.3 ==="
+          GODOT_VERSION="4.3-stable"
+          curl -L -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_macos.universal.zip"
+          unzip -q godot.zip
+          mv "Godot.app" /Applications/Godot.app
+          
+          # Link godot executable to PATH
+          sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
+          godot --version
+          
+          echo "=== Downloading Export Templates ==="
+          curl -L -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q templates.tpz
+          
+          # Install templates to Godot directory on macOS
+          TEMPLATES_DIR="$HOME/Library/Application Support/Godot/export_templates/4.3.stable"
+          mkdir -p "$TEMPLATES_DIR"
+          mv templates/* "$TEMPLATES_DIR/"
+          echo "Templates installed to $TEMPLATES_DIR"
+
+      - name: Export Godot Project to iOS Xcode Project
+        run: |
+          mkdir -p build/ios
+          godot --headless --export-release "iOS" build/ios/TitanStrike.ipa || true
+          
+          # Check if Xcode project was generated
+          ls -la build/ios
+
+      - name: Build Xcode Project to App
+        run: |
+          cd build/ios
+          
+          # Find the xcodeproj file
+          XCODEPROJ=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
+          echo "Found Xcode project: $XCODEPROJ"
+          
+          # Build unsigned archive / app for iphoneos
+          xcodebuild build \
+            -project "$XCODEPROJ" \
+            -scheme "$(basename "$XCODEPROJ" .xcodeproj)" \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath ./DerivedData
+            
+          echo "Xcode build finished."
+
+      - name: Package App into IPA
+        run: |
+          cd build/ios
+          APP_PATH=$(find ./DerivedData -name "*.app" -type d | head -n 1)
+          echo "Found App at: $APP_PATH"
+          
+          mkdir -p ipa_package/Payload
+          cp -R "$APP_PATH" ipa_package/Payload/
+          
+          cd ipa_package
+          zip -qr ../TitanStrike-unsigned.ipa Payload
+          cd ..
+          
+          echo "Successfully created TitanStrike-unsigned.ipa"
+          ls -lh TitanStrike-unsigned.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TitanStrike-iOS-IPA
+          path: build/ios/TitanStrike-unsigned.ipa
+          retention-days: 14
+
+      - name: Create GitHub Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/ios/TitanStrike-unsigned.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

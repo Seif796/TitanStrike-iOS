@@ -1,0 +1,170 @@
+[gd_scene load_steps=6 format=3 uid="uid://ctouch001ctrl"]
+
+[ext_resource type="Script" path="res://scripts/touch_controls.gd" id="1_touch"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_joystick_base"]
+bg_color = Color(0.15, 0.18, 0.25, 0.45)
+corner_radius_top_left = 80
+corner_radius_top_right = 80
+corner_radius_bottom_right = 80
+corner_radius_bottom_left = 80
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.3, 0.6, 1, 0.5)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_knob"]
+bg_color = Color(0.2, 0.7, 1, 0.75)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fire_btn"]
+bg_color = Color(0.9, 0.2, 0.2, 0.7)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.5, 0.5, 0.9)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_btn"]
+bg_color = Color(0.2, 0.25, 0.35, 0.75)
+corner_radius_top_left = 35
+corner_radius_top_right = 35
+corner_radius_bottom_right = 35
+corner_radius_bottom_left = 35
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.7, 1, 0.7)
+
+[node name="TouchControls" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_touch")
+
+[node name="LeftZone" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 500.0
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="JoystickBase" type="Panel" parent="LeftZone"]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 460.0
+offset_right = 240.0
+offset_bottom = 620.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_joystick_base")
+
+[node name="Knob" type="Panel" parent="LeftZone/JoystickBase"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 110.0
+offset_bottom = 110.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_knob")
+
+[node name="RightZone" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -550.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="FireBtn" type="Button" parent="RightZone"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -170.0
+offset_right = -50.0
+offset_bottom = -50.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_fire_btn")
+text = "FIRE"
+
+[node name="ReloadBtn" type="Button" parent="RightZone"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -270.0
+offset_right = -70.0
+offset_bottom = -190.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
+text = "🔄"
+
+[node name="SwitchBtn" type="Button" parent="RightZone"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -160.0
+offset_right = -190.0
+offset_bottom = -90.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn")
+text = "⚔️"
+
+[node name="CenterZone" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ReviveBtn" type="Button" parent="CenterZone"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -110.0
+offset_top = 40.0
+offset_right = 110.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+text = "❤️ REVIVE SQUAD"

@@ -1,0 +1,16 @@
+# Godot 4 .gitignore
+.godot/
+*.translation
+*.import
+
+# Xcode / iOS build outputs
+build/
+*.xcodeproj/
+*.xcworkspace/
+*.ipa
+*.app
+Payload/
+
+# OS metadata
+.DS_Store
+Thumbs.db

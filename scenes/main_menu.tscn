@@ -1,0 +1,113 @@
+[gd_scene load_steps=3 format=3 uid="uid://cmainmenu001"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_bg"]
+bg_color = Color(0.07, 0.08, 0.12, 1)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_menu_bg")
+
+[node name="Panel" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -280.0
+offset_right = 260.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 38
+text = "TITAN STRIKE 3D"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 18
+text = "Co-op Campaign & Boss Hunt"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Player Name / اسم اللاعب:"
+
+[node name="NameInput" type="LineEdit" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+placeholder_text = "Enter your squad callsign..."
+
+[node name="ClassLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Select Class / اختر الشخصية:"
+
+[node name="ClassOption" type="OptionButton" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+
+[node name="ClassDesc" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+text = "Class description goes here..."
+autowrap_mode = 2
+
+[node name="HostBtn" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "🛡️ Host Squad (سيرفر مضيف)"
+
+[node name="JoinContainer" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="IPInput" type="LineEdit" parent="Panel/VBox/JoinContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Host IP (e.g. 192.168.1.x)"
+
+[node name="JoinBtn" type="Button" parent="Panel/VBox/JoinContainer"]
+custom_minimum_size = Vector2(140, 45)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "🔗 Join (دخول)"
+
+[node name="StatusLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+autowrap_mode = 2

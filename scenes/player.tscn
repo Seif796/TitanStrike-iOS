@@ -1,0 +1,144 @@
+[gd_scene load_steps=14 format=3 uid="uid://cplayer001scene"]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/weapon.gd" id="2_weapon"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.2, 0.6, 1, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+radius = 0.35
+height = 1.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dark"]
+albedo_color = Color(0.15, 0.16, 0.2, 1)
+metallic = 0.7
+roughness = 0.3
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+material = SubResource("StandardMaterial3D_dark")
+radius = 0.25
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_visor"]
+albedo_color = Color(0, 0.9, 1, 1)
+emission_enabled = true
+emission = Color(0, 0.9, 1, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+material = SubResource("StandardMaterial3D_visor")
+size = Vector3(0.3, 0.12, 0.15)
+
+[sub_resource type="BoxMesh" id="BoxMesh_backpack"]
+material = SubResource("StandardMaterial3D_dark")
+size = Vector3(0.4, 0.5, 0.25)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rifle"]
+material = SubResource("StandardMaterial3D_dark")
+size = Vector3(0.12, 0.18, 0.9)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pistol"]
+material = SubResource("StandardMaterial3D_dark")
+size = Vector3(0.1, 0.15, 0.45)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_interact"]
+height = 2.0
+radius = 2.5
+
+[node name="Player" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="Head" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("SphereMesh_head")
+
+[node name="Visor" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.2)
+mesh = SubResource("BoxMesh_visor")
+
+[node name="Backpack" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0.28)
+mesh = SubResource("BoxMesh_backpack")
+
+[node name="Weapons" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 0.85, -0.3)
+
+[node name="PrimaryWeapon" type="Node3D" parent="Model/Weapons"]
+script = ExtResource("2_weapon")
+weapon_name = "Assault Pulse Rifle"
+damage = 22.0
+fire_rate = 0.12
+max_ammo = 32
+reload_time = 1.6
+bullet_speed = 50.0
+
+[node name="Model" type="MeshInstance3D" parent="Model/Weapons/PrimaryWeapon"]
+mesh = SubResource("BoxMesh_rifle")
+
+[node name="Muzzle" type="Marker3D" parent="Model/Weapons/PrimaryWeapon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.55)
+
+[node name="MuzzleFlash" type="OmniLight3D" parent="Model/Weapons/PrimaryWeapon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.6)
+light_color = Color(0.2, 0.8, 1, 1)
+light_energy = 3.0
+omni_range = 4.0
+
+[node name="SecondaryWeapon" type="Node3D" parent="Model/Weapons"]
+visible = false
+script = ExtResource("2_weapon")
+weapon_name = "Plasma Sidearm"
+damage = 35.0
+fire_rate = 0.25
+max_ammo = 15
+reload_time = 1.2
+bullet_speed = 45.0
+
+[node name="Model" type="MeshInstance3D" parent="Model/Weapons/SecondaryWeapon"]
+mesh = SubResource("BoxMesh_pistol")
+
+[node name="Muzzle" type="Marker3D" parent="Model/Weapons/SecondaryWeapon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.3)
+
+[node name="MuzzleFlash" type="OmniLight3D" parent="Model/Weapons/SecondaryWeapon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.35)
+light_color = Color(1, 0.4, 0.1, 1)
+light_energy = 2.5
+omni_range = 3.5
+
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0.4, 0.3, 0)
+spring_length = 4.0
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
+
+[node name="InteractArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_interact")

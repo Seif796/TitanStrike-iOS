@@ -1,0 +1,188 @@
+[gd_scene load_steps=18 format=3 uid="uid://cboss001scene"]
+
+[ext_resource type="Script" path="res://scripts/boss.gd" id="1_boss"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_boss"]
+radius = 1.6
+height = 5.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_armor"]
+albedo_color = Color(0.12, 0.13, 0.16, 1)
+metallic = 0.85
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+material = SubResource("StandardMaterial3D_armor")
+size = Vector3(2.4, 2.8, 1.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_core"]
+albedo_color = Color(1, 0.25, 0.05, 1)
+emission_enabled = true
+emission = Color(1, 0.3, 0.1, 1)
+emission_energy_multiplier = 7.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("StandardMaterial3D_core")
+radius = 0.6
+height = 1.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+material = SubResource("StandardMaterial3D_armor")
+size = Vector3(1.1, 1.0, 1.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_horns"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+metallic = 0.9
+
+[sub_resource type="PrismMesh" id="PrismMesh_horn"]
+material = SubResource("StandardMaterial3D_horns")
+size = Vector3(0.5, 1.2, 0.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_arm"]
+material = SubResource("StandardMaterial3D_armor")
+size = Vector3(0.9, 3.2, 0.9)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_shockwave"]
+height = 1.5
+radius = 8.0
+
+[sub_resource type="Animation" id="Animation_slam"]
+resource_name = "slam"
+length = 1.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/RightArm:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.7, 1.2),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(2.2, 0, 0), Vector3(-0.5, 0, 0), Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_cast"]
+resource_name = "cast"
+length = 1.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/LeftArm:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1.2),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(1.6, 0, 0), Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_roar"]
+resource_name = "roar"
+length = 1.8
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/Head:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4, 1.2, 1.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-0.6, 0, 0), Vector3(-0.6, 0, 0), Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_defeat"]
+resource_name = "defeat"
+length = 2.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, -3.0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_boss"]
+_data = {
+"cast": SubResource("Animation_cast"),
+"defeat": SubResource("Animation_defeat"),
+"roar": SubResource("Animation_roar"),
+"slam": SubResource("Animation_slam")
+}
+
+[node name="Boss" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_boss")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+shape = SubResource("CapsuleShape3D_boss")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+mesh = SubResource("BoxMesh_torso")
+
+[node name="GlowingCore" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -0.6)
+mesh = SubResource("SphereMesh_core")
+
+[node name="Head" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.4, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Model/Head"]
+mesh = SubResource("BoxMesh_head")
+
+[node name="HornLeft" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, -0.7, 0.8, 0)
+mesh = SubResource("PrismMesh_horn")
+
+[node name="HornRight" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, 0.7, 0.8, 0)
+mesh = SubResource("PrismMesh_horn")
+
+[node name="EyesLight" type="OmniLight3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.7)
+light_color = Color(1, 0.3, 0.1, 1)
+light_energy = 4.0
+omni_range = 8.0
+
+[node name="RightArm" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 3.2, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Model/RightArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.2, 0)
+mesh = SubResource("BoxMesh_arm")
+
+[node name="LeftArm" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 3.2, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Model/LeftArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.2, 0)
+mesh = SubResource("BoxMesh_arm")
+
+[node name="ShockwaveArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ShockwaveArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("CylinderShape3D_shockwave")
+
+[node name="ProjectileSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, -1.5)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_boss")
+}
