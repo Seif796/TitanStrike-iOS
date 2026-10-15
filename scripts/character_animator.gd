@@ -2,10 +2,9 @@ extends Node
 class_name CharacterAnimator
 
 # CharacterAnimator Script (res://scripts/character_animator.gd)
-# Seamlessly coordinates AnimationPlayer (idle, run, jump, shoot)
-# and procedural additive motion (turning banking, weapon recoil)
-# for both the 3D Watermelon Boy model and legacy rigs.
-# Ensures the weapon is firmly held in a realistic tactical combat stance at all times.
+# High-energy procedural animation controller for the 3D Watermelon Boy model and legacy rigs.
+# Guarantees highly visible, bouncy movement animations, forward sprint leans, hip waddles,
+# jump stretches, and realistic tactical two-handed weapon holding.
 
 @export var player: CharacterBody3D
 @export var model_root: Node3D
@@ -26,13 +25,14 @@ var last_rot_y: float = 0.0
 var target_tilt_z: float = 0.0
 
 func _ready() -> void:
-	if anim_player and anim_player.has_animation("idle"):
-		anim_player.play("idle")
+	# Stop AnimationPlayer in gameplay so procedural locomotion runs with full priority
+	if anim_player:
+		anim_player.stop()
 
 func on_jump() -> void:
-	if anim_player and anim_player.has_animation("jump"):
-		anim_player.stop()
-		anim_player.play("jump", 0.06)
+	if melon_boy_mesh and melon_boy_mesh.visible:
+		melon_boy_mesh.position.y = 0.22
+		melon_boy_mesh.scale = Vector3(0.9, 1.18, 0.9)
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
@@ -51,24 +51,48 @@ func _physics_process(delta: float) -> void:
 	if model_root:
 		model_root.rotation.z = lerp_angle(model_root.rotation.z, target_tilt_z, 10.0 * delta)
 	
-	# Coordinate AnimationPlayer states
-	if anim_player:
-		if not player.is_on_floor():
-			if anim_player.has_animation("jump") and anim_player.current_animation != "jump":
-				anim_player.play("jump", 0.1)
-		elif is_moving:
-			if anim_player.current_animation != "run":
-				anim_player.play("run", 0.15)
-			# Scale animation speed with movement speed
-			anim_player.speed_scale = clamp(speed / 6.5, 0.75, 1.6)
-		else:
-			anim_player.speed_scale = 1.0
-			if anim_player.current_animation != "idle" and anim_player.current_animation != "shoot":
-				anim_player.play("idle", 0.25)
+	# Animate 3D Melon Boy model
+	if melon_boy_mesh and melon_boy_mesh.visible:
+		_animate_melon_boy(delta, speed)
 	
 	# Fallback legacy rig if Melon Boy 3D is hidden (for classes 1 and 2)
 	if melon_boy_mesh and not melon_boy_mesh.visible:
 		_animate_legacy_rig(delta, speed)
+
+func _animate_melon_boy(delta: float, speed: float) -> void:
+	if not melon_boy_mesh:
+		return
+	
+	if is_moving and player.is_on_floor():
+		walk_cycle += delta * speed * 2.8
+		
+		# 1. Pronounced footstep vertical bounce (0.16m per step!)
+		var stride_bounce = abs(sin(walk_cycle)) * 0.16
+		melon_boy_mesh.position.y = stride_bounce
+		
+		# 2. Dynamic forward sprint lean (-14 degrees forward!)
+		melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, deg_to_rad(-14.0), 12.0 * delta)
+		
+		# 3. Dynamic hip waddle / swagger (±9 degrees side-to-side!)
+		var swagger = sin(walk_cycle * 0.5) * deg_to_rad(9.0)
+		melon_boy_mesh.rotation.z = swagger + target_tilt_z
+		
+		# 4. Athletic squash & stretch impact on foot landing!
+		var squash = 1.0 - abs(sin(walk_cycle)) * 0.08
+		melon_boy_mesh.scale = Vector3(1.0 + (1.0 - squash) * 0.5, squash, 1.0 + (1.0 - squash) * 0.5)
+	elif not player.is_on_floor():
+		# Airborne jump suspension
+		melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, 0.18, 10.0 * delta)
+		melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, deg_to_rad(-10.0), 10.0 * delta)
+		melon_boy_mesh.scale = melon_boy_mesh.scale.lerp(Vector3(0.92, 1.15, 0.92), 10.0 * delta)
+	else:
+		# Standing idle: gentle breathing squash & stretch
+		walk_cycle += delta * 2.2
+		var idle_breath = sin(walk_cycle) * 0.035
+		melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, idle_breath, 8.0 * delta)
+		melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, 0.0, 8.0 * delta)
+		melon_boy_mesh.rotation.z = lerp_angle(melon_boy_mesh.rotation.z, 0.0, 8.0 * delta)
+		melon_boy_mesh.scale = melon_boy_mesh.scale.lerp(Vector3(1.0, 1.0 + sin(walk_cycle) * 0.025, 1.0), 8.0 * delta)
 
 func _animate_legacy_rig(delta: float, speed: float) -> void:
 	if leaf_sprout:

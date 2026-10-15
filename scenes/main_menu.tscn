@@ -150,6 +150,16 @@ theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 14
 text = "Health & Speed stats"
 
+[node name="BotSectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "🤖 AI BOT COMPANION (اختر بطل البوت المساعد):"
+
+[node name="BotOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
 [node name="RightCol" type="Control" parent="HBox" unique_id=1210280399]
 custom_minimum_size = Vector2(550, 0)
 layout_mode = 2

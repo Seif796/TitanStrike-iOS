@@ -28,6 +28,10 @@ var boss_node: Node = null
 # Map selection: 0: Fruit Kingdom Arena, 1: Cyber Stadium, 2: Desert Canyon
 var selected_map_id: int = 0
 
+# AI Bot Companion configuration for Solo Play
+var bot_enabled: bool = true
+var bot_class_id: int = 1 # Default: Berry Striker 🍓
+
 # Progression & Retry system
 const SAVE_PATH = "user://game_save.cfg"
 var admin_unlocked: bool = false

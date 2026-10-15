@@ -87,6 +87,11 @@ func _spawn_players() -> void:
 		p.global_position = spawn_nodes[0].global_position
 		players_container.add_child(p)
 		_setup_local_player(p)
+		
+		# Solo player: deploy AI Bot companion if enabled
+		if GameManager.bot_enabled:
+			var bot_pos = spawn_nodes[1].global_position if spawn_nodes.size() > 1 else spawn_nodes[0].global_position + Vector3(3, 0, 0)
+			_spawn_bot_companion(bot_pos)
 		return
 	
 	for peer_id in NetworkManager.players:
@@ -106,6 +111,31 @@ func _spawn_players() -> void:
 		
 		if peer_id == multiplayer.get_unique_id():
 			_setup_local_player(p)
+	
+	# If only 1 player in the squad, spawn the Bot to join forces!
+	if NetworkManager.players.size() == 1 and GameManager.bot_enabled:
+		var bot_pos = spawn_nodes[1].global_position if spawn_nodes.size() > 1 else spawn_nodes[0].global_position + Vector3(3, 0, 0)
+		_spawn_bot_companion(bot_pos)
+
+func _spawn_bot_companion(pos: Vector3) -> void:
+	var bot = player_scene.instantiate()
+	bot.name = "Bot_Companion"
+	bot.peer_id = 999
+	bot.is_bot = true
+	bot.class_id = GameManager.bot_class_id
+	bot.global_position = pos
+	
+	# Attach AI brain
+	var bot_ai = PlayerBotAI.new()
+	bot_ai.name = "BotAI"
+	bot.add_child(bot_ai)
+	
+	players_container.add_child(bot)
+	
+	var c_data = GameManager.CLASSES.get(GameManager.bot_class_id, GameManager.CLASSES[1])
+	get_tree().create_timer(1.2).timeout.connect(func():
+		rpc("_broadcast_hud_alert", "🤖 SQUAD BOT COMPANION JOINED! 🤖\n(انضم البوت المساعد للفريق: %s)" % c_data["name"], Color(0.2, 0.9, 1.0))
+	)
 
 func _setup_local_player(p: Player) -> void:
 	local_player = p
@@ -196,11 +226,29 @@ func _monitor_wave_clear() -> void:
 	timer.timeout.connect(func():
 		if GameManager.enemies_remaining <= 0:
 			_reward_materials_all(75)
+			_full_heal_all_players() # Fully restore all players and bot health!
+			rpc("_broadcast_hud_alert", "💚 STAGE CLEARED! HEALTH FULLY RESTORED! 💚\n(اكتملت المرحلة واستعاد الأبطال كامل طاقتهم!)", Color(0.2, 1.0, 0.4))
 			GameManager.current_wave += 1
-			get_tree().create_timer(3.0).timeout.connect(_start_next_wave)
+			get_tree().create_timer(3.5).timeout.connect(_start_next_wave)
 		else:
 			_monitor_wave_clear()
 	)
+
+func _full_heal_all_players() -> void:
+	rpc("_sync_full_heal_all")
+
+@rpc("call_local", "reliable")
+func _sync_full_heal_all() -> void:
+	for p in get_tree().get_nodes_in_group("players"):
+		if p is Player:
+			p.current_hp = p.max_hp
+			p.is_down = false
+			p.health_changed.emit(p.current_hp, p.max_hp)
+			p.downed_state_changed.emit(false)
+			if p.active_weapon:
+				p.active_weapon.current_ammo = p.active_weapon.max_ammo
+				p.active_weapon.is_reloading = false
+				p.active_weapon.ammo_changed.emit(p.active_weapon.current_ammo, p.active_weapon.max_ammo, false)
 
 func _reward_materials_all(amount: int) -> void:
 	rpc("_sync_reward_materials", amount)
@@ -253,8 +301,9 @@ func _spawn_boss(boss_id: int) -> void:
 
 func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 	if cleared_boss_id == 1:
-		rpc("_broadcast_hud_alert", "💥 BOSS 1 DESTROYED! 💥\n⚠️ AN ANCIENT MEGA TITAN AWAKENS! (البيج بوس الثاني قادم!) ⚠️", Color(1.0, 0.85, 0.1))
 		_reward_materials_all(150)
+		_full_heal_all_players() # Restore full health before Boss 2!
+		rpc("_broadcast_hud_alert", "💥 BOSS 1 DESTROYED! HEALTH RESTORED! 💥\n⚠️ AN ANCIENT MEGA TITAN AWAKENS! (البيج بوس الثاني قادم - استعدوا!) ⚠️", Color(1.0, 0.85, 0.1))
 		
 		get_tree().create_timer(4.5).timeout.connect(func():
 			if multiplayer.is_server():
@@ -262,6 +311,8 @@ func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 				_spawn_boss(2)
 		)
 	elif cleared_boss_id == 2:
+		_reward_materials_all(300)
+		_full_heal_all_players()
 		rpc("_broadcast_hud_alert", "🏆 ALL TITANS OBLITERATED! YOU SAVED CYBERFORT! 🏆", Color(0.2, 1.0, 0.3))
 
 @rpc("call_local", "reliable")

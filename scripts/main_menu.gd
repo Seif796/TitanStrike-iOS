@@ -5,6 +5,7 @@ extends Control
 
 @onready var name_input: LineEdit = $HBox/RightCol/Panel/VBox/NameInput
 @onready var class_option: OptionButton = $HBox/LeftCol/Panel/VBox/ClassOption
+@onready var bot_option: OptionButton = $HBox/LeftCol/Panel/VBox/BotOption
 @onready var class_desc: Label = $HBox/LeftCol/Panel/VBox/ClassDesc
 @onready var class_stats: Label = $HBox/LeftCol/Panel/VBox/ClassStats
 
@@ -22,7 +23,7 @@ func _ready() -> void:
 	# Force landscape orientation
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
 	
-	# Populate classes
+	# Populate player classes
 	class_option.clear()
 	for id in GameManager.CLASSES:
 		var c = GameManager.CLASSES[id]
@@ -33,6 +34,24 @@ func _ready() -> void:
 	
 	class_option.item_selected.connect(_on_class_selected)
 	_update_class_info(0)
+	
+	# Populate Bot Companion classes
+	if bot_option:
+		bot_option.clear()
+		for id in GameManager.CLASSES:
+			var c = GameManager.CLASSES[id]
+			if id == 3 and not GameManager.admin_unlocked:
+				bot_option.add_item("🔒 Admin (Locked)", id)
+			else:
+				bot_option.add_item(c["name"], id)
+		bot_option.select(GameManager.bot_class_id)
+		bot_option.item_selected.connect(func(idx: int):
+			if idx == 3 and not GameManager.admin_unlocked:
+				bot_option.select(1)
+				GameManager.bot_class_id = 1
+			else:
+				GameManager.bot_class_id = idx
+		)
 	
 	create_room_btn.pressed.connect(_on_create_room_pressed)
 	join_room_btn.pressed.connect(_on_join_room_pressed)

@@ -74,6 +74,14 @@ func _update_lobby_ui() -> void:
 		label.add_theme_color_override("font_color", c_data["color"])
 		label.add_theme_font_size_override("font_size", 18)
 		player_list_container.add_child(label)
+	
+	if NetworkManager.players.size() <= 1 and GameManager.bot_enabled:
+		var bot_c = GameManager.CLASSES.get(GameManager.bot_class_id, GameManager.CLASSES[1])
+		var bot_label = Label.new()
+		bot_label.text = "• 🤖 AI Companion [SQUAD BOT] - Hero: %s" % bot_c["name"]
+		bot_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+		bot_label.add_theme_font_size_override("font_size", 18)
+		player_list_container.add_child(bot_label)
 
 func _on_launch_countdown(sec: int) -> void:
 	if countdown_label:

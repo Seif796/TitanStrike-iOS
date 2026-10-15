@@ -11,6 +11,7 @@ signal weapon_switched(weapon_node: Weapon)
 
 @export var peer_id: int = 1
 @export var class_id: int = 0
+@export var is_bot: bool = false
 
 var max_hp: float = 130.0
 var current_hp: float = 130.0
@@ -64,7 +65,12 @@ func _ready() -> void:
 	add_to_group("players")
 	apply_class_stats(class_id)
 	
-	if is_local_player():
+	if is_bot:
+		camera.current = false
+		if building_system:
+			building_system.set_process(false)
+			building_system.set_physics_process(false)
+	elif is_local_player():
 		camera.current = true
 	else:
 		camera.current = false
@@ -165,7 +171,12 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	
-	if is_local_player():
+	if is_bot:
+		_process_movement(delta)
+		if is_firing and (not building_system or not building_system.is_build_mode):
+			try_fire()
+		move_and_slide()
+	elif is_local_player():
 		_handle_camera_and_input(delta)
 		_process_movement(delta)
 		move_and_slide()
