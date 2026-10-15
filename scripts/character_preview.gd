@@ -16,6 +16,7 @@ class_name CharacterPreview
 var melon_tex = preload("res://assets/watermelon_pattern.svg")
 var berry_tex = preload("res://assets/strawberry_pattern.svg")
 var citrus_tex = preload("res://assets/citrus_pattern.svg")
+var melon_shader = preload("res://shaders/watermelon_boy.gdshader")
 
 var rot_speed: float = 0.85
 
@@ -29,25 +30,28 @@ func update_class_visual(class_id: int) -> void:
 			_set_legacy_preview_visible(false)
 			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
 			if mesh_inst and mesh_inst is MeshInstance3D:
-				var mat = StandardMaterial3D.new()
-				mat.vertex_color_use_as_albedo = true
-				mat.roughness = 0.4
-				mat.metallic = 0.05
-				mesh_inst.material_override = mat
+				var sh_mat = ShaderMaterial.new()
+				sh_mat.shader = melon_shader
+				sh_mat.set_shader_parameter("base_tint", Color(1.0, 1.0, 1.0, 1.0))
+				sh_mat.set_shader_parameter("use_vertex_color", true)
+				sh_mat.set_shader_parameter("roughness", 0.35)
+				sh_mat.set_shader_parameter("metallic", 0.05)
+				mesh_inst.material_override = sh_mat
 			return
 		elif class_id == 3:
 			melon_boy_3d.visible = true
 			_set_legacy_preview_visible(false)
 			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
 			if mesh_inst and mesh_inst is MeshInstance3D:
-				var gold_mat = StandardMaterial3D.new()
-				gold_mat.albedo_color = Color(1.0, 0.85, 0.15)
-				gold_mat.metallic = 0.95
-				gold_mat.roughness = 0.15
-				gold_mat.emission_enabled = true
-				gold_mat.emission = Color(1.0, 0.8, 0.1)
-				gold_mat.emission_energy_multiplier = 3.0
-				mesh_inst.material_override = gold_mat
+				var sh_mat = ShaderMaterial.new()
+				sh_mat.shader = melon_shader
+				sh_mat.set_shader_parameter("base_tint", Color(1.0, 0.85, 0.15, 1.0))
+				sh_mat.set_shader_parameter("use_vertex_color", false)
+				sh_mat.set_shader_parameter("roughness", 0.15)
+				sh_mat.set_shader_parameter("metallic", 0.95)
+				sh_mat.set_shader_parameter("emission_color", Color(1.0, 0.75, 0.1, 1.0))
+				sh_mat.set_shader_parameter("emission_energy", 3.0)
+				mesh_inst.material_override = sh_mat
 			return
 		else:
 			melon_boy_3d.visible = false
