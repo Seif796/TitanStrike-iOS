@@ -2,8 +2,8 @@ extends CharacterBody3D
 class_name Player
 
 # Player Script (res://scripts/player.gd)
-# 3D Action Player controller with dynamic procedural animations,
-# base building system, multiple classes, mobile touch controls, and multiplayer sync.
+# Smooth decoupled third-person camera and movement.
+# Movement NEVER affects camera angle, allowing seamless backward walking while looking around.
 
 signal health_changed(current: float, max_val: float)
 signal downed_state_changed(is_down: bool)
@@ -28,6 +28,7 @@ var input_vector: Vector2 = Vector2.ZERO
 var look_input: Vector2 = Vector2.ZERO
 var is_firing: bool = false
 
+@onready var model: Node3D = $Model
 @onready var camera_pivot: Node3D = $CameraPivot
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
 @onready var camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
@@ -94,7 +95,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	
 	if is_local_player():
-		_handle_local_input(delta)
+		_handle_camera_and_input(delta)
 		_process_movement(delta)
 		move_and_slide()
 		
@@ -105,42 +106,35 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, 15.0 * delta)
 		move_and_slide()
 
-func _handle_local_input(_delta: float) -> void:
+func _handle_camera_and_input(_delta: float) -> void:
 	if is_down:
 		velocity.x = 0
 		velocity.z = 0
 		return
 	
-	# PC / Keyboard fallback
-	if input_vector == Vector2.ZERO:
-		var x = Input.get_action_raw_strength("move_right") - Input.get_action_raw_strength("move_left")
-		var y = Input.get_action_raw_strength("move_backward") - Input.get_action_raw_strength("move_forward")
-		input_vector = Vector2(x, y).normalized()
-	
-	# Aim / Camera rotation
+	# Rotate Player and Camera horizontally with swipe
 	if look_input != Vector2.ZERO:
 		rotate_y(-look_input.x)
 		if camera_pivot:
 			camera_pivot.rotation.x = clamp(camera_pivot.rotation.x - look_input.y, deg_to_rad(-60), deg_to_rad(45))
 		look_input = Vector2.ZERO
 	
-	# Firing (only when not in build mode)
+	# PC Keyboard fallback
+	if input_vector == Vector2.ZERO:
+		var x = Input.get_action_raw_strength("move_right") - Input.get_action_raw_strength("move_left")
+		var y = Input.get_action_raw_strength("move_backward") - Input.get_action_raw_strength("move_forward")
+		input_vector = Vector2(x, y).normalized()
+	
+	# Firing
 	if (Input.is_action_pressed("fire") or is_firing) and (not building_system or not building_system.is_build_mode):
 		try_fire()
 	
-	# Reloading
 	if Input.is_action_just_pressed("reload"):
 		reload_active_weapon()
-	
-	# Switching weapons
 	if Input.is_action_just_pressed("switch_weapon"):
 		switch_weapon()
-	
-	# Toggle Build mode
 	if Input.is_action_just_pressed("toggle_build"):
 		toggle_build_mode()
-	
-	# Revive nearby teammate
 	if Input.is_action_pressed("interact"):
 		_try_revive_teammate()
 
@@ -148,24 +142,35 @@ func _process_movement(_delta: float) -> void:
 	if is_down:
 		return
 	
+	# Movement relative to the camera heading
 	var cam_forward = -camera.global_transform.basis.z
 	cam_forward.y = 0
 	cam_forward = cam_forward.normalized()
+	
 	var cam_right = camera.global_transform.basis.x
 	cam_right.y = 0
 	cam_right = cam_right.normalized()
 	
 	var move_dir = (cam_right * input_vector.x + cam_forward * -input_vector.y).normalized()
-	if move_dir.length() > 0.1:
+	
+	if move_dir.length() > 0.05:
 		velocity.x = move_dir.x * move_speed
 		velocity.z = move_dir.z * move_speed
 		
-		# Rotate body towards movement
-		var target_rot = atan2(-move_dir.x, -move_dir.z)
-		rotation.y = lerp_angle(rotation.y, target_rot, 0.25)
+		# Rotate ONLY the visual model towards movement, NEVER the Camera/Player body!
+		# When firing or aiming, model faces forward with camera
+		if model:
+			if is_firing:
+				model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.3)
+			else:
+				var local_move_dir = global_transform.basis.inverse() * move_dir
+				var target_model_rot = atan2(-local_move_dir.x, -local_move_dir.z)
+				model.rotation.y = lerp_angle(model.rotation.y, target_model_rot, 0.25)
 	else:
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
+		if model and is_firing:
+			model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.3)
 
 func try_fire() -> void:
 	if is_down or not active_weapon or (building_system and building_system.is_build_mode):
