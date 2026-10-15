@@ -1,7 +1,21 @@
 extends Node3D
 
 # Arena Script (res://scripts/arena.gd)
-# Manages player spawning, building system hooks, wave progression, and boss battle.
+# Features 3 Selectable Maps (Fruit Kingdom, Cyber Stadium, Desert Canyon),
+# dynamic environment styling, wave progression, and boss battle.
+
+@onready var world_env: WorldEnvironment = $WorldEnvironment
+@onready var sun_light: DirectionalLight3D = $DirectionalLight3D
+@onready var floor_mesh: CSGBox3D = $Map/Floor
+@onready var wall_north: CSGBox3D = $Map/WallNorth
+@onready var wall_south: CSGBox3D = $Map/WallSouth
+@onready var wall_east: CSGBox3D = $Map/WallEast
+@onready var wall_west: CSGBox3D = $Map/WallWest
+
+@onready var pillar1: CSGBox3D = $Map/CoverPillar1
+@onready var pillar2: CSGBox3D = $Map/CoverPillar2
+@onready var pillar3: CSGBox3D = $Map/CoverPillar3
+@onready var pillar4: CSGBox3D = $Map/CoverPillar4
 
 @onready var players_container: Node3D = $Players
 @onready var enemies_container: Node3D = $Enemies
@@ -17,10 +31,48 @@ var boss_scene = preload("res://scenes/boss.tscn")
 var local_player: Player = null
 
 func _ready() -> void:
+	_apply_map_theme(GameManager.selected_map_id)
 	_spawn_players()
 	
 	if multiplayer.is_server():
 		get_tree().create_timer(2.0).timeout.connect(_start_next_wave)
+
+func _apply_map_theme(map_id: int) -> void:
+	var floor_mat = StandardMaterial3D.new()
+	var pillar_mat = StandardMaterial3D.new()
+	
+	match map_id:
+		0: # Fruit Kingdom Arena (مملكة الفواكه)
+			floor_mat.albedo_color = Color(0.25, 0.65, 0.2) # Lush green lawn
+			floor_mat.roughness = 0.8
+			pillar_mat.albedo_color = Color(0.85, 0.35, 0.15) # Fruit crates
+			if sun_light:
+				sun_light.light_color = Color(1.0, 0.95, 0.85)
+				sun_light.light_energy = 1.3
+		1: # Cyber Stadium (ساحة السايبر)
+			floor_mat.albedo_color = Color(0.1, 0.12, 0.18)
+			floor_mat.metallic = 0.6
+			floor_mat.roughness = 0.3
+			pillar_mat.albedo_color = Color(0.15, 0.25, 0.4)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(0, 0.8, 1)
+			pillar_mat.emission_energy_multiplier = 1.5
+			if sun_light:
+				sun_light.light_color = Color(0.6, 0.8, 1.0)
+				sun_light.light_energy = 0.9
+		2: # Desert Titan Canyon (وادي العمالقة)
+			floor_mat.albedo_color = Color(0.85, 0.65, 0.35) # Golden desert sand
+			floor_mat.roughness = 0.9
+			pillar_mat.albedo_color = Color(0.65, 0.45, 0.25) # Canyon sandstone
+			if sun_light:
+				sun_light.light_color = Color(1.0, 0.75, 0.5) # Sunset orange
+				sun_light.light_energy = 1.5
+	
+	if floor_mesh: floor_mesh.material = floor_mat
+	if pillar1: pillar1.material = pillar_mat
+	if pillar2: pillar2.material = pillar_mat
+	if pillar3: pillar3.material = pillar_mat
+	if pillar4: pillar4.material = pillar_mat
 
 func _spawn_players() -> void:
 	var spawn_nodes = spawn_points.get_children()
@@ -92,7 +144,7 @@ func _start_next_wave() -> void:
 		rpc("_sync_wave_info", GameManager.current_wave, GameManager.max_waves, enemy_count)
 		
 		for i in range(enemy_count):
-			get_tree().create_timer(i * 1.4).timeout.connect(func():
+			get_tree().create_timer(i * 1.3).timeout.connect(func():
 				_spawn_minion()
 			)
 		
@@ -104,8 +156,7 @@ func _monitor_wave_clear() -> void:
 	var timer = get_tree().create_timer(2.0)
 	timer.timeout.connect(func():
 		if GameManager.enemies_remaining <= 0:
-			# Reward surviving squad with nano-materials for building!
-			_reward_materials_all(60)
+			_reward_materials_all(75)
 			GameManager.current_wave += 1
 			get_tree().create_timer(3.0).timeout.connect(_start_next_wave)
 		else:

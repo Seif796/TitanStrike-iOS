@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="lightGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#80E040"/>
+      <stop offset="100%" stop-color="#60C530"/>
+    </linearGradient>
+  </defs>
+  <!-- Base Light Green Skin -->
+  <rect width="512" height="512" fill="url(#lightGreen)"/>
+  
+  <!-- Wavy Dark Green Watermelon Stripes -->
+  <path d="M 40,0 Q 60,120 30,256 Q 10,380 40,512 L 80,512 Q 50,380 70,256 Q 100,120 80,0 Z" fill="#1C6618"/>
+  <path d="M 140,0 Q 170,120 135,256 Q 110,380 145,512 L 195,512 Q 160,380 185,256 Q 220,120 195,0 Z" fill="#1C6618"/>
+  <path d="M 260,0 Q 285,120 250,256 Q 225,380 260,512 L 310,512 Q 275,380 300,256 Q 335,120 310,0 Z" fill="#1C6618"/>
+  <path d="M 375,0 Q 405,120 370,256 Q 345,380 380,512 L 430,512 Q 395,380 420,256 Q 455,120 430,0 Z" fill="#1C6618"/>
+  <path d="M 480,0 Q 500,120 475,256 Q 460,380 485,512 L 512,512 L 512,0 Z" fill="#1C6618"/>
+</svg>

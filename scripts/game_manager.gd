@@ -1,7 +1,7 @@
 extends Node
 
 # GameManager Autoload (res://scripts/game_manager.gd)
-# Controls match flow, waves, classes, and forces landscape orientation.
+# Controls match flow, waves, map selection, fruit hero classes, and forces landscape orientation.
 
 enum GameState {
 	MENU,
@@ -23,33 +23,41 @@ var max_waves: int = 3
 var enemies_remaining: int = 0
 var boss_node: Node = null
 
-# Class definitions
+# Map selection: 0: Fruit Kingdom Arena, 1: Cyber Stadium, 2: Desert Canyon
+var selected_map_id: int = 0
+
+const MAPS: Dictionary = {
+	0: { "name": "🍉 Fruit Kingdom Arena (مملكة الفواكه)", "theme_color": Color(0.2, 0.8, 0.3) },
+	1: { "name": "⚡ Cyber Stadium (ساحة السايبر)", "theme_color": Color(0.1, 0.6, 1.0) },
+	2: { "name": "🏜️ Desert Titan Canyon (وادي العمالقة)", "theme_color": Color(0.9, 0.6, 0.2) }
+}
+
+# Fruit Heroes Class definitions
 const CLASSES: Dictionary = {
 	0: {
-		"name": "Phantom (النينجا السايبراني)",
-		"hp": 120,
-		"speed": 7.0,
-		"role": "Cyber ninja with high agility, pulse rifle, and precision building.",
-		"color": Color(0, 0.85, 1.0) # Neon Cyan
+		"name": "🍉 Melon Boy (ولد البطيخ)",
+		"hp": 130,
+		"speed": 7.2,
+		"role": "The main hero! Agile, fires rapid watermelon seeds, and builds sturdy fruit defense walls.",
+		"color": Color(0.25, 0.8, 0.2) # Melon Green
 	},
 	1: {
-		"name": "Juggernaut (المدرّع الثقيل)",
-		"hp": 220,
-		"speed": 5.2,
-		"role": "Heavy armored mech warrior with extreme defense and heavy plasma firepower.",
-		"color": Color(1.0, 0.35, 0.1) # Fiery Orange
+		"name": "🍓 Berry Striker (بطلة الفراولة)",
+		"hp": 100,
+		"speed": 8.2,
+		"role": "Super fast berry ranger with high critical seed shots and tactical speed ramps.",
+		"color": Color(0.9, 0.15, 0.25) # Strawberry Red
 	},
 	2: {
-		"name": "Tactician (المهندس التكتيكي)",
-		"hp": 130,
-		"speed": 6.2,
-		"role": "Combat engineer equipped with advanced defense walls and auto-turrets.",
-		"color": Color(0.2, 0.95, 0.5) # Neon Green
+		"name": "🍊 Citrus Tank (البرتقال المدرّع)",
+		"hp": 240,
+		"speed": 5.4,
+		"role": "Heavy armored citrus juggernaut with explosive melon cannons and auto-turrets.",
+		"color": Color(1.0, 0.5, 0.05) # Citrus Orange
 	}
 }
 
 func _ready() -> void:
-	# Force landscape orientation immediately on startup
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
 
 @rpc("call_local", "reliable")

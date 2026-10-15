@@ -2,8 +2,8 @@ extends CharacterBody3D
 class_name Player
 
 # Player Script (res://scripts/player.gd)
-# Smooth decoupled third-person camera and movement.
-# Movement NEVER affects camera angle, allowing seamless backward walking while looking around.
+# Features full simultaneous Run & Gun (moving and shooting without slowdown),
+# Watermelon Boy character meshes, fruit hero customization, base building, and co-op revive.
 
 signal health_changed(current: float, max_val: float)
 signal downed_state_changed(is_down: bool)
@@ -12,9 +12,9 @@ signal weapon_switched(weapon_node: Weapon)
 @export var peer_id: int = 1
 @export var class_id: int = 0
 
-var max_hp: float = 120.0
-var current_hp: float = 120.0
-var move_speed: float = 6.5
+var max_hp: float = 130.0
+var current_hp: float = 130.0
+var move_speed: float = 7.2
 var gravity: float = 18.0
 var is_down: bool = false
 var revive_timer: float = 0.0
@@ -29,13 +29,24 @@ var look_input: Vector2 = Vector2.ZERO
 var is_firing: bool = false
 
 @onready var model: Node3D = $Model
+@onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
+@onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
+@onready var chest_plate: MeshInstance3D = $Model/BodyMesh/ChestPlate
+@onready var leg_l: MeshInstance3D = $Model/LeftLeg/LegMesh
+@onready var leg_r: MeshInstance3D = $Model/RightLeg/LegMesh
+@onready var arm_l: MeshInstance3D = $Model/LeftArm/ArmMesh
+@onready var arm_r: MeshInstance3D = $Model/RightArm/ArmMesh
+
 @onready var camera_pivot: Node3D = $CameraPivot
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
 @onready var camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
 @onready var weapons_container: Node3D = $Model/Weapons
-@onready var chest_plate: MeshInstance3D = $Model/BodyMesh/ChestPlate
 @onready var interact_area: Area3D = $InteractArea
 @onready var building_system: BuildingSystem = $BuildingSystem
+
+var melon_tex = preload("res://assets/watermelon_pattern.svg")
+var berry_tex = preload("res://assets/strawberry_pattern.svg")
+var citrus_tex = preload("res://assets/citrus_pattern.svg")
 
 var sync_position: Vector3 = Vector3.ZERO
 var sync_rotation_y: float = 0.0
@@ -70,8 +81,26 @@ func apply_class_stats(c_id: int) -> void:
 	current_hp = max_hp
 	move_speed = data["speed"]
 	
-	if chest_plate and chest_plate.material_override is StandardMaterial3D:
-		chest_plate.material_override.albedo_color = data["color"]
+	var target_tex = melon_tex
+	match class_id:
+		0: target_tex = melon_tex
+		1: target_tex = berry_tex
+		2: target_tex = citrus_tex
+	
+	var mat = StandardMaterial3D.new()
+	mat.albedo_texture = target_tex
+	mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
+	mat.roughness = 0.35
+	
+	if head_mesh: head_mesh.material_override = mat
+	if chest_plate: chest_plate.material_override = mat
+	if leg_l: leg_l.material_override = mat
+	if leg_r: leg_r.material_override = mat
+	if arm_l: arm_l.material_override = mat
+	if arm_r: arm_r.material_override = mat
+	
+	if leaf_sprout:
+		leaf_sprout.visible = (class_id == 0)
 	
 	health_changed.emit(current_hp, max_hp)
 
@@ -112,7 +141,7 @@ func _handle_camera_and_input(_delta: float) -> void:
 		velocity.z = 0
 		return
 	
-	# Rotate Player and Camera horizontally with swipe
+	# Rotate horizontally with finger drag
 	if look_input != Vector2.ZERO:
 		rotate_y(-look_input.x)
 		if camera_pivot:
@@ -125,7 +154,7 @@ func _handle_camera_and_input(_delta: float) -> void:
 		var y = Input.get_action_raw_strength("move_backward") - Input.get_action_raw_strength("move_forward")
 		input_vector = Vector2(x, y).normalized()
 	
-	# Firing
+	# Simultaneous Run & Gun: Can shoot while moving in any direction!
 	if (Input.is_action_pressed("fire") or is_firing) and (not building_system or not building_system.is_build_mode):
 		try_fire()
 	
@@ -142,7 +171,6 @@ func _process_movement(_delta: float) -> void:
 	if is_down:
 		return
 	
-	# Movement relative to the camera heading
 	var cam_forward = -camera.global_transform.basis.z
 	cam_forward.y = 0
 	cam_forward = cam_forward.normalized()
@@ -157,11 +185,10 @@ func _process_movement(_delta: float) -> void:
 		velocity.x = move_dir.x * move_speed
 		velocity.z = move_dir.z * move_speed
 		
-		# Rotate ONLY the visual model towards movement, NEVER the Camera/Player body!
-		# When firing or aiming, model faces forward with camera
+		# In Run & Gun: When shooting, model always aims straight forward with the camera
 		if model:
 			if is_firing:
-				model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.3)
+				model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.35)
 			else:
 				var local_move_dir = global_transform.basis.inverse() * move_dir
 				var target_model_rot = atan2(-local_move_dir.x, -local_move_dir.z)
@@ -170,7 +197,7 @@ func _process_movement(_delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
 		if model and is_firing:
-			model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.3)
+			model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.35)
 
 func try_fire() -> void:
 	if is_down or not active_weapon or (building_system and building_system.is_build_mode):
@@ -195,8 +222,6 @@ func _get_aim_target() -> Vector3:
 		return result.position
 	return to
 
-# --- BUILDING SYSTEM INTEGRATION ---
-
 func toggle_build_mode() -> bool:
 	if not building_system or is_down:
 		return false
@@ -212,8 +237,6 @@ func place_structure() -> void:
 func select_structure_type(idx: int) -> void:
 	if building_system and not is_down:
 		building_system.select_structure(idx)
-
-# --- WEAPONS ---
 
 func switch_weapon() -> void:
 	if is_down or (building_system and building_system.is_build_mode):
@@ -233,8 +256,6 @@ func switch_weapon() -> void:
 func reload_active_weapon() -> void:
 	if active_weapon and not is_down and (not building_system or not building_system.is_build_mode):
 		active_weapon.start_reload()
-
-# --- HEALTH & CO-OP REVIVE ---
 
 func take_damage(amount: float) -> void:
 	if is_down:
@@ -276,8 +297,6 @@ func _try_revive_teammate() -> void:
 
 func is_downed() -> bool:
 	return is_down
-
-# --- RPC SYNC ---
 
 @rpc("unreliable")
 func _sync_transform(pos: Vector3, rot_y: float) -> void:

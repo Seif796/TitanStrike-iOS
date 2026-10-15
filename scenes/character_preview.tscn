@@ -1,63 +1,92 @@
-[gd_scene load_steps=14 format=3 uid="uid://cpreview001scene"]
+[gd_scene load_steps=22 format=3 uid="uid://cpreview001scene"]
 
 [ext_resource type="Script" path="res://scripts/character_preview.gd" id="1_preview"]
+[ext_resource type="Texture2D" path="res://assets/watermelon_pattern.svg" id="2_melon_tex"]
 
 [sub_resource type="Environment" id="Environment_preview"]
 background_mode = 1
-background_color = Color(0.08, 0.11, 0.16, 1)
+background_color = Color(0.08, 0.12, 0.18, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.3, 0.4, 0.55, 1)
+ambient_light_color = Color(0.4, 0.5, 0.65, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_suit"]
-albedo_color = Color(0.12, 0.14, 0.18, 1)
-metallic = 0.8
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_melon_skin"]
+albedo_texture = ExtResource("2_melon_tex")
+uv1_scale = Vector3(2, 2, 2)
+roughness = 0.4
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+material = SubResource("StandardMaterial3D_melon_skin")
+radius = 0.38
+height = 0.76
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_leaf"]
+albedo_color = Color(0.18, 0.65, 0.15, 1)
 roughness = 0.3
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_armor"]
-albedo_color = Color(0, 0.85, 1, 1)
-metallic = 0.85
-roughness = 0.25
-emission_enabled = true
-emission = Color(0, 0.7, 0.9, 1)
-emission_energy_multiplier = 0.8
+[sub_resource type="PrismMesh" id="PrismMesh_leaf"]
+material = SubResource("StandardMaterial3D_leaf")
+size = Vector3(0.18, 0.35, 0.06)
 
-[sub_resource type="BoxMesh" id="BoxMesh_chest"]
-material = SubResource("StandardMaterial3D_armor")
-size = Vector3(0.65, 0.65, 0.45)
+[sub_resource type="PrismMesh" id="PrismMesh_hair_bang"]
+material = SubResource("StandardMaterial3D_leaf")
+size = Vector3(0.25, 0.2, 0.15)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_neon"]
-albedo_color = Color(0, 0.95, 1, 1)
-emission_enabled = true
-emission = Color(0, 0.95, 1, 1)
-emission_energy_multiplier = 4.0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eye_white"]
+albedo_color = Color(0.98, 0.98, 0.98, 1)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_reactor"]
-material = SubResource("StandardMaterial3D_neon")
-top_radius = 0.1
-bottom_radius = 0.1
+[sub_resource type="SphereMesh" id="SphereMesh_eye_white"]
+material = SubResource("StandardMaterial3D_eye_white")
+radius = 0.1
+height = 0.18
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pupil"]
+albedo_color = Color(0.25, 0.15, 0.08, 1)
+roughness = 0.1
+
+[sub_resource type="SphereMesh" id="SphereMesh_pupil"]
+material = SubResource("StandardMaterial3D_pupil")
+radius = 0.06
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nose"]
+albedo_color = Color(0.95, 0.65, 0.55, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_nose"]
+material = SubResource("StandardMaterial3D_nose")
+radius = 0.05
 height = 0.08
 
-[sub_resource type="BoxMesh" id="BoxMesh_head"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.4, 0.45, 0.42)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jacket"]
+albedo_texture = ExtResource("2_melon_tex")
+uv1_scale = Vector3(3, 3, 3)
 
-[sub_resource type="BoxMesh" id="BoxMesh_visor"]
-material = SubResource("StandardMaterial3D_neon")
-size = Vector3(0.36, 0.14, 0.12)
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+material = SubResource("StandardMaterial3D_jacket")
+size = Vector3(0.55, 0.58, 0.4)
 
-[sub_resource type="BoxMesh" id="BoxMesh_jetpack"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.45, 0.55, 0.25)
+[sub_resource type="CylinderMesh" id="CylinderMesh_leg"]
+material = SubResource("StandardMaterial3D_jacket")
+top_radius = 0.12
+bottom_radius = 0.11
+height = 0.55
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_thruster"]
-material = SubResource("StandardMaterial3D_neon")
-top_radius = 0.08
-bottom_radius = 0.05
-height = 0.2
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shoes"]
+albedo_color = Color(0.75, 0.55, 0.35, 1)
+roughness = 0.6
 
-[sub_resource type="BoxMesh" id="BoxMesh_rifle"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.12, 0.18, 0.95)
+[sub_resource type="BoxMesh" id="BoxMesh_shoe"]
+material = SubResource("StandardMaterial3D_shoes")
+size = Vector3(0.18, 0.12, 0.28)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_arm"]
+material = SubResource("StandardMaterial3D_jacket")
+top_radius = 0.1
+bottom_radius = 0.09
+height = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_blaster"]
+material = SubResource("StandardMaterial3D_leaf")
+size = Vector3(0.12, 0.16, 0.65)
 
 [node name="CharacterPreview" type="Node3D"]
 script = ExtResource("1_preview")
@@ -67,55 +96,94 @@ environment = SubResource("Environment_preview")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 2, 3, 2)
-light_color = Color(0.9, 0.95, 1, 1)
-light_energy = 1.2
+light_color = Color(1, 0.98, 0.9, 1)
+light_energy = 1.3
 
 [node name="RimLight" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -1.8)
-light_color = Color(0, 0.9, 1, 1)
+light_color = Color(0.4, 0.9, 0.3, 1)
 light_energy = 3.0
 omni_range = 5.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 1.25, 2.3)
-fov = 48.0
+transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 1.15, 2.1)
+fov = 46.0
 
 [node name="Model" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="Head" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Model/Head"]
+mesh = SubResource("SphereMesh_head")
+
+[node name="LeafSprout" type="Node3D" parent="Model/Head"]
+transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, 0.12, 0.42, 0)
+
+[node name="LeafMesh" type="MeshInstance3D" parent="Model/Head/LeafSprout"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+mesh = SubResource("PrismMesh_leaf")
+
+[node name="HairBang" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, -0.258819, 0.965926, 0, -0.965926, -0.258819, 0, 0.35, -0.25)
+mesh = SubResource("PrismMesh_hair_bang")
+
+[node name="EyeLeft" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.05, -0.32)
+mesh = SubResource("SphereMesh_eye_white")
+
+[node name="Pupil" type="MeshInstance3D" parent="Model/Head/EyeLeft"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+mesh = SubResource("SphereMesh_pupil")
+
+[node name="EyeRight" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.05, -0.32)
+mesh = SubResource("SphereMesh_eye_white")
+
+[node name="Pupil" type="MeshInstance3D" parent="Model/Head/EyeRight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+mesh = SubResource("SphereMesh_pupil")
+
+[node name="Nose" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, -0.37)
+mesh = SubResource("SphereMesh_nose")
+
+[node name="EarLeft" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.38, 0, 0)
+mesh = SubResource("SphereMesh_nose")
+
+[node name="EarRight" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0, 0)
+mesh = SubResource("SphereMesh_nose")
 
 [node name="ChestPlate" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
-mesh = SubResource("BoxMesh_chest")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+mesh = SubResource("BoxMesh_torso")
 
-[node name="Reactor" type="MeshInstance3D" parent="Model/ChestPlate"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.23)
-mesh = SubResource("CylinderMesh_reactor")
+[node name="LeftLeg" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.35, 0)
+mesh = SubResource("CylinderMesh_leg")
 
-[node name="CoreLight" type="OmniLight3D" parent="Model/ChestPlate/Reactor"]
-light_color = Color(0, 0.9, 1, 1)
-light_energy = 2.5
-omni_range = 2.5
+[node name="ShoeL" type="MeshInstance3D" parent="Model/LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.28, -0.05)
+mesh = SubResource("BoxMesh_shoe")
 
-[node name="Head" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
-mesh = SubResource("BoxMesh_head")
+[node name="RightLeg" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.35, 0)
+mesh = SubResource("CylinderMesh_leg")
 
-[node name="Visor" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -0.21)
-mesh = SubResource("BoxMesh_visor")
+[node name="ShoeR" type="MeshInstance3D" parent="Model/RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.28, -0.05)
+mesh = SubResource("BoxMesh_shoe")
 
-[node name="Jetpack" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.28)
-mesh = SubResource("BoxMesh_jetpack")
+[node name="LeftArm" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.95, 0)
+mesh = SubResource("CylinderMesh_arm")
 
-[node name="ThrusterL" type="MeshInstance3D" parent="Model/Jetpack"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, -0.32, 0)
-mesh = SubResource("CylinderMesh_thruster")
-
-[node name="ThrusterR" type="MeshInstance3D" parent="Model/Jetpack"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -0.32, 0)
-mesh = SubResource("CylinderMesh_thruster")
+[node name="RightArm" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 0.95, 0)
+mesh = SubResource("CylinderMesh_arm")
 
 [node name="Weapon" type="MeshInstance3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.85, -0.3)
-mesh = SubResource("BoxMesh_rifle")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.85, -0.25)
+mesh = SubResource("BoxMesh_blaster")

@@ -1,86 +1,100 @@
-[gd_scene load_steps=22 format=3 uid="uid://cplayer001scene"]
+[gd_scene load_steps=28 format=3 uid="uid://cplayer001scene"]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/weapon.gd" id="2_weapon"]
 [ext_resource type="Script" path="res://scripts/character_animator.gd" id="3_anim"]
 [ext_resource type="Script" path="res://scripts/building_system.gd" id="4_build"]
+[ext_resource type="Texture2D" path="res://assets/watermelon_pattern.svg" id="5_melon_tex"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
-height = 1.9
+height = 1.85
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_suit"]
-albedo_color = Color(0.12, 0.14, 0.18, 1)
-metallic = 0.75
-roughness = 0.35
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_melon_skin"]
+albedo_texture = ExtResource("5_melon_tex")
+uv1_scale = Vector3(2, 2, 2)
+roughness = 0.4
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_armor_plate"]
-albedo_color = Color(0.18, 0.55, 0.95, 1)
-metallic = 0.85
-roughness = 0.25
-emission_enabled = true
-emission = Color(0.1, 0.4, 0.8, 1)
-emission_energy_multiplier = 0.8
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+material = SubResource("StandardMaterial3D_melon_skin")
+radius = 0.38
+height = 0.76
 
-[sub_resource type="BoxMesh" id="BoxMesh_chest"]
-material = SubResource("StandardMaterial3D_armor_plate")
-size = Vector3(0.65, 0.65, 0.45)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_leaf"]
+albedo_color = Color(0.18, 0.65, 0.15, 1)
+roughness = 0.3
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_neon"]
-albedo_color = Color(0, 0.95, 1, 1)
-emission_enabled = true
-emission = Color(0, 0.95, 1, 1)
-emission_energy_multiplier = 5.0
+[sub_resource type="PrismMesh" id="PrismMesh_leaf"]
+material = SubResource("StandardMaterial3D_leaf")
+size = Vector3(0.18, 0.35, 0.06)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_reactor"]
-material = SubResource("StandardMaterial3D_neon")
-top_radius = 0.1
-bottom_radius = 0.1
+[sub_resource type="PrismMesh" id="PrismMesh_hair_bang"]
+material = SubResource("StandardMaterial3D_leaf")
+size = Vector3(0.25, 0.2, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eye_white"]
+albedo_color = Color(0.98, 0.98, 0.98, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye_white"]
+material = SubResource("StandardMaterial3D_eye_white")
+radius = 0.1
+height = 0.18
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pupil"]
+albedo_color = Color(0.25, 0.15, 0.08, 1)
+roughness = 0.1
+
+[sub_resource type="SphereMesh" id="SphereMesh_pupil"]
+material = SubResource("StandardMaterial3D_pupil")
+radius = 0.06
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nose"]
+albedo_color = Color(0.95, 0.65, 0.55, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_nose"]
+material = SubResource("StandardMaterial3D_nose")
+radius = 0.05
 height = 0.08
 
-[sub_resource type="BoxMesh" id="BoxMesh_head"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.4, 0.45, 0.42)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jacket"]
+albedo_texture = ExtResource("5_melon_tex")
+uv1_scale = Vector3(3, 3, 3)
 
-[sub_resource type="BoxMesh" id="BoxMesh_visor"]
-material = SubResource("StandardMaterial3D_neon")
-size = Vector3(0.36, 0.14, 0.12)
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+material = SubResource("StandardMaterial3D_jacket")
+size = Vector3(0.55, 0.58, 0.4)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_antenna"]
-material = SubResource("StandardMaterial3D_neon")
-top_radius = 0.02
-bottom_radius = 0.02
-height = 0.35
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shirt"]
+albedo_color = Color(0.92, 0.88, 0.8, 1)
 
-[sub_resource type="BoxMesh" id="BoxMesh_leg"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.22, 0.65, 0.24)
+[sub_resource type="BoxMesh" id="BoxMesh_shirt"]
+material = SubResource("StandardMaterial3D_shirt")
+size = Vector3(0.24, 0.5, 0.08)
 
-[sub_resource type="BoxMesh" id="BoxMesh_arm"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.2, 0.6, 0.2)
+[sub_resource type="CylinderMesh" id="CylinderMesh_leg"]
+material = SubResource("StandardMaterial3D_jacket")
+top_radius = 0.12
+bottom_radius = 0.11
+height = 0.55
 
-[sub_resource type="BoxMesh" id="BoxMesh_shoulder"]
-material = SubResource("StandardMaterial3D_armor_plate")
-size = Vector3(0.26, 0.25, 0.26)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shoes"]
+albedo_color = Color(0.75, 0.55, 0.35, 1)
+roughness = 0.6
 
-[sub_resource type="BoxMesh" id="BoxMesh_jetpack"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.45, 0.55, 0.25)
+[sub_resource type="BoxMesh" id="BoxMesh_shoe"]
+material = SubResource("StandardMaterial3D_shoes")
+size = Vector3(0.18, 0.12, 0.28)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_thruster"]
-material = SubResource("StandardMaterial3D_neon")
-top_radius = 0.08
-bottom_radius = 0.05
-height = 0.2
+[sub_resource type="CylinderMesh" id="CylinderMesh_arm"]
+material = SubResource("StandardMaterial3D_jacket")
+top_radius = 0.1
+bottom_radius = 0.09
+height = 0.5
 
-[sub_resource type="BoxMesh" id="BoxMesh_rifle"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.12, 0.18, 0.95)
-
-[sub_resource type="BoxMesh" id="BoxMesh_pistol"]
-material = SubResource("StandardMaterial3D_suit")
-size = Vector3(0.1, 0.15, 0.45)
+[sub_resource type="BoxMesh" id="BoxMesh_blaster"]
+material = SubResource("StandardMaterial3D_leaf")
+size = Vector3(0.12, 0.16, 0.65)
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_interact"]
 height = 2.0
@@ -92,141 +106,157 @@ collision_mask = 3
 script = ExtResource("1_player")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.92, 0)
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="Model" type="Node3D" parent="."]
 
 [node name="BodyMesh" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 
 [node name="ChestPlate" type="MeshInstance3D" parent="Model/BodyMesh"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-mesh = SubResource("BoxMesh_chest")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("BoxMesh_torso")
 
-[node name="CoreReactor" type="MeshInstance3D" parent="Model/BodyMesh/ChestPlate"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.23)
-mesh = SubResource("CylinderMesh_reactor")
-
-[node name="CoreLight" type="OmniLight3D" parent="Model/BodyMesh/ChestPlate/CoreReactor"]
-light_color = Color(0, 0.9, 1, 1)
-light_energy = 2.0
-omni_range = 2.5
-
-[node name="Jetpack" type="MeshInstance3D" parent="Model/BodyMesh"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0.28)
-mesh = SubResource("BoxMesh_jetpack")
-
-[node name="ThrusterL" type="MeshInstance3D" parent="Model/BodyMesh/Jetpack"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, -0.32, 0)
-mesh = SubResource("CylinderMesh_thruster")
-
-[node name="ThrusterR" type="MeshInstance3D" parent="Model/BodyMesh/Jetpack"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -0.32, 0)
-mesh = SubResource("CylinderMesh_thruster")
+[node name="Shirt" type="MeshInstance3D" parent="Model/BodyMesh/ChestPlate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.17)
+mesh = SubResource("BoxMesh_shirt")
 
 [node name="Head" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 
 [node name="HeadMesh" type="MeshInstance3D" parent="Model/Head"]
-mesh = SubResource("BoxMesh_head")
+mesh = SubResource("SphereMesh_head")
 
-[node name="Visor" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -0.21)
-mesh = SubResource("BoxMesh_visor")
+[node name="LeafSprout" type="Node3D" parent="Model/Head"]
+transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, 0.12, 0.42, 0)
 
-[node name="Antenna" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, 0.25, 0.1)
-mesh = SubResource("CylinderMesh_antenna")
+[node name="LeafMesh" type="MeshInstance3D" parent="Model/Head/LeafSprout"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+mesh = SubResource("PrismMesh_leaf")
+
+[node name="HairBang" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, -0.258819, 0.965926, 0, -0.965926, -0.258819, 0, 0.35, -0.25)
+mesh = SubResource("PrismMesh_hair_bang")
+
+[node name="EyeLeft" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.05, -0.32)
+mesh = SubResource("SphereMesh_eye_white")
+
+[node name="Pupil" type="MeshInstance3D" parent="Model/Head/EyeLeft"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+mesh = SubResource("SphereMesh_pupil")
+
+[node name="EyeRight" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.05, -0.32)
+mesh = SubResource("SphereMesh_eye_white")
+
+[node name="Pupil" type="MeshInstance3D" parent="Model/Head/EyeRight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
+mesh = SubResource("SphereMesh_pupil")
+
+[node name="Nose" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, -0.37)
+mesh = SubResource("SphereMesh_nose")
+
+[node name="EarLeft" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.38, 0, 0)
+mesh = SubResource("SphereMesh_nose")
+
+[node name="EarRight" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0, 0)
+mesh = SubResource("SphereMesh_nose")
 
 [node name="LeftLeg" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.65, 0)
 
 [node name="LegMesh" type="MeshInstance3D" parent="Model/LeftLeg"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 0)
-mesh = SubResource("BoxMesh_leg")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+mesh = SubResource("CylinderMesh_leg")
+
+[node name="Shoe" type="MeshInstance3D" parent="Model/LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.52, -0.05)
+mesh = SubResource("BoxMesh_shoe")
 
 [node name="RightLeg" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.65, 0)
 
 [node name="LegMesh" type="MeshInstance3D" parent="Model/RightLeg"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 0)
-mesh = SubResource("BoxMesh_leg")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+mesh = SubResource("CylinderMesh_leg")
+
+[node name="Shoe" type="MeshInstance3D" parent="Model/RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.52, -0.05)
+mesh = SubResource("BoxMesh_shoe")
 
 [node name="LeftArm" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 1.35, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 1.25, 0)
 
 [node name="ArmMesh" type="MeshInstance3D" parent="Model/LeftArm"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.28, 0)
-mesh = SubResource("BoxMesh_arm")
-
-[node name="ShoulderPad" type="MeshInstance3D" parent="Model/LeftArm"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
-mesh = SubResource("BoxMesh_shoulder")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
+mesh = SubResource("CylinderMesh_arm")
 
 [node name="RightArm" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 1.35, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.25, 0)
 
 [node name="ArmMesh" type="MeshInstance3D" parent="Model/RightArm"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.28, 0)
-mesh = SubResource("BoxMesh_arm")
-
-[node name="ShoulderPad" type="MeshInstance3D" parent="Model/RightArm"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
-mesh = SubResource("BoxMesh_shoulder")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
+mesh = SubResource("CylinderMesh_arm")
 
 [node name="Weapons" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.05, -0.35)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 1.0, -0.3)
 
 [node name="PrimaryWeapon" type="Node3D" parent="Model/Weapons"]
 script = ExtResource("2_weapon")
-weapon_name = "Assault Pulse Rifle"
-damage = 24.0
-fire_rate = 0.11
-max_ammo = 35
-reload_time = 1.5
-bullet_speed = 52.0
+weapon_name = "Watermelon Seed Blaster"
+damage = 25.0
+fire_rate = 0.1
+max_ammo = 40
+reload_time = 1.3
+bullet_speed = 55.0
+bullet_color = Color(0.15, 0.8, 0.2, 1)
 
 [node name="Model" type="MeshInstance3D" parent="Model/Weapons/PrimaryWeapon"]
-mesh = SubResource("BoxMesh_rifle")
+mesh = SubResource("BoxMesh_blaster")
 
 [node name="Muzzle" type="Marker3D" parent="Model/Weapons/PrimaryWeapon"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.58)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.4)
 
 [node name="MuzzleFlash" type="OmniLight3D" parent="Model/Weapons/PrimaryWeapon"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.65)
-light_color = Color(0, 0.9, 1, 1)
-light_energy = 3.5
-omni_range = 4.5
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
+light_color = Color(0.4, 1, 0.2, 1)
+light_energy = 3.0
+omni_range = 3.5
 
 [node name="SecondaryWeapon" type="Node3D" parent="Model/Weapons"]
 visible = false
 script = ExtResource("2_weapon")
-weapon_name = "Plasma Sidearm"
-damage = 38.0
-fire_rate = 0.22
-max_ammo = 16
-reload_time = 1.1
-bullet_speed = 48.0
+weapon_name = "Melon Splash Cannon"
+damage = 60.0
+fire_rate = 0.4
+max_ammo = 10
+reload_time = 1.8
+bullet_speed = 35.0
+bullet_color = Color(1, 0.2, 0.4, 1)
 
 [node name="Model" type="MeshInstance3D" parent="Model/Weapons/SecondaryWeapon"]
-mesh = SubResource("BoxMesh_pistol")
+mesh = SubResource("BoxMesh_blaster")
 
 [node name="Muzzle" type="Marker3D" parent="Model/Weapons/SecondaryWeapon"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.32)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.4)
 
 [node name="MuzzleFlash" type="OmniLight3D" parent="Model/Weapons/SecondaryWeapon"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.38)
-light_color = Color(1, 0.35, 0.1, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
+light_color = Color(1, 0.3, 0.5, 1)
 light_energy = 3.0
-omni_range = 3.8
+omni_range = 4.0
 
 [node name="BuildingSystem" type="Node3D" parent="."]
 script = ExtResource("4_build")
 
 [node name="PreviewMesh" type="MeshInstance3D" parent="BuildingSystem"]
 
-[node name="CharacterAnimator" type="Node" parent="." node_paths=PackedStringArray("player", "model_root", "left_leg", "right_leg", "left_arm", "right_arm", "head", "body_mesh")]
+[node name="CharacterAnimator" type="Node" parent="." node_paths=PackedStringArray("player", "model_root", "left_leg", "right_leg", "left_arm", "right_arm", "head", "leaf_sprout", "body_mesh")]
 script = ExtResource("3_anim")
 player = NodePath("..")
 model_root = NodePath("../Model")
@@ -235,14 +265,15 @@ right_leg = NodePath("../Model/RightLeg")
 left_arm = NodePath("../Model/LeftArm")
 right_arm = NodePath("../Model/RightArm")
 head = NodePath("../Model/Head")
+leaf_sprout = NodePath("../Model/Head/LeafSprout")
 body_mesh = NodePath("../Model/BodyMesh")
 
 [node name="CameraPivot" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
-transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0.45, 0.3, 0)
-spring_length = 4.2
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0.4, 0.25, 0)
+spring_length = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
 
@@ -251,5 +282,5 @@ collision_layer = 0
 collision_mask = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CylinderShape3D_interact")
