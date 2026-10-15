@@ -81,16 +81,25 @@ func apply_class_stats(c_id: int) -> void:
 	current_hp = max_hp
 	move_speed = data["speed"]
 	
-	var target_tex = melon_tex
-	match class_id:
-		0: target_tex = melon_tex
-		1: target_tex = berry_tex
-		2: target_tex = citrus_tex
-	
 	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = target_tex
-	mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
-	mat.roughness = 0.35
+	if class_id == 3:
+		# Golden Cyber Admin with glowing energy!
+		mat.albedo_color = Color(1.0, 0.85, 0.15)
+		mat.metallic = 0.95
+		mat.roughness = 0.15
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.8, 0.1)
+		mat.emission_energy_multiplier = 3.0
+	else:
+		var target_tex = melon_tex
+		match class_id:
+			0: target_tex = melon_tex
+			1: target_tex = berry_tex
+			2: target_tex = citrus_tex
+		
+		mat.albedo_texture = target_tex
+		mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
+		mat.roughness = 0.35
 	
 	if head_mesh: head_mesh.material_override = mat
 	if chest_plate: chest_plate.material_override = mat
@@ -294,6 +303,17 @@ func revive() -> void:
 	current_hp = max_hp * 0.6
 	health_changed.emit(current_hp, max_hp)
 	downed_state_changed.emit(false)
+
+@rpc("call_local", "reliable")
+func full_restore() -> void:
+	is_down = false
+	current_hp = max_hp
+	health_changed.emit(current_hp, max_hp)
+	downed_state_changed.emit(false)
+	if active_weapon:
+		active_weapon.current_ammo = active_weapon.max_ammo
+		active_weapon.is_reloading = false
+		active_weapon.ammo_changed.emit(active_weapon.current_ammo, active_weapon.max_ammo, false)
 
 func _try_revive_teammate() -> void:
 	for body in interact_area.get_overlapping_bodies():

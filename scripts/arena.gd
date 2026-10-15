@@ -33,6 +33,7 @@ var local_player: Player = null
 func _ready() -> void:
 	_apply_map_theme(GameManager.selected_map_id)
 	_spawn_players()
+	GameManager.retry_stage_requested.connect(_on_retry_stage_requested)
 	
 	if multiplayer.is_server():
 		get_tree().create_timer(2.0).timeout.connect(_start_next_wave)
@@ -138,19 +139,57 @@ func _start_next_wave() -> void:
 		return
 	
 	if GameManager.current_wave <= GameManager.max_waves:
-		var enemy_count = 6 + (GameManager.current_wave * 4)
-		GameManager.enemies_remaining = enemy_count
-		GameManager.wave_updated.emit(GameManager.current_wave, GameManager.max_waves, enemy_count)
-		rpc("_sync_wave_info", GameManager.current_wave, GameManager.max_waves, enemy_count)
-		
-		for i in range(enemy_count):
-			get_tree().create_timer(i * 1.3).timeout.connect(func():
-				_spawn_minion()
-			)
-		
-		_monitor_wave_clear()
+		_start_current_wave()
 	else:
 		_start_boss_battle()
+
+func _start_current_wave() -> void:
+	if not multiplayer.is_server():
+		return
+	
+	var enemy_count = 6 + (GameManager.current_wave * 4)
+	GameManager.enemies_remaining = enemy_count
+	GameManager.wave_updated.emit(GameManager.current_wave, GameManager.max_waves, enemy_count)
+	rpc("_sync_wave_info", GameManager.current_wave, GameManager.max_waves, enemy_count)
+	
+	for i in range(enemy_count):
+		get_tree().create_timer(i * 1.3).timeout.connect(func():
+			_spawn_minion()
+		)
+	
+	_monitor_wave_clear()
+
+func _on_retry_stage_requested() -> void:
+	if hud and hud.end_screen:
+		hud.end_screen.visible = false
+	
+	# Clear existing enemies and active bosses
+	for child in enemies_container.get_children():
+		child.queue_free()
+	for b in get_tree().get_nodes_in_group("boss"):
+		b.queue_free()
+	
+	# Full restore and reposition players
+	var spawn_nodes = spawn_points.get_children()
+	var spawn_idx = 0
+	for p in get_tree().get_nodes_in_group("players"):
+		if p is Player:
+			p.rpc("full_restore")
+			if spawn_idx < spawn_nodes.size():
+				p.global_position = spawn_nodes[spawn_idx].global_position
+				spawn_idx += 1
+	
+	rpc("_broadcast_hud_alert", "🔄 SECOND CHANCE ACTIVATED! RETRYING STAGE! 🔄\n(أعدت المحاولة - استبسلوا للفوز!)", Color(0.2, 0.9, 1.0))
+	
+	if multiplayer.is_server():
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if current_boss_phase == 0:
+				_start_current_wave()
+			elif current_boss_phase == 1:
+				_spawn_boss(1)
+			elif current_boss_phase == 2:
+				_spawn_boss(2)
+		)
 
 func _monitor_wave_clear() -> void:
 	var timer = get_tree().create_timer(2.0)

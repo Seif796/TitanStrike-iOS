@@ -3,6 +3,7 @@ class_name HUD
 
 # HUD Script (res://scripts/hud.gd)
 # Displays player health, ammo, nano-materials building stats, boss health bar, waves, and alerts.
+# Includes 1-chance emergency Try Again button on defeat and victory unlock announcements.
 
 @onready var health_bar: ProgressBar = $SafeArea/PlayerStats/HealthBar
 @onready var health_label: Label = $SafeArea/PlayerStats/HealthLabel
@@ -17,6 +18,7 @@ class_name HUD
 @onready var end_screen: Control = $EndScreen
 @onready var end_title: Label = $EndScreen/Panel/VBox/Title
 @onready var end_desc: Label = $EndScreen/Panel/VBox/Desc
+@onready var try_again_btn: Button = $EndScreen/Panel/VBox/TryAgainBtn
 @onready var restart_btn: Button = $EndScreen/Panel/VBox/RestartBtn
 
 func _ready() -> void:
@@ -26,16 +28,30 @@ func _ready() -> void:
 		alert_label.visible = false
 	if end_screen:
 		end_screen.visible = false
+	if try_again_btn:
+		try_again_btn.visible = false
 	
 	GameManager.boss_health_updated.connect(_on_boss_health_updated)
 	GameManager.wave_updated.connect(_on_wave_updated)
 	GameManager.game_over_triggered.connect(_on_game_over)
+	
+	if try_again_btn:
+		try_again_btn.pressed.connect(_on_try_again_pressed)
 	
 	if restart_btn:
 		restart_btn.pressed.connect(func():
 			NetworkManager.leave_game()
 			get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 		)
+
+func _on_try_again_pressed() -> void:
+	if GameManager.has_used_retry:
+		return
+	if try_again_btn:
+		try_again_btn.visible = false
+	if end_screen:
+		end_screen.visible = false
+	GameManager.rpc("request_retry_stage")
 
 func update_health(current: float, max_val: float) -> void:
 	if health_bar:
@@ -90,8 +106,17 @@ func _on_game_over(is_victory: bool) -> void:
 		if is_victory:
 			end_title.text = "🏆 VICTORY! 🏆"
 			end_title.modulate = Color.GREEN
-			end_desc.text = "You and your co-op squad eliminated both Titan Bosses!"
+			end_desc.text = "You eliminated both Titans!\n👑 ADMIN CHARACTER UNLOCKED! (تم فتح شخصية الأدمن 500 HP!) 👑"
+			if try_again_btn:
+				try_again_btn.visible = false
 		else:
 			end_title.text = "💀 DEFEAT 💀"
 			end_title.modulate = Color.RED
-			end_desc.text = "All squad members were eliminated by the Titan."
+			if not GameManager.has_used_retry:
+				end_desc.text = "All squad members were eliminated!\nYou have 1 emergency retry to replay this stage."
+				if try_again_btn:
+					try_again_btn.visible = true
+			else:
+				end_desc.text = "All squad members were eliminated.\n(Used 1 retry chance - No retries remaining)"
+				if try_again_btn:
+					try_again_btn.visible = false

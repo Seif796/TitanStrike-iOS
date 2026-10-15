@@ -26,7 +26,10 @@ func _ready() -> void:
 	class_option.clear()
 	for id in GameManager.CLASSES:
 		var c = GameManager.CLASSES[id]
-		class_option.add_item(c["name"], id)
+		if id == 3 and not GameManager.admin_unlocked:
+			class_option.add_item("🔒 Admin (Locked - Win 1 Game to Unlock)", id)
+		else:
+			class_option.add_item(c["name"], id)
 	
 	class_option.item_selected.connect(_on_class_selected)
 	_update_class_info(0)
@@ -44,13 +47,26 @@ func _speak_prompt(text: String) -> void:
 		voice_banner.text = "🎙️ " + text
 
 func _on_class_selected(index: int) -> void:
+	if index == 3 and not GameManager.admin_unlocked:
+		status_label.text = "🔒 شخصية Admin (500 HP) مقفولة! يجب الفوز في لعبة كاملة (هزيمة الـ 2 بيج بوس) لفتحها!"
+		status_label.modulate = Color.YELLOW
+		_speak_prompt("Admin hero is locked! Win 1 match to unlock.")
+		class_option.select(0)
+		selected_class = 0
+		_update_class_info(0)
+		return
+	
 	selected_class = index
 	_update_class_info(index)
 
 func _update_class_info(index: int) -> void:
 	var c = GameManager.CLASSES[index]
-	class_desc.text = c["role"]
-	class_stats.text = "HP: %d  |  Speed: %.1f m/s  |  Color: %s" % [c["hp"], c["speed"], c["name"].split(" ")[0]]
+	if index == 3 and not GameManager.admin_unlocked:
+		class_desc.text = "🔒 مقفولة! عليك الفوز في لعبة كاملة والتغلب على الـ 3 موجات والاثنين بيج بوس لفتح الأدمن الخارق (500 HP)!"
+		class_stats.text = "HP: 500  |  Speed: 9.2 m/s  |  Status: 🔒 LOCKED"
+	else:
+		class_desc.text = c["role"]
+		class_stats.text = "HP: %d  |  Speed: %.1f m/s  |  Hero: %s" % [c["hp"], c["speed"], c["name"]]
 	
 	if char_preview:
 		char_preview.update_class_visual(index)

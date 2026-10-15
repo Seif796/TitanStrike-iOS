@@ -22,16 +22,24 @@ func _physics_process(delta: float) -> void:
 	$Model.rotation.y += rot_speed * delta
 
 func update_class_visual(class_id: int) -> void:
-	var target_tex: Texture2D = melon_tex
-	match class_id:
-		0: target_tex = melon_tex
-		1: target_tex = berry_tex
-		2: target_tex = citrus_tex
-	
 	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = target_tex
-	mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
-	mat.roughness = 0.35
+	if class_id == 3:
+		mat.albedo_color = Color(1.0, 0.85, 0.15)
+		mat.metallic = 0.95
+		mat.roughness = 0.15
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.8, 0.1)
+		mat.emission_energy_multiplier = 3.0
+	else:
+		var target_tex: Texture2D = melon_tex
+		match class_id:
+			0: target_tex = melon_tex
+			1: target_tex = berry_tex
+			2: target_tex = citrus_tex
+		
+		mat.albedo_texture = target_tex
+		mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
+		mat.roughness = 0.35
 	
 	if head_mesh: head_mesh.material_override = mat
 	if chest_mesh: chest_mesh.material_override = mat
