@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/character_animator.gd" id="3_anim"]
 [ext_resource type="Script" path="res://scripts/building_system.gd" id="4_build"]
 [ext_resource type="Texture2D" path="res://assets/watermelon_pattern.svg" id="5_melon_tex"]
+[ext_resource type="PackedScene" uid="uid://c4m4dxo48llo6" path="res://assets/watermelon_boy_3d.glb" id="6_melon_glb"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -100,6 +101,87 @@ size = Vector3(0.12, 0.16, 0.65)
 height = 2.0
 radius = 2.8
 
+[sub_resource type="Animation" id="Animation_idle"]
+resource_name = "idle"
+length = 1.6
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:y")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.8, 1.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.03, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Model/WatermelonBoyMesh:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.8, 1.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(1.02, 1.02, 1.02), Vector3(1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_run"]
+resource_name = "run"
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:y")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.4, 0.6, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 0.08, 0.0, 0.08, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Model/WatermelonBoyMesh:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.4, 0.6, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.14, 0, 0), Vector3(-0.14, 0, -0.07), Vector3(-0.14, 0, 0), Vector3(-0.14, 0, 0.07), Vector3(-0.14, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_shoot"]
+resource_name = "shoot"
+length = 0.3
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:z")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.05, 0.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_player"]
+_data = {
+"idle": SubResource("Animation_idle"),
+"run": SubResource("Animation_run"),
+"shoot": SubResource("Animation_shoot")
+}
+
 [node name="Player" type="CharacterBody3D"]
 collision_layer = 2
 collision_mask = 3
@@ -110,6 +192,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.92, 0)
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="Model" type="Node3D" parent="."]
+
+[node name="WatermelonBoyMesh" parent="Model" instance=ExtResource("6_melon_glb")]
 
 [node name="BodyMesh" type="Node3D" parent="Model"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
@@ -256,10 +340,11 @@ script = ExtResource("4_build")
 
 [node name="PreviewMesh" type="MeshInstance3D" parent="BuildingSystem"]
 
-[node name="CharacterAnimator" type="Node" parent="." node_paths=PackedStringArray("player", "model_root", "left_leg", "right_leg", "left_arm", "right_arm", "head", "leaf_sprout", "body_mesh")]
+[node name="CharacterAnimator" type="Node" parent="." node_paths=PackedStringArray("player", "model_root", "melon_boy_mesh", "left_leg", "right_leg", "left_arm", "right_arm", "head", "leaf_sprout", "body_mesh")]
 script = ExtResource("3_anim")
 player = NodePath("..")
 model_root = NodePath("../Model")
+melon_boy_mesh = NodePath("../Model/WatermelonBoyMesh")
 left_leg = NodePath("../Model/LeftLeg")
 right_leg = NodePath("../Model/RightLeg")
 left_arm = NodePath("../Model/LeftArm")
@@ -267,6 +352,11 @@ right_arm = NodePath("../Model/RightArm")
 head = NodePath("../Model/Head")
 leaf_sprout = NodePath("../Model/Head/LeafSprout")
 body_mesh = NodePath("../Model/BodyMesh")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_player")
+}
 
 [node name="CameraPivot" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)

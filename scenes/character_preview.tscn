@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/character_preview.gd" id="1_preview"]
 [ext_resource type="Texture2D" path="res://assets/watermelon_pattern.svg" id="2_melon_tex"]
+[ext_resource type="PackedScene" uid="uid://c4m4dxo48llo6" path="res://assets/watermelon_boy_3d.glb" id="3_melon_glb"]
 
 [sub_resource type="Environment" id="Environment_preview"]
 background_mode = 1
@@ -110,6 +111,8 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 fov = 46.0
 
 [node name="Model" type="Node3D" parent="."]
+
+[node name="WatermelonBoyMesh" parent="Model" instance=ExtResource("3_melon_glb")]
 
 [node name="Head" type="Node3D" parent="Model"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)

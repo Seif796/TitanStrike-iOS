@@ -1,22 +1,22 @@
-[gd_scene load_steps=7 format=3 uid="uid://cmainmenu001"]
+[gd_scene format=3 uid="uid://cmainmenu001"]
 
-[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
-[ext_resource type="PackedScene" path="res://scenes/character_preview.tscn" id="2_preview"]
+[ext_resource type="Script" uid="uid://cg37ywqddv0rh" path="res://scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="PackedScene" uid="uid://d0xvbanpm2jxu" path="res://scenes/character_preview.tscn" id="2_preview"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.04, 0.06, 0.09, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.08, 0.11, 0.17, 0.95)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0, 0.8, 1, 0.45)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_create"]
 bg_color = Color(0, 0.65, 0.95, 0.95)
@@ -32,7 +32,7 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=902313751]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -41,7 +41,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="Background" type="Panel" parent="."]
+[node name="Background" type="Panel" parent="." unique_id=480663104]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -50,7 +50,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 
-[node name="TopBar" type="VBoxContainer" parent="."]
+[node name="TopBar" type="VBoxContainer" parent="." unique_id=2083202187]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -59,21 +59,21 @@ offset_bottom = 85.0
 grow_horizontal = 2
 theme_override_constants/separation = 3
 
-[node name="Title" type="Label" parent="TopBar"]
+[node name="Title" type="Label" parent="TopBar" unique_id=1791709186]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.92, 1, 1)
 theme_override_font_sizes/font_size = 32
 text = "🛡️ CYBERFORT: TITAN STRIKE 3D"
 horizontal_alignment = 1
 
-[node name="VoiceBanner" type="Label" parent="TopBar"]
+[node name="VoiceBanner" type="Label" parent="TopBar" unique_id=1620217159]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 15
 text = "🎙️ Welcome! Enter your name and select your hero."
 horizontal_alignment = 1
 
-[node name="HBox" type="HBoxContainer" parent="."]
+[node name="HBox" type="HBoxContainer" parent="." unique_id=619783984]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -89,11 +89,11 @@ grow_vertical = 2
 theme_override_constants/separation = 26
 alignment = 1
 
-[node name="LeftCol" type="Control" parent="HBox"]
+[node name="LeftCol" type="Control" parent="HBox" unique_id=909454555]
 custom_minimum_size = Vector2(550, 0)
 layout_mode = 2
 
-[node name="Panel" type="Panel" parent="HBox/LeftCol"]
+[node name="Panel" type="Panel" parent="HBox/LeftCol" unique_id=104799318]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -102,7 +102,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="HBox/LeftCol/Panel"]
+[node name="VBox" type="VBoxContainer" parent="HBox/LeftCol/Panel" unique_id=848698170]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -115,46 +115,47 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+[node name="SectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=455534327]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "👤 CHOOSE YOUR CHARACTER (اختر البطل):"
 
-[node name="ClassOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox"]
+[node name="ClassOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox" unique_id=1839428694]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 
-[node name="PreviewContainer" type="SubViewportContainer" parent="HBox/LeftCol/Panel/VBox"]
+[node name="PreviewContainer" type="SubViewportContainer" parent="HBox/LeftCol/Panel/VBox" unique_id=1591270355]
 custom_minimum_size = Vector2(0, 260)
 layout_mode = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="HBox/LeftCol/Panel/VBox/PreviewContainer"]
+[node name="SubViewport" type="SubViewport" parent="HBox/LeftCol/Panel/VBox/PreviewContainer" unique_id=2112628944]
 handle_input_locally = false
 size = Vector2i(510, 260)
 render_target_update_mode = 4
 
-[node name="CharacterPreview" parent="HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" instance=ExtResource("2_preview")]
+[node name="CharacterPreview" parent="HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" unique_id=2146251622 instance=ExtResource("2_preview")]
+transform = Transform3D(1, 0, 0, 0, 0.99963313, -0.027084498, 0, 0.027084498, 0.99963313, 0, 0.5476209, 0)
 
-[node name="ClassDesc" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+[node name="ClassDesc" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=1508342876]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
 theme_override_font_sizes/font_size = 14
 text = "Class description..."
 autowrap_mode = 2
 
-[node name="ClassStats" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+[node name="ClassStats" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=1551617652]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 14
 text = "Health & Speed stats"
 
-[node name="RightCol" type="Control" parent="HBox"]
+[node name="RightCol" type="Control" parent="HBox" unique_id=1210280399]
 custom_minimum_size = Vector2(550, 0)
 layout_mode = 2
 
-[node name="Panel" type="Panel" parent="HBox/RightCol"]
+[node name="Panel" type="Panel" parent="HBox/RightCol" unique_id=1965680161]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -163,7 +164,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="HBox/RightCol/Panel"]
+[node name="VBox" type="VBoxContainer" parent="HBox/RightCol/Panel" unique_id=471323408]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -176,56 +177,56 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 14
 
-[node name="SectionTitle" type="Label" parent="HBox/RightCol/Panel/VBox"]
+[node name="SectionTitle" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=2112264684]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "🌐 MULTIPLAYER CO-OP ROOMS (الغرف):"
 
-[node name="NameLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+[node name="NameLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=653752544]
 layout_mode = 2
 text = "Your Callsign / اسمك في اللعبة (إجباري):"
 
-[node name="NameInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox"]
+[node name="NameInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox" unique_id=2077374339]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 placeholder_text = "Type your name here..."
 
-[node name="HSeparator" type="HSeparator" parent="HBox/RightCol/Panel/VBox"]
+[node name="HSeparator" type="HSeparator" parent="HBox/RightCol/Panel/VBox" unique_id=1607710356]
 layout_mode = 2
 
-[node name="CreateRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox"]
+[node name="CreateRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox" unique_id=344761581]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 19
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_create")
 text = "➕ CREATE ROOM (إنشاء غرفة)"
 
-[node name="OrLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+[node name="OrLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=1664963144]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 14
 text = "— OR JOIN BY ROOM CODE (انضمام بكود الغرفة) —"
 horizontal_alignment = 1
 
-[node name="JoinBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox"]
+[node name="JoinBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox" unique_id=661306863]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="CodeInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox/JoinBox"]
+[node name="CodeInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox/JoinBox" unique_id=1295413165]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Enter Room Code (e.g. #B4E2)..."
 
-[node name="JoinRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox/JoinBox"]
+[node name="JoinRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox/JoinBox" unique_id=872449460]
 custom_minimum_size = Vector2(180, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
 text = "🔗 JOIN ROOM"
 
-[node name="StatusLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+[node name="StatusLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=1029960627]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1

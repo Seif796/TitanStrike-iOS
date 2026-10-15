@@ -29,6 +29,7 @@ var look_input: Vector2 = Vector2.ZERO
 var is_firing: bool = false
 
 @onready var model: Node3D = $Model
+@onready var melon_boy_3d: Node3D = $Model/WatermelonBoyMesh
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
 @onready var chest_plate: MeshInstance3D = $Model/BodyMesh/ChestPlate
@@ -81,37 +82,62 @@ func apply_class_stats(c_id: int) -> void:
 	current_hp = max_hp
 	move_speed = data["speed"]
 	
-	var mat = StandardMaterial3D.new()
-	if class_id == 3:
-		# Golden Cyber Admin with glowing energy!
-		mat.albedo_color = Color(1.0, 0.85, 0.15)
-		mat.metallic = 0.95
-		mat.roughness = 0.15
-		mat.emission_enabled = true
-		mat.emission = Color(1.0, 0.8, 0.1)
-		mat.emission_energy_multiplier = 3.0
+	if melon_boy_3d:
+		if class_id == 0:
+			# Authentic 3D Watermelon Boy model with baked vertex colors!
+			melon_boy_3d.visible = true
+			_set_legacy_rig_visible(false)
+			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
+			if mesh_inst and mesh_inst is MeshInstance3D:
+				var mat = StandardMaterial3D.new()
+				mat.vertex_color_use_as_albedo = true
+				mat.roughness = 0.4
+				mat.metallic = 0.05
+				mesh_inst.material_override = mat
+		elif class_id == 3:
+			# 3D Model coated in glowing Golden Cyber Admin armor (500 HP)!
+			melon_boy_3d.visible = true
+			_set_legacy_rig_visible(false)
+			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
+			if mesh_inst and mesh_inst is MeshInstance3D:
+				var gold_mat = StandardMaterial3D.new()
+				gold_mat.albedo_color = Color(1.0, 0.85, 0.15)
+				gold_mat.metallic = 0.95
+				gold_mat.roughness = 0.15
+				gold_mat.emission_enabled = true
+				gold_mat.emission = Color(1.0, 0.8, 0.1)
+				gold_mat.emission_energy_multiplier = 3.0
+				mesh_inst.material_override = gold_mat
+		else:
+			# Berry Striker or Citrus Tank
+			melon_boy_3d.visible = false
+			_set_legacy_rig_visible(true)
+			var target_tex = berry_tex if class_id == 1 else citrus_tex
+			var mat = StandardMaterial3D.new()
+			mat.albedo_texture = target_tex
+			mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
+			mat.roughness = 0.35
+			if head_mesh: head_mesh.material_override = mat
+			if chest_plate: chest_plate.material_override = mat
+			if leg_l: leg_l.material_override = mat
+			if leg_r: leg_r.material_override = mat
+			if arm_l: arm_l.material_override = mat
+			if arm_r: arm_r.material_override = mat
 	else:
-		var target_tex = melon_tex
-		match class_id:
-			0: target_tex = melon_tex
-			1: target_tex = berry_tex
-			2: target_tex = citrus_tex
-		
-		mat.albedo_texture = target_tex
-		mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
-		mat.roughness = 0.35
-	
-	if head_mesh: head_mesh.material_override = mat
-	if chest_plate: chest_plate.material_override = mat
-	if leg_l: leg_l.material_override = mat
-	if leg_r: leg_r.material_override = mat
-	if arm_l: arm_l.material_override = mat
-	if arm_r: arm_r.material_override = mat
+		_set_legacy_rig_visible(true)
 	
 	if leaf_sprout:
 		leaf_sprout.visible = (class_id == 0)
 	
 	health_changed.emit(current_hp, max_hp)
+
+func _set_legacy_rig_visible(v: bool) -> void:
+	if head_mesh and head_mesh.get_parent(): head_mesh.get_parent().visible = v
+	if chest_plate and chest_plate.get_parent(): chest_plate.get_parent().visible = v
+	if leg_l and leg_l.get_parent(): leg_l.get_parent().visible = v
+	if leg_r and leg_r.get_parent(): leg_r.get_parent().visible = v
+	if arm_l and arm_l.get_parent(): arm_l.get_parent().visible = v
+	if arm_r and arm_r.get_parent(): arm_r.get_parent().visible = v
 
 func _setup_weapons() -> void:
 	var weapons = weapons_container.get_children()
