@@ -1,12 +1,13 @@
-[gd_scene load_steps=6 format=3 uid="uid://cmainmenu001"]
+[gd_scene load_steps=7 format=3 uid="uid://cmainmenu001"]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="PackedScene" path="res://scenes/character_preview.tscn" id="2_preview"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.05, 0.07, 0.1, 1)
+bg_color = Color(0.04, 0.06, 0.09, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.09, 0.12, 0.18, 0.92)
+bg_color = Color(0.08, 0.11, 0.17, 0.95)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
@@ -15,17 +16,17 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 0.8, 1, 0.4)
+border_color = Color(0, 0.8, 1, 0.45)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_create"]
-bg_color = Color(0, 0.6, 0.9, 0.9)
+bg_color = Color(0, 0.65, 0.95, 0.95)
 corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_join"]
-bg_color = Color(0.15, 0.75, 0.45, 0.9)
+bg_color = Color(0.12, 0.8, 0.45, 0.95)
 corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
@@ -53,15 +54,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 18.0
-offset_bottom = 98.0
+offset_top = 14.0
+offset_bottom = 85.0
 grow_horizontal = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 3
 
 [node name="Title" type="Label" parent="TopBar"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 34
+theme_override_colors/font_color = Color(0, 0.92, 1, 1)
+theme_override_font_sizes/font_size = 32
 text = "🛡️ CYBERFORT: TITAN STRIKE 3D"
 horizontal_alignment = 1
 
@@ -69,7 +70,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 15
-text = "🎙️ Welcome to CyberFort 3D! Choose Create Room or Join Room."
+text = "🎙️ Welcome! Enter your name and select your hero."
 horizontal_alignment = 1
 
 [node name="HBox" type="HBoxContainer" parent="."]
@@ -79,17 +80,17 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -560.0
-offset_top = -240.0
-offset_right = 560.0
-offset_bottom = 290.0
+offset_left = -580.0
+offset_top = -250.0
+offset_right = 580.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 28
+theme_override_constants/separation = 26
 alignment = 1
 
 [node name="LeftCol" type="Control" parent="HBox"]
-custom_minimum_size = Vector2(530, 0)
+custom_minimum_size = Vector2(550, 0)
 layout_mode = 2
 
 [node name="Panel" type="Panel" parent="HBox/LeftCol"]
@@ -106,47 +107,51 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 20.0
-offset_right = -24.0
-offset_bottom = -20.0
+offset_left = 20.0
+offset_top = 16.0
+offset_right = -20.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="SectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 20
-text = "👤 SELECT YOUR CHARACTER"
+theme_override_font_sizes/font_size = 18
+text = "👤 CHOOSE YOUR CHARACTER (اختر البطل):"
 
 [node name="ClassOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox"]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+
+[node name="PreviewContainer" type="SubViewportContainer" parent="HBox/LeftCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="HBox/LeftCol/Panel/VBox/PreviewContainer"]
+handle_input_locally = false
+size = Vector2i(510, 260)
+render_target_update_mode = 4
+
+[node name="CharacterPreview" parent="HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" instance=ExtResource("2_preview")]
 
 [node name="ClassDesc" type="Label" parent="HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(0.8, 0.85, 0.92, 1)
-theme_override_font_sizes/font_size = 15
-text = "Character bio and abilities..."
+theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "Class description..."
 autowrap_mode = 2
 
 [node name="ClassStats" type="Label" parent="HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 0.9, 0.6, 1)
+theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 14
-text = "Health: 120 HP  |  Speed: 6.5 m/s"
-
-[node name="BuildNote" type="Label" parent="HBox/LeftCol/Panel/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
-theme_override_font_sizes/font_size = 13
-text = "🔨 Features full 3D building: Defense Walls, Tactical Ramps & Auto-Turrets!"
-autowrap_mode = 2
+text = "Health & Speed stats"
 
 [node name="RightCol" type="Control" parent="HBox"]
-custom_minimum_size = Vector2(530, 0)
+custom_minimum_size = Vector2(550, 0)
 layout_mode = 2
 
 [node name="Panel" type="Panel" parent="HBox/RightCol"]
@@ -163,62 +168,65 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 20.0
-offset_right = -24.0
-offset_bottom = -20.0
+offset_left = 22.0
+offset_top = 18.0
+offset_right = -22.0
+offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
 [node name="SectionTitle" type="Label" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 20
-text = "🌐 MULTIPLAYER CO-OP ROOMS"
+theme_override_font_sizes/font_size = 18
+text = "🌐 MULTIPLAYER CO-OP ROOMS (الغرف):"
+
+[node name="NameLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+text = "Your Callsign / اسمك في اللعبة (إجباري):"
 
 [node name="NameInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-placeholder_text = "Enter Callsign / اسم اللاعب..."
+placeholder_text = "Type your name here..."
 
 [node name="HSeparator" type="HSeparator" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
 
 [node name="CreateRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox"]
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 19
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_create")
 text = "➕ CREATE ROOM (إنشاء غرفة)"
 
 [node name="OrLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 1)
-theme_override_font_sizes/font_size = 13
-text = "— OR JOIN EXISTING ROOM —"
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+text = "— OR JOIN BY ROOM CODE (انضمام بكود الغرفة) —"
 horizontal_alignment = 1
 
 [node name="JoinBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="IPInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox/JoinBox"]
-custom_minimum_size = Vector2(0, 48)
+[node name="CodeInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox/JoinBox"]
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Host Room IP..."
+placeholder_text = "Enter Room Code (e.g. #B4E2)..."
 
 [node name="JoinRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox/JoinBox"]
-custom_minimum_size = Vector2(170, 48)
+custom_minimum_size = Vector2(180, 52)
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
 text = "🔗 JOIN ROOM"
 
 [node name="StatusLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 autowrap_mode = 2

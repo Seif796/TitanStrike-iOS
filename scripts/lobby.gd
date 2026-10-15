@@ -1,10 +1,10 @@
 extends Control
 
 # Lobby Script (res://scripts/lobby.gd)
-# Room Lobby displaying members, Room IP, and automatic launch countdown when squad connects.
+# Displays Room Code prominently and auto-launches countdown when player joins.
 
 @onready var room_title: Label = $Panel/VBox/Title
-@onready var ip_info_label: Label = $Panel/VBox/IPInfoLabel
+@onready var code_banner: Label = $Panel/VBox/CodeBanner
 @onready var player_list_container: VBoxContainer = $Panel/VBox/PlayerList
 @onready var countdown_label: Label = $Panel/VBox/CountdownLabel
 @onready var start_btn: Button = $Panel/VBox/Actions/StartBtn
@@ -23,15 +23,16 @@ func _ready() -> void:
 	if countdown_label:
 		countdown_label.visible = false
 	
+	var r_code = NetworkManager.current_room_code
 	if multiplayer.is_server():
-		room_title.text = "ROOM CREATED - WAITING FOR SQUAD (في انتظار اللاعبين)"
-		ip_info_label.text = "Room Host IP: %s (Share with friends to Join)" % NetworkManager.get_local_ip()
+		room_title.text = "ROOM CREATED - WAITING FOR SQUAD"
+		code_banner.text = "🔑 ROOM CODE: #%s\n(Share this code with your friend to join!)" % r_code
 		if start_btn:
 			start_btn.visible = true
-			start_btn.text = "🚀 Start Solo / Now"
+			start_btn.text = "🚀 Start Solo / Force"
 	else:
 		room_title.text = "JOINED SQUAD ROOM - READY"
-		ip_info_label.text = "Connected to Room Host"
+		code_banner.text = "CONNECTED TO ROOM #%s" % r_code
 		if start_btn:
 			start_btn.visible = false
 	
@@ -49,13 +50,13 @@ func _update_lobby_ui() -> void:
 		var role_tag = " [ROOM HOST]" if is_host else " [SQUAD AGENT]"
 		label.text = "• %s - Class: %s %s" % [p.get("name", "Player"), c_data["name"], role_tag]
 		label.add_theme_color_override("font_color", c_data["color"])
-		label.add_theme_font_size_override("font_size", 17)
+		label.add_theme_font_size_override("font_size", 18)
 		player_list_container.add_child(label)
 
 func _on_launch_countdown(sec: int) -> void:
 	if countdown_label:
 		countdown_label.visible = true
-		countdown_label.text = "⚡ SQUAD READY! LAUNCHING MISSION IN %d..." % sec
+		countdown_label.text = "⚡ PLAYER JOINED! LAUNCHING IN %d..." % sec
 		countdown_label.modulate = Color.GREEN
 
 func _on_start_pressed() -> void:

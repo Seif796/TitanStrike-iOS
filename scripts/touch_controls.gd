@@ -2,10 +2,14 @@ extends Control
 class_name TouchControls
 
 # TouchControls Script (res://scripts/touch_controls.gd)
-# Mobile on-screen joystick, camera drag, combat buttons, and Fortnite-style building buttons.
+# Features directional movement buttons (D-Pad), smooth right-screen finger swipe camera look,
+# combat buttons, and Fortnite-style building buttons.
 
-@onready var joystick_base: Control = $LeftZone/JoystickBase
-@onready var joystick_knob: Control = $LeftZone/JoystickBase/Knob
+# Directional Movement Buttons (D-Pad)
+@onready var btn_up: Button = $LeftZone/DPad/BtnUp
+@onready var btn_down: Button = $LeftZone/DPad/BtnDown
+@onready var btn_left: Button = $LeftZone/DPad/BtnLeft
+@onready var btn_right: Button = $LeftZone/DPad/BtnRight
 
 # Combat buttons
 @onready var fire_btn: Button = $RightZone/CombatBar/FireBtn
@@ -23,34 +27,61 @@ class_name TouchControls
 @onready var combat_bar: Control = $RightZone/CombatBar
 @onready var revive_btn: Button = $CenterZone/ReviveBtn
 
-var joystick_active: bool = false
-var joystick_touch_index: int = -1
-var joystick_center: Vector2 = Vector2.ZERO
-var joystick_radius: float = 75.0
-
+var dpad_vector: Vector2 = Vector2.ZERO
 var look_touch_index: int = -1
 var last_look_pos: Vector2 = Vector2.ZERO
 
 var player_ref: Player = null
 var is_in_build_mode: bool = false
 
+# D-pad button states
+var up_pressed: bool = false
+var down_pressed: bool = false
+var left_pressed: bool = false
+var right_pressed: bool = false
+
 func _ready() -> void:
-	if joystick_base:
-		joystick_center = joystick_base.size / 2.0
-		_reset_joystick()
-	
 	if revive_btn:
 		revive_btn.visible = false
-	
 	if build_bar:
 		build_bar.visible = false
 	
-	_connect_buttons()
+	_connect_movement_buttons()
+	_connect_action_buttons()
 
 func bind_player(p: Player) -> void:
 	player_ref = p
 
-func _connect_buttons() -> void:
+func _connect_movement_buttons() -> void:
+	if btn_up:
+		btn_up.button_down.connect(func(): up_pressed = true; _update_dpad())
+		btn_up.button_up.connect(func(): up_pressed = false; _update_dpad())
+	if btn_down:
+		btn_down.button_down.connect(func(): down_pressed = true; _update_dpad())
+		btn_down.button_up.connect(func(): down_pressed = false; _update_dpad())
+	if btn_left:
+		btn_left.button_down.connect(func(): left_pressed = true; _update_dpad())
+		btn_left.button_up.connect(func(): left_pressed = false; _update_dpad())
+	if btn_right:
+		btn_right.button_down.connect(func(): right_pressed = true; _update_dpad())
+		btn_right.button_up.connect(func(): right_pressed = false; _update_dpad())
+
+func _update_dpad() -> void:
+	var v = Vector2.ZERO
+	if up_pressed:
+		v.y -= 1.0
+	if down_pressed:
+		v.y += 1.0
+	if left_pressed:
+		v.x -= 1.0
+	if right_pressed:
+		v.x += 1.0
+	
+	dpad_vector = v.normalized()
+	if player_ref:
+		player_ref.input_vector = dpad_vector
+
+func _connect_action_buttons() -> void:
 	if fire_btn:
 		fire_btn.button_down.connect(func():
 			if player_ref:
@@ -123,51 +154,21 @@ func _input(event: InputEvent) -> void:
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
 	var screen_width = get_viewport_rect().size.x
-	var is_left_half = event.position.x < (screen_width * 0.42)
+	var is_right_half = event.position.x >= (screen_width * 0.45)
 	
 	if event.pressed:
-		if is_left_half and joystick_touch_index == -1:
-			joystick_touch_index = event.index
-			joystick_active = true
-			if joystick_base:
-				joystick_base.global_position = event.position - joystick_center
-			_update_joystick(event.position)
-		elif not is_left_half and look_touch_index == -1:
+		if is_right_half and look_touch_index == -1:
+			# Touch started on right side -> begin camera swipe look
 			look_touch_index = event.index
 			last_look_pos = event.position
 	else:
-		if event.index == joystick_touch_index:
-			joystick_touch_index = -1
-			joystick_active = false
-			_reset_joystick()
-			if player_ref:
-				player_ref.input_vector = Vector2.ZERO
-		elif event.index == look_touch_index:
+		if event.index == look_touch_index:
 			look_touch_index = -1
 
 func _handle_drag(event: InputEventScreenDrag) -> void:
-	if event.index == joystick_touch_index and joystick_active:
-		_update_joystick(event.position)
-	elif event.index == look_touch_index:
+	if event.index == look_touch_index:
 		var delta = event.position - last_look_pos
 		last_look_pos = event.position
 		if player_ref:
+			# Smooth finger drag camera rotation
 			player_ref.look_input = delta * 0.0055
-
-func _update_joystick(touch_pos: Vector2) -> void:
-	if not joystick_base or not joystick_knob:
-		return
-	var base_center = joystick_base.global_position + joystick_center
-	var offset = touch_pos - base_center
-	if offset.length() > joystick_radius:
-		offset = offset.normalized() * joystick_radius
-	
-	joystick_knob.position = joystick_center + offset - (joystick_knob.size / 2.0)
-	
-	var norm_input = offset / joystick_radius
-	if player_ref:
-		player_ref.input_vector = norm_input
-
-func _reset_joystick() -> void:
-	if joystick_knob:
-		joystick_knob.position = joystick_center - (joystick_knob.size / 2.0)

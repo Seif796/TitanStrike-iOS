@@ -2,27 +2,20 @@
 
 [ext_resource type="Script" path="res://scripts/touch_controls.gd" id="1_touch"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_joystick_base"]
-bg_color = Color(0.12, 0.16, 0.22, 0.5)
-corner_radius_top_left = 75
-corner_radius_top_right = 75
-corner_radius_bottom_right = 75
-corner_radius_bottom_left = 75
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0, 0.8, 1, 0.6)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_knob"]
-bg_color = Color(0, 0.9, 1, 0.85)
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dpad_btn"]
+bg_color = Color(0.1, 0.16, 0.24, 0.8)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.85, 1, 0.7)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fire_btn"]
-bg_color = Color(1, 0.2, 0.25, 0.8)
+bg_color = Color(1, 0.2, 0.25, 0.85)
 corner_radius_top_left = 48
 corner_radius_top_right = 48
 corner_radius_bottom_right = 48
@@ -83,27 +76,60 @@ script = ExtResource("1_touch")
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_right = 480.0
+offset_right = 460.0
 grow_vertical = 2
 mouse_filter = 1
 
-[node name="JoystickBase" type="Panel" parent="LeftZone"]
-layout_mode = 0
-offset_left = 75.0
-offset_top = 475.0
-offset_right = 225.0
-offset_bottom = 625.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_joystick_base")
+[node name="DPad" type="Control" parent="LeftZone"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -240.0
+offset_right = 240.0
+offset_bottom = -60.0
+grow_vertical = 0
 
-[node name="Knob" type="Panel" parent="LeftZone/JoystickBase"]
+[node name="BtnUp" type="Button" parent="LeftZone/DPad"]
 layout_mode = 0
-offset_left = 47.0
-offset_top = 47.0
-offset_right = 103.0
-offset_bottom = 103.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_knob")
+offset_left = 55.0
+offset_top = 0.0
+offset_right = 125.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_dpad_btn")
+text = "▲"
+
+[node name="BtnDown" type="Button" parent="LeftZone/DPad"]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 120.0
+offset_right = 125.0
+offset_bottom = 180.0
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_dpad_btn")
+text = "▼"
+
+[node name="BtnLeft" type="Button" parent="LeftZone/DPad"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 60.0
+offset_right = 60.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_dpad_btn")
+text = "◀"
+
+[node name="BtnRight" type="Button" parent="LeftZone/DPad"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 60.0
+offset_right = 180.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_dpad_btn")
+text = "▶"
 
 [node name="RightZone" type="Control" parent="."]
 layout_mode = 1
@@ -111,7 +137,7 @@ anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -580.0
+offset_left = -600.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 1
