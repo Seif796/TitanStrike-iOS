@@ -20,7 +20,6 @@ var jump_velocity: float = 8.5
 var gravity: float = 18.0
 var is_down: bool = false
 var revive_timer: float = 0.0
-var is_bot: bool = false
 var bot_aim_target: Vector3 = Vector3.ZERO
 
 var primary_weapon: Weapon = null

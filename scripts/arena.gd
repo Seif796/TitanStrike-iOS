@@ -84,8 +84,8 @@ func _spawn_players() -> void:
 		p.name = "1"
 		p.peer_id = 1
 		p.class_id = NetworkManager.local_class_id
-		p.global_position = spawn_nodes[0].global_position
 		players_container.add_child(p)
+		p.global_position = spawn_nodes[0].global_position
 		_setup_local_player(p)
 		
 		# Solo player: deploy AI Bot companion if enabled
@@ -106,8 +106,8 @@ func _spawn_players() -> void:
 			spawn_pos = spawn_nodes[spawn_index].global_position
 			spawn_index += 1
 		
-		p.global_position = spawn_pos
 		players_container.add_child(p)
+		p.global_position = spawn_pos
 		
 		if peer_id == multiplayer.get_unique_id():
 			_setup_local_player(p)
@@ -123,7 +123,6 @@ func _spawn_bot_companion(pos: Vector3) -> void:
 	bot.peer_id = 999
 	bot.is_bot = true
 	bot.class_id = GameManager.bot_class_id
-	bot.global_position = pos
 	
 	# Attach AI brain
 	var bot_ai = PlayerBotAI.new()
@@ -131,6 +130,7 @@ func _spawn_bot_companion(pos: Vector3) -> void:
 	bot.add_child(bot_ai)
 	
 	players_container.add_child(bot)
+	bot.global_position = pos
 	
 	var c_data = GameManager.CLASSES.get(GameManager.bot_class_id, GameManager.CLASSES[1])
 	get_tree().create_timer(1.2).timeout.connect(func():
