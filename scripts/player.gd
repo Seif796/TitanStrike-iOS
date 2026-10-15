@@ -20,6 +20,8 @@ var jump_velocity: float = 8.5
 var gravity: float = 18.0
 var is_down: bool = false
 var revive_timer: float = 0.0
+var is_bot: bool = false
+var bot_aim_target: Vector3 = Vector3.ZERO
 
 var primary_weapon: Weapon = null
 var secondary_weapon: Weapon = null
@@ -241,15 +243,24 @@ func _process_movement(_delta: float) -> void:
 	if is_down:
 		return
 	
-	var cam_forward = -camera.global_transform.basis.z
-	cam_forward.y = 0
-	cam_forward = cam_forward.normalized()
+	var forward: Vector3
+	var right: Vector3
+	if is_bot or not camera:
+		forward = -global_transform.basis.z
+		forward.y = 0
+		forward = forward.normalized()
+		right = global_transform.basis.x
+		right.y = 0
+		right = right.normalized()
+	else:
+		forward = -camera.global_transform.basis.z
+		forward.y = 0
+		forward = forward.normalized()
+		right = camera.global_transform.basis.x
+		right.y = 0
+		right = right.normalized()
 	
-	var cam_right = camera.global_transform.basis.x
-	cam_right.y = 0
-	cam_right = cam_right.normalized()
-	
-	var move_dir = (cam_right * input_vector.x + cam_forward * -input_vector.y).normalized()
+	var move_dir = (right * input_vector.x + forward * -input_vector.y).normalized()
 	
 	if move_dir.length() > 0.05:
 		velocity.x = move_dir.x * move_speed
@@ -257,7 +268,7 @@ func _process_movement(_delta: float) -> void:
 		
 		# Smooth model alignment:
 		if model:
-			if is_firing:
+			if is_firing or is_bot:
 				model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.35)
 			else:
 				var local_move_dir = global_transform.basis.inverse() * move_dir
@@ -266,7 +277,7 @@ func _process_movement(_delta: float) -> void:
 	else:
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
-		if model and is_firing:
+		if model and (is_firing or is_bot):
 			model.rotation.y = lerp_angle(model.rotation.y, 0.0, 0.35)
 
 func try_fire() -> void:
@@ -279,6 +290,12 @@ func try_fire() -> void:
 		rpc("_sync_shoot", aim_point)
 
 func _get_aim_target() -> Vector3:
+	if is_bot and bot_aim_target != Vector3.ZERO:
+		return bot_aim_target
+	
+	if not camera:
+		return global_position - global_transform.basis.z * 30.0 + Vector3(0, 1.2, 0)
+	
 	var viewport = get_viewport()
 	var center = viewport.get_visible_rect().size / 2.0
 	var from = camera.project_ray_origin(center)
@@ -331,14 +348,14 @@ func take_damage(amount: float) -> void:
 	if is_down:
 		return
 	
-	if is_local_player():
+	if is_bot or is_local_player():
 		_apply_damage(amount)
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_damage", amount)
 
 @rpc("any_peer", "call_local", "reliable")
 func _sync_damage(amount: float) -> void:
-	if not is_local_player():
+	if not is_local_player() and not is_bot:
 		_apply_damage(amount)
 
 func _apply_damage(amount: float) -> void:
@@ -353,6 +370,7 @@ func _enter_downed_state() -> void:
 	downed_state_changed.emit(true)
 	GameManager.check_all_players_down()
 
+@rpc("call_local", "reliable")
 func revive() -> void:
 	is_down = false
 	current_hp = max_hp * 0.6
@@ -373,7 +391,10 @@ func full_restore() -> void:
 func _try_revive_teammate() -> void:
 	for body in interact_area.get_overlapping_bodies():
 		if body is Player and body != self and body.is_down:
-			body.rpc("revive")
+			if multiplayer.has_multiplayer_peer():
+				body.rpc("revive")
+			else:
+				body.revive()
 			break
 
 func is_downed() -> bool:

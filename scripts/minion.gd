@@ -16,6 +16,7 @@ var can_attack: bool = true
 var target_player: Player = null
 var sync_pos: Vector3 = Vector3.ZERO
 var crawl_cycle: float = 0.0
+var retarget_timer: float = 0.0
 
 @onready var model: Node3D = $Model
 @onready var launcher: Node3D = $Model/Launcher
@@ -28,6 +29,7 @@ var projectile_scene = preload("res://scenes/minion_projectile.tscn")
 
 func _ready() -> void:
 	add_to_group("enemies")
+	add_to_group("minions")
 	current_hp = max_hp
 
 func _physics_process(delta: float) -> void:
@@ -59,7 +61,9 @@ func _animate_legs(delta: float) -> void:
 		if leg_br: leg_br.rotation.x = lerp_angle(leg_br.rotation.x, 0, 8.0 * delta)
 
 func _server_process(delta: float) -> void:
-	if not is_instance_valid(target_player) or target_player.is_down:
+	retarget_timer += delta
+	if retarget_timer >= 1.5 or not is_instance_valid(target_player) or target_player.is_down:
+		retarget_timer = 0.0
 		_find_target()
 	
 	if not is_instance_valid(target_player):
@@ -134,9 +138,16 @@ func _melee_attack() -> void:
 		can_attack = true
 	)
 
-func take_damage(amount: float, _shooter_id: int = 1) -> void:
+func take_damage(amount: float, shooter_id: int = 1) -> void:
 	if multiplayer.is_server():
 		current_hp -= amount
+		# Dynamic aggro: 50% chance to immediately switch target to the attacker if alive
+		if randf() < 0.5:
+			var players = get_tree().get_nodes_in_group("players")
+			for p in players:
+				if p is Player and p.peer_id == shooter_id and not p.is_down:
+					target_player = p
+					break
 		if current_hp <= 0:
 			_die()
 

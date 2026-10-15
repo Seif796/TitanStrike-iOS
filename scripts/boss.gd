@@ -45,6 +45,7 @@ var minion_scene = preload("res://scenes/minion.tscn")
 
 var sync_pos: Vector3 = Vector3.ZERO
 var sync_rot: float = 0.0
+var retarget_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -127,7 +128,9 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 func _server_ai_process(delta: float) -> void:
-	if not is_instance_valid(target_player) or target_player.is_down:
+	retarget_timer += delta
+	if retarget_timer >= 2.0 or not is_instance_valid(target_player) or target_player.is_down:
+		retarget_timer = 0.0
 		_find_closest_player()
 	
 	if not is_instance_valid(target_player):
@@ -261,13 +264,21 @@ func _perform_berserk_summon() -> void:
 
 # --- DAMAGE & PHASES ---
 
-func take_damage(amount: float, _shooter_id: int = 1) -> void:
+func take_damage(amount: float, shooter_id: int = 1) -> void:
 	if state == BossState.DEFEATED:
 		return
 	
 	if multiplayer.is_server():
 		_apply_damage(amount)
 		rpc("_sync_boss_damage", current_hp)
+		
+		# Boss aggro: 30% chance to retaliate towards attacker if attacker is alive
+		if randf() < 0.3:
+			var players = get_tree().get_nodes_in_group("players")
+			for p in players:
+				if p is Player and p.peer_id == shooter_id and not p.is_down:
+					target_player = p
+					break
 
 @rpc("any_peer", "call_local", "reliable")
 func _sync_boss_damage(new_hp: float) -> void:
