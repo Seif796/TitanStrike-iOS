@@ -15,6 +15,7 @@ class_name TouchControls
 @onready var btn_right: Button = $LeftZone/DPad/BtnRight
 
 @onready var right_zone: Control = $RightZone
+@onready var jump_btn: Button = $RightZone/JumpBtn
 @onready var combat_bar: Control = $RightZone/CombatBar
 @onready var fire_btn: Button = $RightZone/CombatBar/FireBtn
 @onready var reload_btn: Button = $RightZone/CombatBar/ReloadBtn
@@ -82,7 +83,14 @@ func _process_touch_down(index: int, pos: Vector2) -> void:
 		_on_build_toggle_pressed()
 		return
 	
-	# 3. Check Right Zone Action Buttons
+	# 3. Check JUMP BUTTON (works in both combat and build modes)
+	if jump_btn and jump_btn.visible and jump_btn.get_global_rect().has_point(pos):
+		if player_ref:
+			player_ref.jump()
+		jump_btn.modulate = Color(1.4, 1.4, 1.4)
+		return
+	
+	# 4. Check Right Zone Action Buttons
 	if is_in_build_mode:
 		if place_btn and place_btn.get_global_rect().has_point(pos):
 			if player_ref:
@@ -119,13 +127,13 @@ func _process_touch_down(index: int, pos: Vector2) -> void:
 				player_ref.switch_weapon()
 			return
 	
-	# 4. Check Left Zone (Movement / D-Pad)
+	# 5. Check Left Zone (Movement / D-Pad)
 	if pos.x < screen_w * 0.45:
 		move_touch_index = index
 		_update_movement_from_pos(pos)
 		return
 	
-	# 5. Check Right Zone (Camera Look swipe)
+	# 6. Check Right Zone (Camera Look swipe)
 	if pos.x >= screen_w * 0.45 and look_touch_index == -1:
 		look_touch_index = index
 		last_look_pos = pos
@@ -144,6 +152,9 @@ func _process_touch_drag(index: int, pos: Vector2, _rel: Vector2) -> void:
 			player_ref.look_input = delta * 0.0055
 
 func _process_touch_up(index: int) -> void:
+	if jump_btn:
+		jump_btn.modulate = Color(1.0, 1.0, 1.0)
+	
 	if index == move_touch_index:
 		move_touch_index = -1
 		dpad_vector = Vector2.ZERO

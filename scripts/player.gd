@@ -15,6 +15,7 @@ signal weapon_switched(weapon_node: Weapon)
 var max_hp: float = 130.0
 var current_hp: float = 130.0
 var move_speed: float = 7.5
+var jump_velocity: float = 8.5
 var gravity: float = 18.0
 var is_down: bool = false
 var revive_timer: float = 0.0
@@ -90,6 +91,7 @@ func apply_class_stats(c_id: int) -> void:
 			_set_legacy_rig_visible(false)
 			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
 			if mesh_inst and mesh_inst is MeshInstance3D:
+				mesh_inst.rotation.y = PI
 				var sh_mat = ShaderMaterial.new()
 				sh_mat.shader = melon_shader
 				sh_mat.set_shader_parameter("base_tint", Color(1.0, 1.0, 1.0, 1.0))
@@ -103,6 +105,7 @@ func apply_class_stats(c_id: int) -> void:
 			_set_legacy_rig_visible(false)
 			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
 			if mesh_inst and mesh_inst is MeshInstance3D:
+				mesh_inst.rotation.y = PI
 				var sh_mat = ShaderMaterial.new()
 				sh_mat.shader = melon_shader
 				sh_mat.set_shader_parameter("base_tint", Color(1.0, 0.85, 0.15, 1.0))
@@ -211,6 +214,17 @@ func _handle_camera_and_input(_delta: float) -> void:
 		toggle_build_mode()
 	if Input.is_action_pressed("interact"):
 		_try_revive_teammate()
+	if Input.is_action_just_pressed("jump"):
+		jump()
+
+func jump() -> void:
+	if is_down:
+		return
+	if is_on_floor():
+		velocity.y = jump_velocity
+		var ca = get_node_or_null("CharacterAnimator")
+		if ca and ca.has_method("on_jump"):
+			ca.on_jump()
 
 func _process_movement(_delta: float) -> void:
 	if is_down:

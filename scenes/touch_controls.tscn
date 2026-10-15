@@ -66,6 +66,20 @@ border_color = Color(0.6, 1, 0.7, 0.95)
 shadow_color = Color(0.1, 0.9, 0.3, 0.4)
 shadow_size = 10
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jump_btn"]
+bg_color = Color(0.1, 0.45, 0.88, 0.85)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.3, 0.85, 1, 0.95)
+shadow_color = Color(0.1, 0.5, 1, 0.4)
+shadow_size = 8
+
 [node name="TouchControls" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -196,6 +210,25 @@ theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("StyleBoxFlat_fire_btn")
 text = "🔥 FIRE"
 
+[node name="JumpBtn" type="Button" parent="RightZone"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -95.0
+offset_top = -320.0
+offset_right = -15.0
+offset_bottom = -240.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_jump_btn")
+text = "⤴
+JUMP"
+
 [node name="ReloadBtn" type="Button" parent="RightZone/CombatBar"]
 layout_mode = 1
 anchors_preset = 3
@@ -203,10 +236,10 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -180.0
-offset_top = -315.0
-offset_right = -105.0
-offset_bottom = -240.0
+offset_left = -195.0
+offset_top = -320.0
+offset_right = -120.0
+offset_bottom = -245.0
 grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2

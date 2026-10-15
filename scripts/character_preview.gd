@@ -30,6 +30,7 @@ func update_class_visual(class_id: int) -> void:
 			_set_legacy_preview_visible(false)
 			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
 			if mesh_inst and mesh_inst is MeshInstance3D:
+				mesh_inst.rotation.y = PI
 				var sh_mat = ShaderMaterial.new()
 				sh_mat.shader = melon_shader
 				sh_mat.set_shader_parameter("base_tint", Color(1.0, 1.0, 1.0, 1.0))
@@ -43,6 +44,7 @@ func update_class_visual(class_id: int) -> void:
 			_set_legacy_preview_visible(false)
 			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
 			if mesh_inst and mesh_inst is MeshInstance3D:
+				mesh_inst.rotation.y = PI
 				var sh_mat = ShaderMaterial.new()
 				sh_mat.shader = melon_shader
 				sh_mat.set_shader_parameter("base_tint", Color(1.0, 0.85, 0.15, 1.0))

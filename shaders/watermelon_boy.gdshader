@@ -23,3 +23,4 @@ void fragment() {
 	METALLIC = metallic;
 	EMISSION = emission_color.rgb * emission_energy;
 }
+

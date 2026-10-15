@@ -5,6 +5,7 @@ class_name CharacterAnimator
 # Seamlessly coordinates AnimationPlayer (idle, run, jump, shoot)
 # and procedural additive motion (turning banking, weapon recoil)
 # for both the 3D Watermelon Boy model and legacy rigs.
+# Ensures the weapon is firmly held in a realistic tactical combat stance at all times.
 
 @export var player: CharacterBody3D
 @export var model_root: Node3D
@@ -28,6 +29,11 @@ func _ready() -> void:
 	if anim_player and anim_player.has_animation("idle"):
 		anim_player.play("idle")
 
+func on_jump() -> void:
+	if anim_player and anim_player.has_animation("jump"):
+		anim_player.stop()
+		anim_player.play("jump", 0.06)
+
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
@@ -49,7 +55,7 @@ func _physics_process(delta: float) -> void:
 	if anim_player:
 		if not player.is_on_floor():
 			if anim_player.has_animation("jump") and anim_player.current_animation != "jump":
-				anim_player.play("jump", 0.15)
+				anim_player.play("jump", 0.1)
 		elif is_moving:
 			if anim_player.current_animation != "run":
 				anim_player.play("run", 0.15)
@@ -73,32 +79,37 @@ func _animate_legacy_rig(delta: float, speed: float) -> void:
 	if is_moving and player.is_on_floor():
 		walk_cycle += delta * speed * 2.5
 		var leg_angle = sin(walk_cycle) * deg_to_rad(38)
-		var arm_angle = -sin(walk_cycle) * deg_to_rad(25)
 		
 		if left_leg: left_leg.rotation.x = leg_angle
 		if right_leg: right_leg.rotation.x = -leg_angle
-		if left_arm: left_arm.rotation.x = arm_angle
+		
+		# Tactical 2-handed weapon holding while running:
 		if right_arm:
-			if player.is_firing:
-				right_arm.rotation.x = deg_to_rad(-85) + randf_range(-0.04, 0.04)
-			else:
-				right_arm.rotation.x = -arm_angle * 0.4
+			var fire_kick = randf_range(-0.04, 0.04) if player.is_firing else 0.0
+			right_arm.rotation.x = deg_to_rad(-60) + sin(walk_cycle) * 0.04 + fire_kick
+			right_arm.rotation.y = deg_to_rad(-12)
+		if left_arm:
+			left_arm.rotation.x = deg_to_rad(-45) + sin(walk_cycle) * 0.03
+			left_arm.rotation.y = deg_to_rad(28)
 		if body_mesh:
 			body_mesh.position.y = 0.75 + abs(sin(walk_cycle)) * 0.07
 	else:
 		walk_cycle += delta * 2.2
 		if left_leg: left_leg.rotation.x = lerp_angle(left_leg.rotation.x, 0, 10.0 * delta)
 		if right_leg: right_leg.rotation.x = lerp_angle(right_leg.rotation.x, 0, 10.0 * delta)
-		if left_arm: left_arm.rotation.x = lerp_angle(left_arm.rotation.x, 0, 10.0 * delta)
+		
+		# Firm tactical weapon grip while standing idle:
 		if right_arm:
-			if player.is_firing:
-				right_arm.rotation.x = deg_to_rad(-85) + randf_range(-0.04, 0.04)
-			else:
-				right_arm.rotation.x = lerp_angle(right_arm.rotation.x, 0, 10.0 * delta)
+			var fire_kick = randf_range(-0.04, 0.04) if player.is_firing else 0.0
+			right_arm.rotation.x = lerp_angle(right_arm.rotation.x, deg_to_rad(-60) + fire_kick, 10.0 * delta)
+			right_arm.rotation.y = lerp_angle(right_arm.rotation.y, deg_to_rad(-12), 10.0 * delta)
+		if left_arm:
+			left_arm.rotation.x = lerp_angle(left_arm.rotation.x, deg_to_rad(-45), 10.0 * delta)
+			left_arm.rotation.y = lerp_angle(left_arm.rotation.y, deg_to_rad(28), 10.0 * delta)
 		if body_mesh:
 			body_mesh.position.y = lerp(body_mesh.position.y, 0.75 + sin(walk_cycle) * 0.02, 10.0 * delta)
 	
 	if not player.is_on_floor():
-		if left_leg: left_leg.rotation.x = deg_to_rad(-22)
-		if right_leg: right_leg.rotation.x = deg_to_rad(18)
-		if body_mesh: body_mesh.position.y = 0.85
+		if left_leg: left_leg.rotation.x = deg_to_rad(-26)
+		if right_leg: right_leg.rotation.x = deg_to_rad(22)
+		if body_mesh: body_mesh.position.y = 0.88

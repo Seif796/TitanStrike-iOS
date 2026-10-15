@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cmainmenu001"]
 
 [ext_resource type="Script" uid="uid://cg37ywqddv0rh" path="res://scripts/main_menu.gd" id="1_menu"]
-[ext_resource type="PackedScene" uid="uid://d0xvbanpm2jxu" path="res://scenes/character_preview.tscn" id="2_preview"]
+[ext_resource type="PackedScene" path="res://scenes/character_preview.tscn" id="2_preview"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.04, 0.06, 0.09, 1)
@@ -135,8 +135,7 @@ handle_input_locally = false
 size = Vector2i(510, 260)
 render_target_update_mode = 4
 
-[node name="CharacterPreview" parent="HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" unique_id=2146251622 instance=ExtResource("2_preview")]
-transform = Transform3D(1, 0, 0, 0, 0.99963313, -0.027084498, 0, 0.027084498, 0.99963313, 0, 0.5476209, 0)
+[node name="CharacterPreview" parent="HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" instance=ExtResource("2_preview")]
 
 [node name="ClassDesc" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=1508342876]
 layout_mode = 2
