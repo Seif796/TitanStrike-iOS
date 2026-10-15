@@ -71,3 +71,4 @@ func _on_connection_succeeded() -> void:
 
 func _on_connection_failed() -> void:
 	status_label.text = "Failed to connect to host. Make sure host is running and IP is correct."
+

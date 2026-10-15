@@ -60,3 +60,4 @@ func _on_leave_pressed() -> void:
 
 func _on_server_disconnected() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+

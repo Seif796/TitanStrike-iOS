@@ -86,3 +86,4 @@ func check_all_players_down() -> void:
 	
 	if not any_alive:
 		rpc("trigger_game_over", false)
+

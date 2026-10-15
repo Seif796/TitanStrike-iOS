@@ -124,3 +124,4 @@ func _start_boss_battle() -> void:
 @rpc("call_local", "reliable")
 func _sync_wave_info(w: int, max_w: int, left: int) -> void:
 	GameManager.wave_updated.emit(w, max_w, left)
+

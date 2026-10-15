@@ -130,3 +130,4 @@ func get_local_ip() -> String:
 		if ip.begins_with("192.168.") or ip.begins_with("10.") or (ip.begins_with("172.") and int(ip.split(".")[1]) >= 16 and int(ip.split(".")[1]) <= 31):
 			return ip
 	return "127.0.0.1"
+

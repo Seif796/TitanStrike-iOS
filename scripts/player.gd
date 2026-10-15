@@ -261,3 +261,4 @@ func _sync_transform(pos: Vector3, rot_y: float) -> void:
 func _sync_shoot(target: Vector3) -> void:
 	if active_weapon:
 		active_weapon._spawn_shot_visuals(target)
+

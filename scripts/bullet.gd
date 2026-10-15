@@ -68,3 +68,4 @@ func look_at_safe(target: Vector3) -> void:
 	if abs(direction.dot(up)) > 0.99:
 		up = Vector3.FORWARD
 	look_at(target, up)
+

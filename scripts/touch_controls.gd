@@ -125,3 +125,4 @@ func _update_joystick(touch_pos: Vector2) -> void:
 func _reset_joystick() -> void:
 	if joystick_knob:
 		joystick_knob.position = joystick_center - (joystick_knob.size / 2.0)
+

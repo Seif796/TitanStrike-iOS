@@ -94,3 +94,4 @@ func look_at_safe(target: Vector3) -> void:
 @rpc("unreliable")
 func _sync_minion_pos(pos: Vector3) -> void:
 	sync_pos = pos
+

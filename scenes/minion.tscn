@@ -61,3 +61,4 @@ mesh = SubResource("BoxMesh_blade")
 [node name="RightBlade" type="MeshInstance3D" parent="Model"]
 transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 0.4, -0.1, -0.3)
 mesh = SubResource("BoxMesh_blade")
+

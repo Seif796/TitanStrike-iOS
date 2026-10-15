@@ -44,9 +44,10 @@ jobs:
       - name: Export Godot Project to iOS Xcode Project
         run: |
           mkdir -p build/ios
-          godot --headless --export-release "iOS" build/ios/TitanStrike.ipa || true
+          godot --headless --export-release "iOS" build/ios/TitanStrike.xcodeproj
           
           # Check if Xcode project was generated
+          echo "=== Export folder contents ==="
           ls -la build/ios
 
       - name: Build Xcode Project to App
@@ -56,25 +57,41 @@ jobs:
           # Find the xcodeproj file
           XCODEPROJ=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
           echo "Found Xcode project: $XCODEPROJ"
+          if [ -z "$XCODEPROJ" ]; then
+            echo "Error: No xcodeproj found in build/ios"
+            exit 1
+          fi
           
-          # Build unsigned archive / app for iphoneos
+          # Get available scheme
+          SCHEME=$(xcodebuild -list -project "$XCODEPROJ" | awk '/Schemes:/{flag=1;next}/^$/{flag=0}flag{gsub(/^[ \t]+/, ""); print; exit}')
+          if [ -z "$SCHEME" ]; then
+            SCHEME="$(basename "$XCODEPROJ" .xcodeproj)"
+          fi
+          echo "Using scheme: $SCHEME"
+          
+          # Build unsigned app for iphoneos
           xcodebuild build \
             -project "$XCODEPROJ" \
-            -scheme "$(basename "$XCODEPROJ" .xcodeproj)" \
+            -scheme "$SCHEME" \
             -sdk iphoneos \
             -configuration Release \
+            -destination 'generic/platform=iOS' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             -derivedDataPath ./DerivedData
             
-          echo "Xcode build finished."
+          echo "Xcode build finished successfully."
 
       - name: Package App into IPA
         run: |
           cd build/ios
           APP_PATH=$(find ./DerivedData -name "*.app" -type d | head -n 1)
           echo "Found App at: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: No .app found in DerivedData"
+            exit 1
+          fi
           
           mkdir -p ipa_package/Payload
           cp -R "$APP_PATH" ipa_package/Payload/

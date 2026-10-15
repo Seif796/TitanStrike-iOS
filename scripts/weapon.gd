@@ -92,3 +92,4 @@ func start_reload() -> void:
 		is_reloading = false
 		ammo_changed.emit(current_ammo, max_ammo, false)
 	)
+

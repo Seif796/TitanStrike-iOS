@@ -247,3 +247,4 @@ func _sync_boss_transform(pos: Vector3, rot_y: float) -> void:
 func _play_boss_anim(anim_name: String) -> void:
 	if anim_player and anim_player.has_animation(anim_name):
 		anim_player.play(anim_name)
+

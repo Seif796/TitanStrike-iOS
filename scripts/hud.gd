@@ -88,3 +88,4 @@ func _on_game_over(is_victory: bool) -> void:
 			end_title.text = "💀 DEFEAT 💀"
 			end_title.modulate = Color.RED
 			end_desc.text = "All squad members were eliminated by the Titan."
+
