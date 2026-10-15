@@ -129,7 +129,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		
 		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_transform", global_position, rotation.y)
+			rpc("_sync_transform", global_position, rotation.y, is_firing)
 	else:
 		global_position = global_position.lerp(sync_position, 15.0 * delta)
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, 15.0 * delta)
@@ -305,9 +305,10 @@ func is_downed() -> bool:
 	return is_down
 
 @rpc("unreliable")
-func _sync_transform(pos: Vector3, rot_y: float) -> void:
+func _sync_transform(pos: Vector3, rot_y: float, firing: bool = false) -> void:
 	sync_position = pos
 	sync_rotation_y = rot_y
+	is_firing = firing
 
 @rpc("any_peer", "call_remote")
 func _sync_shoot(target: Vector3) -> void:

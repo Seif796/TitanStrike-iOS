@@ -2,137 +2,192 @@ extends Control
 class_name TouchControls
 
 # TouchControls Script (res://scripts/touch_controls.gd)
-# Features directional movement buttons (D-Pad), smooth right-screen finger swipe camera look,
-# combat buttons, and Fortnite-style building buttons.
+# Features 100% independent multi-touch processing:
+# - Simultaneous Run & Gun: Moving with left thumb NEVER cancels or stops firing with right thumb!
+# - Ergonomic 140x140 circular FIRE button positioned for natural thumb resting.
+# - Smooth camera swipe trackpad on the right screen without false clicks.
 
-# Directional Movement Buttons (D-Pad)
+@onready var left_zone: Control = $LeftZone
+@onready var dpad: Control = $LeftZone/DPad
 @onready var btn_up: Button = $LeftZone/DPad/BtnUp
 @onready var btn_down: Button = $LeftZone/DPad/BtnDown
 @onready var btn_left: Button = $LeftZone/DPad/BtnLeft
 @onready var btn_right: Button = $LeftZone/DPad/BtnRight
 
-# Combat buttons
+@onready var right_zone: Control = $RightZone
+@onready var combat_bar: Control = $RightZone/CombatBar
 @onready var fire_btn: Button = $RightZone/CombatBar/FireBtn
 @onready var reload_btn: Button = $RightZone/CombatBar/ReloadBtn
 @onready var switch_btn: Button = $RightZone/CombatBar/SwitchBtn
-
-# Build mode buttons
 @onready var build_toggle_btn: Button = $RightZone/BuildToggleBtn
+
 @onready var build_bar: Control = $RightZone/BuildBar
+@onready var place_btn: Button = $RightZone/BuildBar/PlaceBtn
 @onready var wall_btn: Button = $RightZone/BuildBar/WallBtn
 @onready var ramp_btn: Button = $RightZone/BuildBar/RampBtn
 @onready var turret_btn: Button = $RightZone/BuildBar/TurretBtn
-@onready var place_btn: Button = $RightZone/BuildBar/PlaceBtn
 
-@onready var combat_bar: Control = $RightZone/CombatBar
 @onready var revive_btn: Button = $CenterZone/ReviveBtn
-
-var dpad_vector: Vector2 = Vector2.ZERO
-var look_touch_index: int = -1
-var last_look_pos: Vector2 = Vector2.ZERO
 
 var player_ref: Player = null
 var is_in_build_mode: bool = false
 
-# D-pad button states
-var up_pressed: bool = false
-var down_pressed: bool = false
-var left_pressed: bool = false
-var right_pressed: bool = false
+# Independent multi-touch pointer tracking
+var move_touch_index: int = -1
+var fire_touch_index: int = -1
+var look_touch_index: int = -1
+var last_look_pos: Vector2 = Vector2.ZERO
+
+var dpad_vector: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	if revive_btn:
 		revive_btn.visible = false
 	if build_bar:
 		build_bar.visible = false
-	
-	_connect_movement_buttons()
-	_connect_action_buttons()
 
 func bind_player(p: Player) -> void:
 	player_ref = p
 
-func _connect_movement_buttons() -> void:
-	if btn_up:
-		btn_up.button_down.connect(func(): up_pressed = true; _update_dpad())
-		btn_up.button_up.connect(func(): up_pressed = false; _update_dpad())
-	if btn_down:
-		btn_down.button_down.connect(func(): down_pressed = true; _update_dpad())
-		btn_down.button_up.connect(func(): down_pressed = false; _update_dpad())
-	if btn_left:
-		btn_left.button_down.connect(func(): left_pressed = true; _update_dpad())
-		btn_left.button_up.connect(func(): left_pressed = false; _update_dpad())
-	if btn_right:
-		btn_right.button_down.connect(func(): right_pressed = true; _update_dpad())
-		btn_right.button_up.connect(func(): right_pressed = false; _update_dpad())
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_process_touch_down(event.index, event.position)
+		else:
+			_process_touch_up(event.index)
+	elif event is InputEventScreenDrag:
+		_process_touch_drag(event.index, event.position, event.relative)
+	elif event is InputEventMouseButton:
+		# Fallback for mouse testing in PC editor
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_process_touch_down(999, event.position)
+			else:
+				_process_touch_up(999)
+	elif event is InputEventMouseMotion:
+		if event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+			_process_touch_drag(999, event.position, event.relative)
 
-func _update_dpad() -> void:
-	var v = Vector2.ZERO
-	if up_pressed:
-		v.y -= 1.0
-	if down_pressed:
-		v.y += 1.0
-	if left_pressed:
-		v.x -= 1.0
-	if right_pressed:
-		v.x += 1.0
+func _process_touch_down(index: int, pos: Vector2) -> void:
+	var screen_w = get_viewport_rect().size.x
 	
-	dpad_vector = v.normalized()
-	if player_ref:
-		player_ref.input_vector = dpad_vector
-
-func _connect_action_buttons() -> void:
-	if fire_btn:
-		fire_btn.button_down.connect(func():
-			if player_ref:
-				player_ref.is_firing = true
-		)
-		fire_btn.button_up.connect(func():
-			if player_ref:
-				player_ref.is_firing = false
-		)
+	# 1. Check Revive Button
+	if revive_btn and revive_btn.visible and revive_btn.get_global_rect().has_point(pos):
+		if player_ref:
+			player_ref._try_revive_teammate()
+		return
 	
-	if reload_btn:
-		reload_btn.pressed.connect(func():
-			if player_ref:
-				player_ref.reload_active_weapon()
-		)
+	# 2. Check Build Mode Toggle
+	if build_toggle_btn and build_toggle_btn.get_global_rect().has_point(pos):
+		_on_build_toggle_pressed()
+		return
 	
-	if switch_btn:
-		switch_btn.pressed.connect(func():
-			if player_ref:
-				player_ref.switch_weapon()
-		)
-	
-	if build_toggle_btn:
-		build_toggle_btn.pressed.connect(_on_build_toggle_pressed)
-	
-	if wall_btn:
-		wall_btn.pressed.connect(func():
-			if player_ref:
-				player_ref.select_structure_type(0)
-		)
-	if ramp_btn:
-		ramp_btn.pressed.connect(func():
-			if player_ref:
-				player_ref.select_structure_type(1)
-		)
-	if turret_btn:
-		turret_btn.pressed.connect(func():
-			if player_ref:
-				player_ref.select_structure_type(2)
-		)
-	if place_btn:
-		place_btn.pressed.connect(func():
+	# 3. Check Right Zone Action Buttons
+	if is_in_build_mode:
+		if place_btn and place_btn.get_global_rect().has_point(pos):
 			if player_ref:
 				player_ref.place_structure()
-		)
-	
-	if revive_btn:
-		revive_btn.pressed.connect(func():
+			return
+		if wall_btn and wall_btn.get_global_rect().has_point(pos):
+			if player_ref: player_ref.select_structure_type(0)
+			return
+		if ramp_btn and ramp_btn.get_global_rect().has_point(pos):
+			if player_ref: player_ref.select_structure_type(1)
+			return
+		if turret_btn and turret_btn.get_global_rect().has_point(pos):
+			if player_ref: player_ref.select_structure_type(2)
+			return
+	else:
+		# Combat Mode Buttons:
+		# Check FIRE BUTTON
+		if fire_btn and fire_btn.get_global_rect().has_point(pos):
+			fire_touch_index = index
 			if player_ref:
-				player_ref._try_revive_teammate()
-		)
+				player_ref.is_firing = true
+			fire_btn.modulate = Color(1.3, 1.3, 1.3)
+			return
+		
+		# Check RELOAD BUTTON
+		if reload_btn and reload_btn.get_global_rect().has_point(pos):
+			if player_ref:
+				player_ref.reload_active_weapon()
+			return
+		
+		# Check SWITCH WEAPON BUTTON
+		if switch_btn and switch_btn.get_global_rect().has_point(pos):
+			if player_ref:
+				player_ref.switch_weapon()
+			return
+	
+	# 4. Check Left Zone (Movement / D-Pad)
+	if pos.x < screen_w * 0.45:
+		move_touch_index = index
+		_update_movement_from_pos(pos)
+		return
+	
+	# 5. Check Right Zone (Camera Look swipe)
+	if pos.x >= screen_w * 0.45 and look_touch_index == -1:
+		look_touch_index = index
+		last_look_pos = pos
+
+func _process_touch_drag(index: int, pos: Vector2, _rel: Vector2) -> void:
+	if index == move_touch_index:
+		_update_movement_from_pos(pos)
+	elif index == fire_touch_index:
+		# Maintain firing even if thumb wiggles slightly
+		if player_ref:
+			player_ref.is_firing = true
+	elif index == look_touch_index:
+		var delta = pos - last_look_pos
+		last_look_pos = pos
+		if player_ref:
+			player_ref.look_input = delta * 0.0055
+
+func _process_touch_up(index: int) -> void:
+	if index == move_touch_index:
+		move_touch_index = -1
+		dpad_vector = Vector2.ZERO
+		if player_ref:
+			player_ref.input_vector = Vector2.ZERO
+		_highlight_dpad(Vector2.ZERO)
+	
+	if index == fire_touch_index:
+		fire_touch_index = -1
+		if player_ref:
+			player_ref.is_firing = false
+		if fire_btn:
+			fire_btn.modulate = Color(1.0, 1.0, 1.0)
+	
+	if index == look_touch_index:
+		look_touch_index = -1
+
+func _update_movement_from_pos(pos: Vector2) -> void:
+	if not dpad:
+		return
+	var center = dpad.get_global_rect().get_center()
+	var offset = pos - center
+	var dist = offset.length()
+	
+	if dist > 15.0:
+		dpad_vector = offset.normalized()
+		var strength = clamp(dist / 65.0, 0.0, 1.0)
+		dpad_vector *= strength
+	else:
+		dpad_vector = Vector2.ZERO
+	
+	if player_ref:
+		player_ref.input_vector = dpad_vector
+	_highlight_dpad(dpad_vector)
+
+func _highlight_dpad(vec: Vector2) -> void:
+	if btn_up:
+		btn_up.modulate = Color(1.4, 1.4, 1.4) if vec.y < -0.25 else Color(1, 1, 1)
+	if btn_down:
+		btn_down.modulate = Color(1.4, 1.4, 1.4) if vec.y > 0.25 else Color(1, 1, 1)
+	if btn_left:
+		btn_left.modulate = Color(1.4, 1.4, 1.4) if vec.x < -0.25 else Color(1, 1, 1)
+	if btn_right:
+		btn_right.modulate = Color(1.4, 1.4, 1.4) if vec.x > 0.25 else Color(1, 1, 1)
 
 func _on_build_toggle_pressed() -> void:
 	if not player_ref:
@@ -145,30 +200,3 @@ func _on_build_toggle_pressed() -> void:
 		combat_bar.visible = !is_in_build_mode
 	
 	build_toggle_btn.text = "⚔️ COMBAT" if is_in_build_mode else "🔨 BUILD"
-
-func _input(event: InputEvent) -> void:
-	if event is InputEventScreenTouch:
-		_handle_touch(event)
-	elif event is InputEventScreenDrag:
-		_handle_drag(event)
-
-func _handle_touch(event: InputEventScreenTouch) -> void:
-	var screen_width = get_viewport_rect().size.x
-	var is_right_half = event.position.x >= (screen_width * 0.45)
-	
-	if event.pressed:
-		if is_right_half and look_touch_index == -1:
-			# Touch started on right side -> begin camera swipe look
-			look_touch_index = event.index
-			last_look_pos = event.position
-	else:
-		if event.index == look_touch_index:
-			look_touch_index = -1
-
-func _handle_drag(event: InputEventScreenDrag) -> void:
-	if event.index == look_touch_index:
-		var delta = event.position - last_look_pos
-		last_look_pos = event.position
-		if player_ref:
-			# Smooth finger drag camera rotation
-			player_ref.look_input = delta * 0.0055
