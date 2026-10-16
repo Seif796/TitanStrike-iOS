@@ -32,7 +32,7 @@ var look_input: Vector2 = Vector2.ZERO
 var is_firing: bool = false
 
 @onready var model: Node3D = $Model
-@onready var melon_boy_3d: Node3D = $Model/WatermelonBoyMesh
+@onready var melon_model: Node3D = $Model/MelonModel
 @onready var admin_model: Node3D = $Model/AdminModel
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
@@ -96,30 +96,20 @@ func apply_class_stats(c_id: int) -> void:
 		# Dedicated 3D Cyber Admin Model (Crown, Cyber Visor, Reactor Core & Gold Armor)!
 		if admin_model:
 			admin_model.visible = true
-		if melon_boy_3d:
-			melon_boy_3d.visible = false
+		if melon_model:
+			melon_model.visible = false
 		_set_legacy_rig_visible(false)
 	elif class_id == 0:
 		if admin_model:
 			admin_model.visible = false
-		if melon_boy_3d:
-			melon_boy_3d.visible = true
-			_set_legacy_rig_visible(false)
-			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
-			if mesh_inst and mesh_inst is MeshInstance3D:
-				mesh_inst.rotation.y = PI
-				var sh_mat = ShaderMaterial.new()
-				sh_mat.shader = melon_shader
-				sh_mat.set_shader_parameter("base_tint", Color(1.0, 1.0, 1.0, 1.0))
-				sh_mat.set_shader_parameter("use_vertex_color", true)
-				sh_mat.set_shader_parameter("roughness", 0.35)
-				sh_mat.set_shader_parameter("metallic", 0.05)
-				mesh_inst.material_override = sh_mat
+		if melon_model:
+			melon_model.visible = true
+		_set_legacy_rig_visible(false)
 	else:
 		if admin_model:
 			admin_model.visible = false
-		if melon_boy_3d:
-			melon_boy_3d.visible = false
+		if melon_model:
+			melon_model.visible = false
 		_set_legacy_rig_visible(true)
 		var target_tex = berry_tex if class_id == 1 else citrus_tex
 		var mat = StandardMaterial3D.new()

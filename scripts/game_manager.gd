@@ -52,10 +52,10 @@ const MAPS: Dictionary = {
 # Hero Classes (including unlockable 500 HP Admin)
 const CLASSES: Dictionary = {
 	0: {
-		"name": "🍉 Melon Boy (ولد البطيخ)",
+		"name": "🍉 Melon Knight (فارس البطيخ الجديد)",
 		"hp": 130,
 		"speed": 7.5,
-		"role": "The main hero! Agile, fires rapid watermelon seeds, and builds sturdy fruit defense walls.",
+		"role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls.",
 		"color": Color(0.25, 0.8, 0.2) # Melon Green
 	},
 	1: {

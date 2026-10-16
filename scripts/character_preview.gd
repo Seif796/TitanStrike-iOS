@@ -4,7 +4,7 @@ class_name CharacterPreview
 # CharacterPreview Script (res://scripts/character_preview.gd)
 # Rotates 3D Character and updates textures/colors between Melon Boy (3D model), Berry Striker, Citrus Tank, and Admin.
 
-@onready var melon_boy_3d: Node3D = $Model/WatermelonBoyMesh
+@onready var melon_model: Node3D = $Model/MelonModel
 @onready var admin_model: Node3D = $Model/AdminModel
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var chest_mesh: MeshInstance3D = $Model/ChestPlate
@@ -17,7 +17,6 @@ class_name CharacterPreview
 var melon_tex = preload("res://assets/watermelon_pattern.svg")
 var berry_tex = preload("res://assets/strawberry_pattern.svg")
 var citrus_tex = preload("res://assets/citrus_pattern.svg")
-var melon_shader = preload("res://shaders/watermelon_boy.gdshader")
 
 var rot_speed: float = 0.85
 
@@ -27,30 +26,18 @@ func _physics_process(delta: float) -> void:
 func update_class_visual(class_id: int) -> void:
 	if class_id == 3:
 		if admin_model: admin_model.visible = true
-		if melon_boy_3d: melon_boy_3d.visible = false
+		if melon_model: melon_model.visible = false
+		_set_legacy_preview_visible(false)
+		return
+	elif class_id == 0:
+		if admin_model: admin_model.visible = false
+		if melon_model: melon_model.visible = true
 		_set_legacy_preview_visible(false)
 		return
 	else:
 		if admin_model: admin_model.visible = false
-	
-	if melon_boy_3d:
-		if class_id == 0:
-			melon_boy_3d.visible = true
-			_set_legacy_preview_visible(false)
-			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
-			if mesh_inst and mesh_inst is MeshInstance3D:
-				mesh_inst.rotation.y = PI
-				var sh_mat = ShaderMaterial.new()
-				sh_mat.shader = melon_shader
-				sh_mat.set_shader_parameter("base_tint", Color(1.0, 1.0, 1.0, 1.0))
-				sh_mat.set_shader_parameter("use_vertex_color", true)
-				sh_mat.set_shader_parameter("roughness", 0.35)
-				sh_mat.set_shader_parameter("metallic", 0.05)
-				mesh_inst.material_override = sh_mat
-			return
-		else:
-			melon_boy_3d.visible = false
-			_set_legacy_preview_visible(true)
+		if melon_model: melon_model.visible = false
+		_set_legacy_preview_visible(true)
 	
 	var target_tex: Texture2D = berry_tex if class_id == 1 else citrus_tex
 	var mat = StandardMaterial3D.new()

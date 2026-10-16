@@ -20,3 +20,8 @@ func play_anim(anim_name: String) -> void:
 	if anim_player and anim_player.has_animation(anim_name):
 		if anim_player.current_animation != anim_name:
 			anim_player.play(anim_name)
+
+func set_anim_speed(speed_ratio: float) -> void:
+	if anim_player:
+		anim_player.speed_scale = speed_ratio
+

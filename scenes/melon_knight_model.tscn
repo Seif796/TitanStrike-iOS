@@ -1,0 +1,448 @@
+[gd_scene load_steps=26 format=3]
+
+[ext_resource type="Script" path="res://scripts/melon_knight_model.gd" id="1_melon_script"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_CharcoalSuit"]
+albedo_color = Color(0.12, 0.14, 0.16, 1)
+metallic = 0.2
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="Mat_EmeraldArmor"]
+albedo_color = Color(0.14, 0.72, 0.3, 1)
+metallic = 0.45
+roughness = 0.22
+
+[sub_resource type="StandardMaterial3D" id="Mat_DarkRind"]
+albedo_color = Color(0.06, 0.36, 0.15, 1)
+metallic = 0.3
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_CrimsonRuby"]
+albedo_color = Color(1, 0.12, 0.3, 1)
+emission_enabled = true
+emission = Color(1, 0.12, 0.3, 1)
+emission_energy_multiplier = 4.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_GoldenSeed"]
+albedo_color = Color(1, 0.8, 0.15, 1)
+metallic = 0.85
+roughness = 0.2
+
+[sub_resource type="BoxMesh" id="Mesh_Torso"]
+material = SubResource("Mat_CharcoalSuit")
+size = Vector3(0.52, 0.6, 0.38)
+
+[sub_resource type="BoxMesh" id="Mesh_ChestPlate"]
+material = SubResource("Mat_EmeraldArmor")
+size = Vector3(0.48, 0.5, 0.14)
+
+[sub_resource type="BoxMesh" id="Mesh_RindStripe"]
+material = SubResource("Mat_DarkRind")
+size = Vector3(0.1, 0.48, 0.15)
+
+[sub_resource type="CylinderMesh" id="Mesh_CoreReactor"]
+material = SubResource("Mat_CrimsonRuby")
+top_radius = 0.1
+bottom_radius = 0.1
+height = 0.06
+
+[sub_resource type="BoxMesh" id="Mesh_Belt"]
+material = SubResource("Mat_DarkRind")
+size = Vector3(0.56, 0.1, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_BeltBuckle"]
+material = SubResource("Mat_GoldenSeed")
+size = Vector3(0.15, 0.12, 0.1)
+
+[sub_resource type="SphereMesh" id="Mesh_Head"]
+material = SubResource("Mat_EmeraldArmor")
+radius = 0.35
+height = 0.7
+
+[sub_resource type="BoxMesh" id="Mesh_Visor"]
+material = SubResource("Mat_CrimsonRuby")
+size = Vector3(0.42, 0.13, 0.14)
+
+[sub_resource type="PrismMesh" id="Mesh_LeafCrest"]
+material = SubResource("Mat_GoldenSeed")
+size = Vector3(0.14, 0.34, 0.08)
+
+[sub_resource type="BoxMesh" id="Mesh_ShoulderPad"]
+material = SubResource("Mat_EmeraldArmor")
+size = Vector3(0.24, 0.2, 0.28)
+
+[sub_resource type="CylinderMesh" id="Mesh_ArmUpper"]
+material = SubResource("Mat_CharcoalSuit")
+top_radius = 0.09
+bottom_radius = 0.08
+height = 0.36
+
+[sub_resource type="BoxMesh" id="Mesh_Gauntlet"]
+material = SubResource("Mat_EmeraldArmor")
+size = Vector3(0.18, 0.2, 0.18)
+
+[sub_resource type="CylinderMesh" id="Mesh_LegUpper"]
+material = SubResource("Mat_CharcoalSuit")
+top_radius = 0.11
+bottom_radius = 0.1
+height = 0.38
+
+[sub_resource type="BoxMesh" id="Mesh_ShinGuard"]
+material = SubResource("Mat_EmeraldArmor")
+size = Vector3(0.2, 0.26, 0.18)
+
+[sub_resource type="BoxMesh" id="Mesh_Boot"]
+material = SubResource("Mat_DarkRind")
+size = Vector3(0.2, 0.14, 0.3)
+
+[sub_resource type="Animation" id="Animation_melon_idle"]
+resource_name = "idle"
+length = 2.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("BodyMesh:position:y")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1, 2),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.75, 0.78, 0.75]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("BodyMesh/Torso:scale")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1, 2),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(1.02, 1.03, 1.02), Vector3(1, 1, 1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("LeftArm:rotation:x")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 1, 2),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-0.08, 0.08, -0.08]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("RightArm:rotation:x")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 1, 2),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.08, -0.08, 0.08]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Head:rotation:z")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 1, 2),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-0.03, 0.03, -0.03]
+}
+
+[sub_resource type="Animation" id="Animation_melon_run"]
+resource_name = "run"
+length = 0.65
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("BodyMesh:position:y")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1625, 0.325, 0.4875, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [0.75, 0.85, 0.75, 0.85, 0.75]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("LeftLeg:rotation:x")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.325, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-0.65, 0.65, -0.65]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("RightLeg:rotation:x")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.325, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.65, -0.65, 0.65]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("LeftArm:rotation:x")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.325, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.55, -0.55, 0.55]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("RightArm:rotation:x")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.325, 0.65),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-0.55, 0.55, -0.55]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("BodyMesh/Torso:rotation:x")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.65),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [-0.18, -0.18]
+}
+
+[sub_resource type="Animation" id="Animation_melon_shoot"]
+resource_name = "shoot"
+length = 0.22
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("BodyMesh/Torso:position:z")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.06, 0.22),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.08, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("RightArm:position:z")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.06, 0.22),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.09, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("RightArm:rotation:x")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.06, 0.22),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-0.85, -0.65, -0.85]
+}
+
+[sub_resource type="Animation" id="Animation_melon_jump"]
+resource_name = "jump"
+length = 0.6
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("BodyMesh:position:y")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.75, 0.9, 0.75]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("LeftLeg:rotation:x")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, -0.45, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("RightLeg:rotation:x")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.35, 0.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("LeftArm:rotation:x")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, -0.65, 0.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_melon"]
+_data = {
+"idle": SubResource("Animation_melon_idle"),
+"jump": SubResource("Animation_melon_jump"),
+"run": SubResource("Animation_melon_run"),
+"shoot": SubResource("Animation_melon_shoot")
+}
+
+[node name="MelonKnightModel" type="Node3D"]
+script = ExtResource("1_melon_script")
+
+[node name="BodyMesh" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+
+[node name="Torso" type="MeshInstance3D" parent="BodyMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_Torso")
+
+[node name="MelonChestPlate" type="MeshInstance3D" parent="BodyMesh/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.16)
+mesh = SubResource("Mesh_ChestPlate")
+
+[node name="StripeCenter" type="MeshInstance3D" parent="BodyMesh/Torso/MelonChestPlate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.01)
+mesh = SubResource("Mesh_RindStripe")
+
+[node name="RubyCore" type="MeshInstance3D" parent="BodyMesh/Torso/MelonChestPlate"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.05, -0.08)
+mesh = SubResource("Mesh_CoreReactor")
+
+[node name="Belt" type="MeshInstance3D" parent="BodyMesh/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.28, 0)
+mesh = SubResource("Mesh_Belt")
+
+[node name="BeltBuckle" type="MeshInstance3D" parent="BodyMesh/Torso/Belt"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22)
+mesh = SubResource("Mesh_BeltBuckle")
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+
+[node name="Helmet" type="MeshInstance3D" parent="Head"]
+mesh = SubResource("Mesh_Head")
+
+[node name="CyberVisor" type="MeshInstance3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -0.32)
+mesh = SubResource("Mesh_Visor")
+
+[node name="LeafCrest" type="MeshInstance3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.45, -0.04)
+mesh = SubResource("Mesh_LeafCrest")
+
+[node name="LeftArm" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.36, 1.25, 0)
+
+[node name="ShoulderPad" type="MeshInstance3D" parent="LeftArm"]
+transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, -0.06, 0.08, 0)
+mesh = SubResource("Mesh_ShoulderPad")
+
+[node name="ArmMesh" type="MeshInstance3D" parent="LeftArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("Mesh_ArmUpper")
+
+[node name="Gauntlet" type="MeshInstance3D" parent="LeftArm/ArmMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.14, -0.03)
+mesh = SubResource("Mesh_Gauntlet")
+
+[node name="RightArm" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36, 1.25, 0)
+
+[node name="ShoulderPad" type="MeshInstance3D" parent="RightArm"]
+transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 0.06, 0.08, 0)
+mesh = SubResource("Mesh_ShoulderPad")
+
+[node name="ArmMesh" type="MeshInstance3D" parent="RightArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("Mesh_ArmUpper")
+
+[node name="Gauntlet" type="MeshInstance3D" parent="RightArm/ArmMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.14, -0.03)
+mesh = SubResource("Mesh_Gauntlet")
+
+[node name="LeftLeg" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.65, 0)
+
+[node name="LegMesh" type="MeshInstance3D" parent="LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("Mesh_LegUpper")
+
+[node name="ShinGuard" type="MeshInstance3D" parent="LeftLeg/LegMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, -0.05)
+mesh = SubResource("Mesh_ShinGuard")
+
+[node name="Boot" type="MeshInstance3D" parent="LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -0.05)
+mesh = SubResource("Mesh_Boot")
+
+[node name="RightLeg" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.65, 0)
+
+[node name="LegMesh" type="MeshInstance3D" parent="RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("Mesh_LegUpper")
+
+[node name="ShinGuard" type="MeshInstance3D" parent="RightLeg/LegMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, -0.05)
+mesh = SubResource("Mesh_ShinGuard")
+
+[node name="Boot" type="MeshInstance3D" parent="RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -0.05)
+mesh = SubResource("Mesh_Boot")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_melon")
+}
+autoplay = "idle"

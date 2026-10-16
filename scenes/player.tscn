@@ -5,7 +5,7 @@
 [ext_resource type="Script" path="res://scripts/character_animator.gd" id="3_anim"]
 [ext_resource type="Script" path="res://scripts/building_system.gd" id="4_build"]
 [ext_resource type="Texture2D" path="res://assets/watermelon_pattern.svg" id="5_melon_tex"]
-[ext_resource type="PackedScene" uid="uid://c4m4dxo48llo6" path="res://assets/watermelon_boy_3d.glb" id="6_melon_glb"]
+[ext_resource type="PackedScene" path="res://scenes/melon_knight_model.tscn" id="6_melon_knight"]
 [ext_resource type="Shader" path="res://shaders/watermelon_boy.gdshader" id="7_melon_shader"]
 [ext_resource type="PackedScene" path="res://scenes/weapon_model.tscn" id="8_weapon_model"]
 [ext_resource type="PackedScene" path="res://scenes/admin_model.tscn" id="9_admin_model"]
@@ -117,7 +117,7 @@ loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:y")
+tracks/0/path = NodePath("Model/MelonModel:position:y")
 tracks/0/interp = 2
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -129,7 +129,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Model/WatermelonBoyMesh:scale")
+tracks/1/path = NodePath("Model/MelonModel:scale")
 tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -141,7 +141,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Model/WatermelonBoyMesh:rotation")
+tracks/2/path = NodePath("Model/MelonModel:rotation")
 tracks/2/interp = 2
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -182,7 +182,7 @@ loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:y")
+tracks/0/path = NodePath("Model/MelonModel:position:y")
 tracks/0/interp = 2
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -194,7 +194,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Model/WatermelonBoyMesh:rotation")
+tracks/1/path = NodePath("Model/MelonModel:rotation")
 tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -206,7 +206,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Model/WatermelonBoyMesh:scale")
+tracks/2/path = NodePath("Model/MelonModel:scale")
 tracks/2/interp = 2
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -246,7 +246,7 @@ length = 0.22
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:z")
+tracks/0/path = NodePath("Model/MelonModel:position:z")
 tracks/0/interp = 2
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -258,7 +258,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Model/WatermelonBoyMesh:rotation:x")
+tracks/1/path = NodePath("Model/MelonModel:rotation:x")
 tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -298,7 +298,7 @@ length = 0.65
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("Model/WatermelonBoyMesh:position:y")
+tracks/0/path = NodePath("Model/MelonModel:position:y")
 tracks/0/interp = 2
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -310,7 +310,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Model/WatermelonBoyMesh:scale")
+tracks/1/path = NodePath("Model/MelonModel:scale")
 tracks/1/interp = 2
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -322,7 +322,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Model/WatermelonBoyMesh:rotation:x")
+tracks/2/path = NodePath("Model/MelonModel:rotation:x")
 tracks/2/interp = 2
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -375,11 +375,7 @@ shape = SubResource("CapsuleShape3D_player")
 
 [node name="Model" type="Node3D" parent="."]
 
-[node name="WatermelonBoyMesh" parent="Model" instance=ExtResource("6_melon_glb")]
-
-[node name="WatermelonBoy" parent="Model/WatermelonBoyMesh" index="0"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
-material_override = SubResource("ShaderMaterial_melon_boy")
+[node name="MelonModel" parent="Model" instance=ExtResource("6_melon_knight")]
 
 [node name="AdminModel" parent="Model" instance=ExtResource("9_admin_model")]
 visible = false
@@ -532,7 +528,7 @@ script = ExtResource("4_build")
 script = ExtResource("3_anim")
 player = NodePath("..")
 model_root = NodePath("../Model")
-melon_boy_mesh = NodePath("../Model/WatermelonBoyMesh")
+melon_boy_mesh = NodePath("../Model/MelonModel")
 left_leg = NodePath("../Model/LeftLeg")
 right_leg = NodePath("../Model/RightLeg")
 left_arm = NodePath("../Model/LeftArm")

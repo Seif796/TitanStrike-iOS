@@ -65,23 +65,32 @@ func _physics_process(delta: float) -> void:
 
 func _animate_admin_model(delta: float, speed: float, m: Node3D) -> void:
 	if m.has_method("play_anim"):
-		if is_moving and player.is_on_floor():
+		if not player.is_on_floor():
+			m.play_anim("jump")
+			if m.has_method("set_anim_speed"):
+				m.set_anim_speed(1.0)
+		elif is_moving:
 			m.play_anim("run")
+			if m.has_method("set_anim_speed"):
+				var anim_speed = clamp(speed / 6.0, 0.9, 2.5)
+				m.set_anim_speed(anim_speed)
 		elif player.is_firing:
 			m.play_anim("shoot")
+			if m.has_method("set_anim_speed"):
+				m.set_anim_speed(1.2)
 		else:
 			m.play_anim("idle")
+			if m.has_method("set_anim_speed"):
+				m.set_anim_speed(1.0)
 	
 	if is_moving and player.is_on_floor():
-		walk_cycle += delta * speed * 2.8
-		var stride_bounce = abs(sin(walk_cycle)) * 0.16
-		m.position.y = stride_bounce
-		m.rotation.x = lerp_angle(m.rotation.x, deg_to_rad(-12.0), 12.0 * delta)
-		var swagger = sin(walk_cycle * 0.5) * deg_to_rad(8.0)
-		m.rotation.z = swagger + target_tilt_z
+		m.position.y = lerp(m.position.y, 0.0, 10.0 * delta)
+		m.rotation.x = lerp_angle(m.rotation.x, deg_to_rad(-8.0), 10.0 * delta)
+		m.rotation.z = lerp_angle(m.rotation.z, target_tilt_z, 10.0 * delta)
 	elif not player.is_on_floor():
-		m.position.y = lerp(m.position.y, 0.18, 10.0 * delta)
-		m.rotation.x = lerp_angle(m.rotation.x, deg_to_rad(-10.0), 10.0 * delta)
+		m.position.y = lerp(m.position.y, 0.12, 8.0 * delta)
+		m.rotation.x = lerp_angle(m.rotation.x, deg_to_rad(-6.0), 8.0 * delta)
+		m.rotation.z = lerp_angle(m.rotation.z, target_tilt_z, 8.0 * delta)
 	else:
 		m.position.y = lerp(m.position.y, 0.0, 8.0 * delta)
 		m.rotation.x = lerp_angle(m.rotation.x, 0.0, 8.0 * delta)
@@ -91,36 +100,37 @@ func _animate_melon_boy(delta: float, speed: float) -> void:
 	if not melon_boy_mesh:
 		return
 	
-	if is_moving and player.is_on_floor():
-		walk_cycle += delta * speed * 2.8
+	if melon_boy_mesh.has_method("play_anim"):
+		if not player.is_on_floor():
+			melon_boy_mesh.play_anim("jump")
+			if melon_boy_mesh.has_method("set_anim_speed"):
+				melon_boy_mesh.set_anim_speed(1.0)
+		elif is_moving:
+			melon_boy_mesh.play_anim("run")
+			if melon_boy_mesh.has_method("set_anim_speed"):
+				var anim_speed = clamp(speed / 5.0, 0.9, 2.2)
+				melon_boy_mesh.set_anim_speed(anim_speed)
+		elif player.is_firing:
+			melon_boy_mesh.play_anim("shoot")
+			if melon_boy_mesh.has_method("set_anim_speed"):
+				melon_boy_mesh.set_anim_speed(1.2)
+		else:
+			melon_boy_mesh.play_anim("idle")
+			if melon_boy_mesh.has_method("set_anim_speed"):
+				melon_boy_mesh.set_anim_speed(1.0)
 		
-		# 1. Pronounced footstep vertical bounce (0.16m per step!)
-		var stride_bounce = abs(sin(walk_cycle)) * 0.16
-		melon_boy_mesh.position.y = stride_bounce
-		
-		# 2. Dynamic forward sprint lean (-14 degrees forward!)
-		melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, deg_to_rad(-14.0), 12.0 * delta)
-		
-		# 3. Dynamic hip waddle / swagger (±9 degrees side-to-side!)
-		var swagger = sin(walk_cycle * 0.5) * deg_to_rad(9.0)
-		melon_boy_mesh.rotation.z = swagger + target_tilt_z
-		
-		# 4. Athletic squash & stretch impact on foot landing!
-		var squash = 1.0 - abs(sin(walk_cycle)) * 0.08
-		melon_boy_mesh.scale = Vector3(1.0 + (1.0 - squash) * 0.5, squash, 1.0 + (1.0 - squash) * 0.5)
-	elif not player.is_on_floor():
-		# Airborne jump suspension
-		melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, 0.18, 10.0 * delta)
-		melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, deg_to_rad(-10.0), 10.0 * delta)
-		melon_boy_mesh.scale = melon_boy_mesh.scale.lerp(Vector3(0.92, 1.15, 0.92), 10.0 * delta)
-	else:
-		# Standing idle: gentle breathing squash & stretch
-		walk_cycle += delta * 2.2
-		var idle_breath = sin(walk_cycle) * 0.035
-		melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, idle_breath, 8.0 * delta)
-		melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, 0.0, 8.0 * delta)
-		melon_boy_mesh.rotation.z = lerp_angle(melon_boy_mesh.rotation.z, 0.0, 8.0 * delta)
-		melon_boy_mesh.scale = melon_boy_mesh.scale.lerp(Vector3(1.0, 1.0 + sin(walk_cycle) * 0.025, 1.0), 8.0 * delta)
+		if is_moving and player.is_on_floor():
+			melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, 0.0, 10.0 * delta)
+			melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, deg_to_rad(-8.0), 10.0 * delta)
+			melon_boy_mesh.rotation.z = lerp_angle(melon_boy_mesh.rotation.z, target_tilt_z, 10.0 * delta)
+		elif not player.is_on_floor():
+			melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, 0.12, 8.0 * delta)
+			melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, deg_to_rad(-6.0), 8.0 * delta)
+			melon_boy_mesh.rotation.z = lerp_angle(melon_boy_mesh.rotation.z, target_tilt_z, 8.0 * delta)
+		else:
+			melon_boy_mesh.position.y = lerp(melon_boy_mesh.position.y, 0.0, 8.0 * delta)
+			melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, 0.0, 8.0 * delta)
+			melon_boy_mesh.rotation.z = lerp_angle(melon_boy_mesh.rotation.z, target_tilt_z, 8.0 * delta)
 
 func _animate_legacy_rig(delta: float, speed: float) -> void:
 	if leaf_sprout:
