@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://cpreview001scene"]
+[gd_scene load_steps=28 format=3 uid="uid://cpreview001scene"]
 
 [ext_resource type="Script" path="res://scripts/character_preview.gd" id="1_preview"]
 [ext_resource type="Texture2D" path="res://assets/watermelon_pattern.svg" id="2_melon_tex"]
@@ -6,6 +6,7 @@
 [ext_resource type="Shader" path="res://shaders/watermelon_boy.gdshader" id="4_melon_shader"]
 [ext_resource type="PackedScene" path="res://scenes/weapon_model.tscn" id="5_weapon_model"]
 [ext_resource type="PackedScene" path="res://scenes/admin_model.tscn" id="6_admin_model"]
+[ext_resource type="PackedScene" path="res://scenes/spiderman_model.tscn" id="7_spider_model"]
 
 [sub_resource type="Environment" id="Environment_preview"]
 background_mode = 1
@@ -170,6 +171,9 @@ fov = 46.0
 [node name="MelonModel" parent="Model" instance=ExtResource("3_melon_knight")]
 
 [node name="AdminModel" parent="Model" instance=ExtResource("6_admin_model")]
+visible = false
+
+[node name="SpiderModel" parent="Model" instance=ExtResource("7_spider_model")]
 visible = false
 
 [node name="Head" type="Node3D" parent="Model"]

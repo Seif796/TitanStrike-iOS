@@ -82,6 +82,13 @@ const CLASSES: Dictionary = {
 		"speed": 15,
 		"role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor.",
 		"color": Color(1.0, 0.85, 0.1) # Golden Cyber Admin
+	},
+	4: {
+		"name": "🕷️ Spider Hero (سبايدر هودي الخارق)",
+		"hp": 220,
+		"speed": 9.2,
+		"role": "The newly added 3D Chibi Spider-Hero! Wearing an oversized hoodie, denim cutoffs, and retro high-top sneakers. Highly agile with web attacks!",
+		"color": Color(0.95, 0.2, 0.25) # Spider Red
 	}
 }
 
@@ -107,6 +114,7 @@ func is_hero_unlocked(hero_id: int) -> bool:
 		1: return berry_unlocked
 		2: return citrus_unlocked
 		3: return admin_unlocked
+		4: return true # Spider Hero unlocked & ready to play!
 		_: return false
 
 func unlock_hero(hero_id: int) -> bool:

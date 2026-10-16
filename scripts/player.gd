@@ -34,6 +34,7 @@ var is_firing: bool = false
 @onready var model: Node3D = $Model
 @onready var melon_model: Node3D = $Model/MelonModel
 @onready var admin_model: Node3D = $Model/AdminModel
+@onready var spider_model: Node3D = get_node_or_null("Model/SpiderModel")
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
 @onready var chest_plate: MeshInstance3D = $Model/BodyMesh/ChestPlate
@@ -112,24 +113,27 @@ func apply_class_stats(c_id: int) -> void:
 	current_hp = max_hp
 	move_speed = data["speed"]
 	
-	if class_id == 3:
+	if class_id == 4:
+		# Dedicated 3D Chibi Spider-Hero Model (Oversized Hoodie, Spider Mask & Retro Sneakers)!
+		if spider_model: spider_model.visible = true
+		if admin_model: admin_model.visible = false
+		if melon_model: melon_model.visible = false
+		_set_legacy_rig_visible(false)
+	elif class_id == 3:
 		# Dedicated 3D Cyber Admin Model (Crown, Cyber Visor, Reactor Core & Gold Armor)!
-		if admin_model:
-			admin_model.visible = true
-		if melon_model:
-			melon_model.visible = false
+		if spider_model: spider_model.visible = false
+		if admin_model: admin_model.visible = true
+		if melon_model: melon_model.visible = false
 		_set_legacy_rig_visible(false)
 	elif class_id == 0:
-		if admin_model:
-			admin_model.visible = false
-		if melon_model:
-			melon_model.visible = true
+		if spider_model: spider_model.visible = false
+		if admin_model: admin_model.visible = false
+		if melon_model: melon_model.visible = true
 		_set_legacy_rig_visible(false)
 	else:
-		if admin_model:
-			admin_model.visible = false
-		if melon_model:
-			melon_model.visible = false
+		if spider_model: spider_model.visible = false
+		if admin_model: admin_model.visible = false
+		if melon_model: melon_model.visible = false
 		_set_legacy_rig_visible(true)
 		var target_tex = berry_tex if class_id == 1 else citrus_tex
 		var mat = StandardMaterial3D.new()

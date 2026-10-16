@@ -79,3 +79,4 @@ double_sided = true
 no_depth_test = true
 texture = SubResource("ViewportTexture_health")
 pixel_size = 0.0055
+

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="chestRed" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#E8242A"/>
+      <stop offset="100%" stop-color="#A51218"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Red Suit Fabric -->
+  <rect width="512" height="512" fill="url(#chestRed)"/>
+
+  <!-- Vertical Web Lines -->
+  <g stroke="#18181A" stroke-width="4" opacity="0.8">
+    <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="190" y1="0" x2="190" y2="512"/>
+    <line x1="322" y1="0" x2="322" y2="512"/>
+    <line x1="120" y1="0" x2="120" y2="512"/>
+    <line x1="392" y1="0" x2="392" y2="512"/>
+    <line x1="50" y1="0" x2="50" y2="512"/>
+    <line x1="462" y1="0" x2="462" y2="512"/>
+
+    <!-- Horizontal Web Lines (Scalloped) -->
+    <path d="M 0,80 Q 128,100 256,100 Q 384,100 512,80" fill="none"/>
+    <path d="M 0,170 Q 128,195 256,195 Q 384,195 512,170" fill="none"/>
+    <path d="M 0,260 Q 128,290 256,290 Q 384,290 512,260" fill="none"/>
+    <path d="M 0,350 Q 128,380 256,380 Q 384,380 512,350" fill="none"/>
+    <path d="M 0,440 Q 128,470 256,470 Q 384,470 512,440" fill="none"/>
+  </g>
+
+  <!-- Black Spider Chest Emblem -->
+  <g fill="#141416" stroke="#141416" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Spider Head and Body -->
+    <ellipse cx="256" cy="225" rx="14" ry="12"/>
+    <ellipse cx="256" cy="265" rx="22" ry="32"/>
+
+    <!-- Left Upper Legs (2 legs) -->
+    <path d="M 248,235 Q 210,175 160,195 Q 140,205 125,235" fill="none" stroke-width="8"/>
+    <path d="M 246,245 Q 195,200 155,240 Q 135,260 120,290" fill="none" stroke-width="7.5"/>
+
+    <!-- Right Upper Legs (2 legs) -->
+    <path d="M 264,235 Q 302,175 352,195 Q 372,205 387,235" fill="none" stroke-width="8"/>
+    <path d="M 266,245 Q 317,200 357,240 Q 377,260 392,290" fill="none" stroke-width="7.5"/>
+
+    <!-- Left Lower Legs (2 legs) -->
+    <path d="M 246,275 Q 195,300 165,340 Q 150,370 145,410" fill="none" stroke-width="7"/>
+    <path d="M 248,285 Q 215,335 185,385 Q 175,415 170,450" fill="none" stroke-width="6.5"/>
+
+    <!-- Right Lower Legs (2 legs) -->
+    <path d="M 266,275 Q 317,300 347,340 Q 362,370 367,410" fill="none" stroke-width="7"/>
+    <path d="M 264,285 Q 297,335 327,385 Q 337,415 342,450" fill="none" stroke-width="6.5"/>
+  </g>
+</svg>

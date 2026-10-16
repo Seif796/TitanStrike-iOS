@@ -6,6 +6,7 @@ class_name CharacterPreview
 
 @onready var melon_model: Node3D = $Model/MelonModel
 @onready var admin_model: Node3D = $Model/AdminModel
+@onready var spider_model: Node3D = get_node_or_null("Model/SpiderModel")
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var chest_mesh: MeshInstance3D = $Model/ChestPlate
 @onready var leg_l: MeshInstance3D = $Model/LeftLeg
@@ -24,17 +25,26 @@ func _physics_process(delta: float) -> void:
 	$Model.rotation.y += rot_speed * delta
 
 func update_class_visual(class_id: int) -> void:
-	if class_id == 3:
+	if class_id == 4:
+		if spider_model: spider_model.visible = true
+		if admin_model: admin_model.visible = false
+		if melon_model: melon_model.visible = false
+		_set_legacy_preview_visible(false)
+		return
+	elif class_id == 3:
+		if spider_model: spider_model.visible = false
 		if admin_model: admin_model.visible = true
 		if melon_model: melon_model.visible = false
 		_set_legacy_preview_visible(false)
 		return
 	elif class_id == 0:
+		if spider_model: spider_model.visible = false
 		if admin_model: admin_model.visible = false
 		if melon_model: melon_model.visible = true
 		_set_legacy_preview_visible(false)
 		return
 	else:
+		if spider_model: spider_model.visible = false
 		if admin_model: admin_model.visible = false
 		if melon_model: melon_model.visible = false
 		_set_legacy_preview_visible(true)

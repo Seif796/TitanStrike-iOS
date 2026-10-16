@@ -37,6 +37,10 @@ func on_jump() -> void:
 	if admin_m and admin_m.visible:
 		admin_m.position.y = 0.22
 		admin_m.scale = Vector3(0.92, 1.15, 0.92)
+	var spider_m = player.get_node_or_null("Model/SpiderModel") if player else null
+	if spider_m and spider_m.visible:
+		spider_m.position.y = 0.22
+		spider_m.scale = Vector3(0.92, 1.15, 0.92)
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
@@ -55,8 +59,11 @@ func _physics_process(delta: float) -> void:
 	if model_root:
 		model_root.rotation.z = lerp_angle(model_root.rotation.z, target_tilt_z, 10.0 * delta)
 	
+	var spider_node = player.get_node_or_null("Model/SpiderModel") if player else null
 	var admin_node = player.get_node_or_null("Model/AdminModel") if player else null
-	if admin_node and admin_node.visible:
+	if spider_node and spider_node.visible:
+		_animate_admin_model(delta, speed, spider_node)
+	elif admin_node and admin_node.visible:
 		_animate_admin_model(delta, speed, admin_node)
 	elif melon_boy_mesh and melon_boy_mesh.visible:
 		_animate_melon_boy(delta, speed)

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- White Leather Base -->
+  <rect width="512" height="512" fill="#F8F8FA"/>
+
+  <!-- Red Leather Heel & Ankle Overlay Panels -->
+  <path d="M 0,0 L 220,0 L 260,240 L 0,260 Z" fill="#D62028"/>
+  <path d="M 280,0 L 512,0 L 512,260 L 250,240 Z" fill="#D62028"/>
+  
+  <!-- Red Toe Cap Panel -->
+  <path d="M 120,380 Q 256,330 392,380 L 420,512 L 92,512 Z" fill="#D62028"/>
+
+  <!-- Stylized Curved Wing / Swoosh Panel -->
+  <path d="M 30,160 Q 200,140 380,240 Q 480,300 490,340 Q 360,270 200,230 Q 80,210 30,160 Z" fill="#18181C"/>
+
+  <!-- White Sole Trim Line -->
+  <rect y="480" width="512" height="32" fill="#E6E6EA"/>
+  <!-- Stitching lines -->
+  <line x1="0" y1="478" x2="512" y2="478" stroke="#888890" stroke-width="2" stroke-dasharray="6,4"/>
+</svg>

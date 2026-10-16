@@ -56,3 +56,4 @@ func set_downed(is_downed: bool) -> void:
 		if name_label:
 			name_label.text = base_name
 			name_label.modulate = Color.WHITE
+
