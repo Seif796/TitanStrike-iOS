@@ -64,6 +64,14 @@ func _physics_process(delta: float) -> void:
 		_animate_legacy_rig(delta, speed)
 
 func _animate_admin_model(delta: float, speed: float, m: Node3D) -> void:
+	if m.has_method("play_anim"):
+		if is_moving and player.is_on_floor():
+			m.play_anim("run")
+		elif player.is_firing:
+			m.play_anim("shoot")
+		else:
+			m.play_anim("idle")
+	
 	if is_moving and player.is_on_floor():
 		walk_cycle += delta * speed * 2.8
 		var stride_bounce = abs(sin(walk_cycle)) * 0.16
@@ -71,16 +79,10 @@ func _animate_admin_model(delta: float, speed: float, m: Node3D) -> void:
 		m.rotation.x = lerp_angle(m.rotation.x, deg_to_rad(-12.0), 12.0 * delta)
 		var swagger = sin(walk_cycle * 0.5) * deg_to_rad(8.0)
 		m.rotation.z = swagger + target_tilt_z
-		var squash = 1.0 - abs(sin(walk_cycle)) * 0.06
-		m.scale = Vector3(1.0 + (1.0 - squash) * 0.5, squash, 1.0 + (1.0 - squash) * 0.5)
 	elif not player.is_on_floor():
 		m.position.y = lerp(m.position.y, 0.18, 10.0 * delta)
 		m.rotation.x = lerp_angle(m.rotation.x, deg_to_rad(-10.0), 10.0 * delta)
-		m.scale = m.scale.lerp(Vector3(0.94, 1.12, 0.94), 10.0 * delta)
 	else:
-		walk_cycle += delta * 2.0
-		var idle_breath = sin(walk_cycle) * 0.02
-		m.scale = Vector3(1.0 - idle_breath * 0.5, 1.0 + idle_breath, 1.0 - idle_breath * 0.5)
 		m.position.y = lerp(m.position.y, 0.0, 8.0 * delta)
 		m.rotation.x = lerp_angle(m.rotation.x, 0.0, 8.0 * delta)
 		m.rotation.z = lerp_angle(m.rotation.z, target_tilt_z, 8.0 * delta)

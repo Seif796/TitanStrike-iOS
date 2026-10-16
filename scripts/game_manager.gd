@@ -33,9 +33,13 @@ var selected_map_id: int = 0
 var bot_enabled: bool = false  # Default OFF — player must choose to enable bot
 var bot_class_id: int = 1 # Default: Berry Striker 🍓
 
-# Progression & Retry system
+# Progression & Retry system (Melon -> Berry -> Citrus -> Admin)
 const SAVE_PATH = "user://game_save.cfg"
-var admin_unlocked: bool = true
+var berry_unlocked: bool = false
+var citrus_unlocked: bool = false
+var admin_unlocked: bool = false
+var berry_just_unlocked: bool = false
+var citrus_just_unlocked: bool = false
 var admin_just_unlocked: bool = false
 var has_used_retry: bool = false
 
@@ -85,15 +89,54 @@ func load_save_data() -> void:
 	var config = ConfigFile.new()
 	var err = config.load(SAVE_PATH)
 	if err == OK:
-		admin_unlocked = config.get_value("progression", "admin_unlocked", true)
+		berry_unlocked = config.get_value("progression", "berry_unlocked", false)
+		citrus_unlocked = config.get_value("progression", "citrus_unlocked", false)
+		admin_unlocked = config.get_value("progression", "admin_unlocked", false)
 	else:
-		admin_unlocked = true
+		berry_unlocked = false
+		citrus_unlocked = false
+		admin_unlocked = false
+
+func is_hero_unlocked(hero_id: int) -> bool:
+	match hero_id:
+		0: return true # Melon Boy is unlocked from the beginning
+		1: return berry_unlocked
+		2: return citrus_unlocked
+		3: return admin_unlocked
+		_: return false
+
+func unlock_hero(hero_id: int) -> bool:
+	var newly_unlocked = false
+	match hero_id:
+		1:
+			if not berry_unlocked:
+				berry_unlocked = true
+				berry_just_unlocked = true
+				newly_unlocked = true
+		2:
+			if not citrus_unlocked:
+				citrus_unlocked = true
+				citrus_just_unlocked = true
+				newly_unlocked = true
+		3:
+			if not admin_unlocked:
+				admin_unlocked = true
+				admin_just_unlocked = true
+				newly_unlocked = true
+				admin_newly_unlocked.emit()
+	if newly_unlocked:
+		save_progression()
+	return newly_unlocked
+
+func save_progression() -> void:
+	var config = ConfigFile.new()
+	config.set_value("progression", "berry_unlocked", berry_unlocked)
+	config.set_value("progression", "citrus_unlocked", citrus_unlocked)
+	config.set_value("progression", "admin_unlocked", admin_unlocked)
+	config.save(SAVE_PATH)
 
 func save_admin_unlocked() -> void:
-	admin_unlocked = true
-	var config = ConfigFile.new()
-	config.set_value("progression", "admin_unlocked", true)
-	config.save(SAVE_PATH)
+	unlock_hero(3)
 
 @rpc("call_local", "reliable")
 func start_game_scene() -> void:

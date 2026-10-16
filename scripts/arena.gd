@@ -229,7 +229,22 @@ func _monitor_wave_clear() -> void:
 		if GameManager.enemies_remaining <= 0:
 			_reward_materials_all(75)
 			_full_heal_all_players() # Fully restore all players and bot health!
-			rpc("_broadcast_hud_alert", "💚 STAGE CLEARED! HEALTH FULLY RESTORED! 💚\n(اكتملت المرحلة واستعاد الأبطال كامل طاقتهم!)", Color(0.2, 1.0, 0.4))
+			
+			var just_unlocked_berry = false
+			var just_unlocked_citrus = false
+			if current_stage == 1:
+				if GameManager.current_wave == 1:
+					just_unlocked_berry = GameManager.unlock_hero(1)
+				elif GameManager.current_wave == 2:
+					just_unlocked_citrus = GameManager.unlock_hero(2)
+			
+			if just_unlocked_berry:
+				rpc("_broadcast_hud_alert", "🍓 ROUND 1 CLEARED! UNLOCKED HERO: BERRY STRIKER! 🍓\n(أحسنت! فزت بالجولة الأولى وتم فتح بطلة الفراولة السريعة!)", Color(1.0, 0.25, 0.4))
+			elif just_unlocked_citrus:
+				rpc("_broadcast_hud_alert", "🍊 ROUND 2 CLEARED! UNLOCKED HERO: CITRUS TANK! 🍊\n(رائع! فزت بالجولة الثانية وتم فتح البرتقال المدرّع العملاق!)", Color(1.0, 0.6, 0.1))
+			else:
+				rpc("_broadcast_hud_alert", "💚 STAGE CLEARED! HEALTH FULLY RESTORED! 💚\n(اكتملت المرحلة واستعاد الأبطال كامل طاقتهم!)", Color(0.2, 1.0, 0.4))
+			
 			GameManager.current_wave += 1
 			get_tree().create_timer(3.5).timeout.connect(_start_next_wave)
 		else:
@@ -320,6 +335,10 @@ func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 	elif cleared_boss_id == 2:
 		_reward_materials_all(300)
 		_full_heal_all_players()
+		var newly_unlocked_admin = GameManager.unlock_hero(3)
+		if newly_unlocked_admin:
+			rpc("_broadcast_hud_alert", "👑 BOSS DEFEATED! UNLOCKED SECRET HERO: ADMIN (500 HP)! 👑\n(تم فتح شخصية الأدمن الخارق بـ 500 دم والدروع الذهبية!)", Color(1.0, 0.85, 0.1))
+		
 		if current_stage == 1:
 			# Move to Stage 2 — 4 waves, much harder!
 			current_stage = 2
@@ -327,8 +346,11 @@ func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 			GameManager.current_wave = 1
 			GameManager.max_waves = 4
 			GameManager.current_state = GameManager.GameState.WAVE_COMBAT
-			rpc("_broadcast_hud_alert", "🔥 STAGE 2 BEGINS! 4 WAVES OF CHAOS! 🔥\n(المرحلة الثانية بدأت - 4 موجات أشرس بكتير، استعد!)", Color(1.0, 0.3, 0.05))
-			get_tree().create_timer(5.0).timeout.connect(func():
+			var next_msg = "🔥 STAGE 2 BEGINS! 4 WAVES OF CHAOS! 🔥\n(المرحلة الثانية بدأت - 4 موجات أشرس بكتير، استعد!)"
+			get_tree().create_timer(3.0 if newly_unlocked_admin else 0.5).timeout.connect(func():
+				rpc("_broadcast_hud_alert", next_msg, Color(1.0, 0.3, 0.05))
+			)
+			get_tree().create_timer(6.0).timeout.connect(func():
 				if multiplayer.is_server():
 					_start_next_wave()
 			)

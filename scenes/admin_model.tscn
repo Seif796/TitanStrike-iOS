@@ -1,4 +1,6 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://scripts/admin_model.gd" id="1_admin_script"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_DarkObsidian"]
 albedo_color = Color(0.12, 0.13, 0.18, 1)
@@ -305,6 +307,7 @@ _data = {
 }
 
 [node name="AdminModel" type="Node3D"]
+script = ExtResource("1_admin_script")
 
 [node name="BodyMesh" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)

@@ -27,8 +27,13 @@ func _ready() -> void:
 	class_option.clear()
 	for id in GameManager.CLASSES:
 		var c = GameManager.CLASSES[id]
-		if id == 3 and not GameManager.admin_unlocked:
-			class_option.add_item("🔒 Admin (Locked - Win 1 Game to Unlock)", id)
+		if not GameManager.is_hero_unlocked(id):
+			var unlock_hint = ""
+			match id:
+				1: unlock_hint = "Win Round 1"
+				2: unlock_hint = "Win Round 2"
+				3: unlock_hint = "Beat Bosses"
+			class_option.add_item("🔒 %s (Locked - %s)" % [c["name"], unlock_hint], id)
 		else:
 			class_option.add_item(c["name"], id)
 	
@@ -41,25 +46,33 @@ func _ready() -> void:
 		bot_option.add_item("🚫 بدون بوت (Solo - No Bot)", -1)
 		for id in GameManager.CLASSES:
 			var c = GameManager.CLASSES[id]
-			if id == 3 and not GameManager.admin_unlocked:
-				bot_option.add_item("🔒 Admin Bot (Locked)", id)
+			if not GameManager.is_hero_unlocked(id):
+				bot_option.add_item("🔒 %s (مقفول)" % c["name"], id)
 			else:
 				bot_option.add_item("🤖 " + c["name"], id)
+		
+		# Ensure bot fallback to unlocked hero
+		if not GameManager.is_hero_unlocked(GameManager.bot_class_id):
+			GameManager.bot_class_id = 0 # Melon Boy
+		
 		# Reflect current saved state
 		if not GameManager.bot_enabled:
 			bot_option.select(0)
 		else:
 			bot_option.select(GameManager.bot_class_id + 1)
+			
 		bot_option.item_selected.connect(func(idx: int):
 			if idx == 0:
 				# No bot
 				GameManager.bot_enabled = false
 			else:
 				var class_id = idx - 1
-				if class_id == 3 and not GameManager.admin_unlocked:
-					bot_option.select(2) # Force Berry Striker
+				if not GameManager.is_hero_unlocked(class_id):
+					status_label.text = "🔒 هذا البوت مقفول حالياً! تم اختيار ولد البطيخ."
+					status_label.modulate = Color.YELLOW
+					bot_option.select(1) # Melon Boy
 					GameManager.bot_enabled = true
-					GameManager.bot_class_id = 1
+					GameManager.bot_class_id = 0
 				else:
 					GameManager.bot_enabled = true
 					GameManager.bot_class_id = class_id
@@ -78,10 +91,15 @@ func _speak_prompt(text: String) -> void:
 		voice_banner.text = "🎙️ " + text
 
 func _on_class_selected(index: int) -> void:
-	if index == 3 and not GameManager.admin_unlocked:
-		status_label.text = "🔒 شخصية Admin (500 HP) مقفولة! يجب الفوز في لعبة كاملة (هزيمة الـ 2 بيج بوس) لفتحها!"
+	if not GameManager.is_hero_unlocked(index):
+		var req_msg = ""
+		match index:
+			1: req_msg = "فوز بالجولة الأولى (Wave 1) لفتح بطلة الفراولة!"
+			2: req_msg = "فوز بالجولة الثانية (Wave 2) لفتح البرتقال المدرّع!"
+			3: req_msg = "فوز باللعبة وهزيمة البيج بوس لفتح الأدمن الخارق (500 HP)!"
+		status_label.text = "🔒 البطل مقفول! " + req_msg
 		status_label.modulate = Color.YELLOW
-		_speak_prompt("Admin hero is locked! Win 1 match to unlock.")
+		_speak_prompt("Hero locked! " + req_msg)
 		class_option.select(0)
 		selected_class = 0
 		_update_class_info(0)
@@ -92,9 +110,14 @@ func _on_class_selected(index: int) -> void:
 
 func _update_class_info(index: int) -> void:
 	var c = GameManager.CLASSES[index]
-	if index == 3 and not GameManager.admin_unlocked:
-		class_desc.text = "🔒 مقفولة! عليك الفوز في لعبة كاملة والتغلب على الـ 3 موجات والاثنين بيج بوس لفتح الأدمن الخارق (500 HP)!"
-		class_stats.text = "HP: 500  |  Speed: 9.2 m/s  |  Status: 🔒 LOCKED"
+	if not GameManager.is_hero_unlocked(index):
+		var req_desc = ""
+		match index:
+			1: req_desc = "🔒 مقفول! فوز بالجولة الأولى (Wave 1) لفتح بطلة الفراولة السريعة."
+			2: req_desc = "🔒 مقفول! فوز بالجولة الثانية (Wave 2) لفتح البرتقال المدرّع العملاق."
+			3: req_desc = "🔒 مقفول! عليك الفوز في لعبة كاملة وهزيمة البيج بوس لفتح الأدمن الخارق (500 HP)!"
+		class_desc.text = req_desc
+		class_stats.text = "HP: %d  |  Speed: %.1f m/s  |  Status: 🔒 LOCKED" % [c["hp"], c["speed"]]
 	else:
 		class_desc.text = c["role"]
 		class_stats.text = "HP: %d  |  Speed: %.1f m/s  |  Hero: %s" % [c["hp"], c["speed"], c["name"]]
