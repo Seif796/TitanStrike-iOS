@@ -15,6 +15,7 @@ var can_attack: bool = true
 
 var target_player: Player = null
 var sync_pos: Vector3 = Vector3.ZERO
+var sync_rot_y: float = 0.0
 var crawl_cycle: float = 0.0
 var retarget_timer: float = 0.0
 var wave_level: int = 1  # Set by arena — higher = more dangerous volley fire
@@ -25,6 +26,7 @@ var wave_level: int = 1  # Set by arena — higher = more dangerous volley fire
 @onready var leg_fr: Node3D = $Model/LegFR
 @onready var leg_bl: Node3D = $Model/LegBL
 @onready var leg_br: Node3D = $Model/LegBR
+@onready var overhead_health_bar: Node3D = get_node_or_null("OverheadHealthBar")
 
 var projectile_scene = preload("res://scenes/minion_projectile.tscn")
 
@@ -32,13 +34,17 @@ func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("minions")
 	current_hp = max_hp
+	if overhead_health_bar:
+		overhead_health_bar.set_entity_name("MECH SPIDER", Color(1.0, 0.35, 0.35))
+		overhead_health_bar.update_health(current_hp, max_hp)
 
 func _physics_process(delta: float) -> void:
 	if multiplayer.is_server():
 		_server_process(delta)
-		rpc("_sync_minion_pos", global_position)
+		rpc("_sync_minion_transform", global_position, rotation.y)
 	else:
 		global_position = global_position.lerp(sync_pos, 12.0 * delta)
+		rotation.y = lerp_angle(rotation.y, sync_rot_y, 12.0 * delta)
 		move_and_slide()
 	
 	_animate_legs(delta)
@@ -146,17 +152,36 @@ func _melee_attack() -> void:
 	)
 
 func take_damage(amount: float, shooter_id: int = 1) -> void:
+	if not multiplayer.is_server():
+		rpc_id(1, "_request_damage", amount, shooter_id)
+		return
+	_apply_damage(amount, shooter_id)
+
+@rpc("any_peer", "reliable")
+func _request_damage(amount: float, shooter_id: int) -> void:
 	if multiplayer.is_server():
-		current_hp -= amount
-		# Dynamic aggro: 50% chance to immediately switch target to the attacker if alive
-		if randf() < 0.5:
-			var players = get_tree().get_nodes_in_group("players")
-			for p in players:
-				if p is Player and p.peer_id == shooter_id and not p.is_down:
-					target_player = p
-					break
-		if current_hp <= 0:
-			_die()
+		_apply_damage(amount, shooter_id)
+
+func _apply_damage(amount: float, shooter_id: int) -> void:
+	current_hp = max(0.0, current_hp - amount)
+	rpc("_sync_minion_hp", current_hp, max_hp)
+	
+	# Dynamic aggro: 50% chance to immediately switch target to the attacker if alive
+	if randf() < 0.5:
+		var players = get_tree().get_nodes_in_group("players")
+		for p in players:
+			if p is Player and p.peer_id == shooter_id and not p.is_down:
+				target_player = p
+				break
+	if current_hp <= 0:
+		_die()
+
+@rpc("call_local", "reliable")
+func _sync_minion_hp(hp: float, m_hp: float) -> void:
+	current_hp = hp
+	max_hp = m_hp
+	if overhead_health_bar:
+		overhead_health_bar.update_health(current_hp, max_hp)
 
 func _die() -> void:
 	if GameManager.enemies_remaining > 0:
@@ -170,5 +195,7 @@ func look_at_safe(target: Vector3) -> void:
 	look_at(target, Vector3.UP)
 
 @rpc("unreliable")
-func _sync_minion_pos(pos: Vector3) -> void:
+func _sync_minion_transform(pos: Vector3, rot_y: float) -> void:
 	sync_pos = pos
+	sync_rot_y = rot_y
+

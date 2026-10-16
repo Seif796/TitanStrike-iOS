@@ -1,6 +1,7 @@
-[gd_scene load_steps=18 format=3 uid="uid://cboss001scene"]
+[gd_scene load_steps=19 format=3 uid="uid://cboss001scene"]
 
 [ext_resource type="Script" path="res://scripts/boss.gd" id="1_boss"]
+[ext_resource type="PackedScene" path="res://scenes/overhead_health_bar.tscn" id="2_health_bar"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_boss"]
 radius = 2.0
@@ -271,3 +272,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, -1.8)
 libraries = {
 "": SubResource("AnimationLibrary_boss")
 }
+
+[node name="OverheadHealthBar" parent="." instance=ExtResource("2_health_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.5, 0)
+

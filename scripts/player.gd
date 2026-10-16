@@ -48,6 +48,7 @@ var is_firing: bool = false
 @onready var weapons_container: Node3D = $Model/Weapons
 @onready var interact_area: Area3D = $InteractArea
 @onready var building_system: BuildingSystem = $BuildingSystem
+@onready var overhead_health_bar: Node3D = get_node_or_null("OverheadHealthBar")
 
 var melon_tex = preload("res://assets/watermelon_pattern.svg")
 var berry_tex = preload("res://assets/strawberry_pattern.svg")
@@ -66,6 +67,25 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	add_to_group("players")
 	apply_class_stats(class_id)
+	
+	if overhead_health_bar:
+		var hero_info = GameManager.CLASSES.get(class_id, GameManager.CLASSES[0])
+		var display_name = hero_info.get("name", "Hero")
+		if is_bot:
+			display_name = "🤖 Bot Companion"
+		elif NetworkManager.players.has(peer_id):
+			var p_name = NetworkManager.players[peer_id].get("name", "")
+			if not p_name.is_empty():
+				display_name = "%s (%s)" % [p_name, hero_info.get("name", "")]
+		overhead_health_bar.set_entity_name(display_name)
+		overhead_health_bar.update_health(current_hp, max_hp)
+		overhead_health_bar.set_downed(is_down)
+		health_changed.connect(func(curr, max_v):
+			if overhead_health_bar: overhead_health_bar.update_health(curr, max_v)
+		)
+		downed_state_changed.connect(func(down):
+			if overhead_health_bar: overhead_health_bar.set_downed(down)
+		)
 	
 	if is_bot:
 		camera.current = false

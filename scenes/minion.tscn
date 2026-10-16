@@ -1,6 +1,7 @@
-[gd_scene load_steps=12 format=3 uid="uid://cminion001scene"]
+[gd_scene load_steps=13 format=3 uid="uid://cminion001scene"]
 
 [ext_resource type="Script" path="res://scripts/minion.gd" id="1_minion"]
+[ext_resource type="PackedScene" path="res://scenes/overhead_health_bar.tscn" id="2_health_bar"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_minion"]
 radius = 0.7
@@ -104,3 +105,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, -0.1, 0.35)
 [node name="Upper" type="MeshInstance3D" parent="Model/LegBR"]
 transform = Transform3D(0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0, 0, 1, 0.15, -0.15, 0)
 mesh = SubResource("BoxMesh_leg_upper")
+
+[node name="OverheadHealthBar" parent="." instance=ExtResource("2_health_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+

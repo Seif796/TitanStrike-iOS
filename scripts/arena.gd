@@ -334,6 +334,7 @@ func _spawn_minion() -> void:
 	minion.max_hp = 85.0 + (GameManager.current_wave * 15.0) + (60.0 if current_stage == 2 else 0.0)
 	minion.current_hp = minion.max_hp
 	minion.move_speed = 5.2 + (GameManager.current_wave * 0.3) + (1.8 if current_stage == 2 else 0.0)
+	minion.rpc("_sync_minion_hp", minion.current_hp, minion.max_hp)
 
 var current_boss_phase: int = 0
 var current_stage: int = 1

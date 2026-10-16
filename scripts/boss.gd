@@ -39,6 +39,7 @@ var can_attack: bool = true
 @onready var shockwave_area: Area3D = $ShockwaveArea
 @onready var projectile_spawn: Marker3D = $ProjectileSpawn
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
+@onready var overhead_health_bar: Node3D = get_node_or_null("OverheadHealthBar")
 
 var boss_projectile_scene = preload("res://scenes/boss_projectile.tscn")
 var minion_scene = preload("res://scenes/minion.tscn")
@@ -54,6 +55,10 @@ func _ready() -> void:
 	GameManager.boss_node = self
 	health_changed.emit(current_hp, max_hp)
 	GameManager.boss_health_updated.emit(current_hp, max_hp, boss_name)
+	
+	if overhead_health_bar:
+		overhead_health_bar.set_entity_name("TITAN DESTROYER", Color(1.0, 0.4, 0.1))
+		overhead_health_bar.update_health(current_hp, max_hp)
 	
 	if shockwave_area:
 		shockwave_area.monitoring = false
@@ -111,6 +116,12 @@ func apply_boss_preset(preset_id: int) -> void:
 		fireball_damage = 35.0
 		slam_damage = 60.0
 		scale = Vector3.ONE
+	
+	if overhead_health_bar:
+		var b_title = "APOCALYPSE MEGA TITAN" if is_final_boss else "TITAN DESTROYER"
+		var b_col = Color(1.0, 0.15, 0.15) if is_final_boss else Color(1.0, 0.5, 0.1)
+		overhead_health_bar.set_entity_name(b_title, b_col)
+		overhead_health_bar.update_health(current_hp, max_hp)
 	
 	health_changed.emit(current_hp, max_hp)
 	GameManager.boss_health_updated.emit(current_hp, max_hp, boss_name)
@@ -281,24 +292,32 @@ func _perform_berserk_summon() -> void:
 func take_damage(amount: float, shooter_id: int = 1) -> void:
 	if state == BossState.DEFEATED:
 		return
+	if not multiplayer.is_server():
+		rpc_id(1, "_request_boss_damage", amount, shooter_id)
+		return
+	_apply_damage(amount)
+	rpc("_sync_boss_damage", current_hp)
 	
-	if multiplayer.is_server():
-		_apply_damage(amount)
-		rpc("_sync_boss_damage", current_hp)
-		
-		# Boss aggro: 30% chance to retaliate towards attacker if attacker is alive
-		if randf() < 0.3:
-			var players = get_tree().get_nodes_in_group("players")
-			for p in players:
-				if p is Player and p.peer_id == shooter_id and not p.is_down:
-					target_player = p
-					break
+	# Boss aggro: 30% chance to retaliate towards attacker if attacker is alive
+	if randf() < 0.3:
+		var players = get_tree().get_nodes_in_group("players")
+		for p in players:
+			if p is Player and p.peer_id == shooter_id and not p.is_down:
+				target_player = p
+				break
+
+@rpc("any_peer", "reliable")
+func _request_boss_damage(amount: float, shooter_id: int) -> void:
+	if multiplayer.is_server() and state != BossState.DEFEATED:
+		take_damage(amount, shooter_id)
 
 @rpc("any_peer", "call_local", "reliable")
 func _sync_boss_damage(new_hp: float) -> void:
 	current_hp = new_hp
 	health_changed.emit(current_hp, max_hp)
 	GameManager.boss_health_updated.emit(current_hp, max_hp, boss_name)
+	if overhead_health_bar:
+		overhead_health_bar.update_health(current_hp, max_hp)
 	_check_phase()
 	
 	if current_hp <= 0 and state != BossState.DEFEATED:
@@ -308,6 +327,8 @@ func _apply_damage(amount: float) -> void:
 	current_hp = max(0, current_hp - amount)
 	health_changed.emit(current_hp, max_hp)
 	GameManager.boss_health_updated.emit(current_hp, max_hp, boss_name)
+	if overhead_health_bar:
+		overhead_health_bar.update_health(current_hp, max_hp)
 	_check_phase()
 	
 	if current_hp <= 0:
@@ -340,6 +361,10 @@ func _die() -> void:
 	can_attack = false
 	target_player = null
 	velocity = Vector3.ZERO
+	
+	# Immediately hide overhead health bar
+	if overhead_health_bar:
+		overhead_health_bar.visible = false
 	
 	# Immediately disable collisions so players and bullets are not blocked
 	var col_shape = get_node_or_null("CollisionShape3D")
