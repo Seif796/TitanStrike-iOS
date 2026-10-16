@@ -35,22 +35,34 @@ func _ready() -> void:
 	class_option.item_selected.connect(_on_class_selected)
 	_update_class_info(0)
 	
-	# Populate Bot Companion classes
+	# Populate Bot Companion — first item is "No Bot"
 	if bot_option:
 		bot_option.clear()
+		bot_option.add_item("🚫 بدون بوت (Solo - No Bot)", -1)
 		for id in GameManager.CLASSES:
 			var c = GameManager.CLASSES[id]
 			if id == 3 and not GameManager.admin_unlocked:
-				bot_option.add_item("🔒 Admin (Locked)", id)
+				bot_option.add_item("🔒 Admin Bot (Locked)", id)
 			else:
-				bot_option.add_item(c["name"], id)
-		bot_option.select(GameManager.bot_class_id)
+				bot_option.add_item("🤖 " + c["name"], id)
+		# Reflect current saved state
+		if not GameManager.bot_enabled:
+			bot_option.select(0)
+		else:
+			bot_option.select(GameManager.bot_class_id + 1)
 		bot_option.item_selected.connect(func(idx: int):
-			if idx == 3 and not GameManager.admin_unlocked:
-				bot_option.select(1)
-				GameManager.bot_class_id = 1
+			if idx == 0:
+				# No bot
+				GameManager.bot_enabled = false
 			else:
-				GameManager.bot_class_id = idx
+				var class_id = idx - 1
+				if class_id == 3 and not GameManager.admin_unlocked:
+					bot_option.select(2) # Force Berry Striker
+					GameManager.bot_enabled = true
+					GameManager.bot_class_id = 1
+				else:
+					GameManager.bot_enabled = true
+					GameManager.bot_class_id = class_id
 		)
 	
 	create_room_btn.pressed.connect(_on_create_room_pressed)

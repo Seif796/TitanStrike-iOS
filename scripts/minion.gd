@@ -17,6 +17,7 @@ var target_player: Player = null
 var sync_pos: Vector3 = Vector3.ZERO
 var crawl_cycle: float = 0.0
 var retarget_timer: float = 0.0
+var wave_level: int = 1  # Set by arena — higher = more dangerous volley fire
 
 @onready var model: Node3D = $Model
 @onready var launcher: Node3D = $Model/Launcher
@@ -78,8 +79,8 @@ func _server_process(delta: float) -> void:
 	
 	look_at_safe(global_position + dir)
 	
-	# Throw ball attack at medium range (3.5m to 18m)
-	if dist > 3.0 and dist <= 18.0 and can_attack:
+	# Throw ball attack at long range (3.5m to 30m)
+	if dist > 3.0 and dist <= 30.0 and can_attack:
 		_throw_ball(target_player.global_position)
 	elif dist <= 2.8 and can_attack:
 		_melee_attack()
@@ -107,7 +108,13 @@ func _find_target() -> void:
 
 func _throw_ball(target_pos: Vector3) -> void:
 	can_attack = false
-	rpc("_spawn_throw_visuals", target_pos)
+	var volley_count = clamp(1 + (wave_level / 2), 1, 5)  # 1–5 balls based on wave_level
+	for i in range(volley_count):
+		get_tree().create_timer(i * 0.28).timeout.connect(func():
+			if is_instance_valid(self) and not is_queued_for_deletion():
+				var spread = Vector3(randf_range(-2.0, 2.0), 0, randf_range(-2.0, 2.0))
+				rpc("_spawn_throw_visuals", target_pos + spread)
+		)
 	
 	get_tree().create_timer(attack_cooldown).timeout.connect(func():
 		can_attack = true

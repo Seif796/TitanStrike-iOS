@@ -177,13 +177,15 @@ func _start_current_wave() -> void:
 	if not multiplayer.is_server():
 		return
 	
-	var enemy_count = 6 + (GameManager.current_wave * 4)
+	var base_count = 6 + (GameManager.current_wave * 4)
+	var enemy_count = base_count * (2 if current_stage == 2 else 1)
 	GameManager.enemies_remaining = enemy_count
 	GameManager.wave_updated.emit(GameManager.current_wave, GameManager.max_waves, enemy_count)
 	rpc("_sync_wave_info", GameManager.current_wave, GameManager.max_waves, enemy_count)
 	
+	var spawn_delay = 1.3 if current_stage == 1 else 0.7  # Faster spawns in stage 2
 	for i in range(enemy_count):
-		get_tree().create_timer(i * 1.3).timeout.connect(func():
+		get_tree().create_timer(i * spawn_delay).timeout.connect(func():
 			_spawn_minion()
 		)
 	
@@ -266,10 +268,16 @@ func _spawn_minion() -> void:
 	var spawn_nodes = spawn_points.get_children()
 	var rand_spawn = spawn_nodes.pick_random()
 	var offset = Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
-	minion.global_position = rand_spawn.global_position + offset
 	enemies_container.add_child(minion, true)
+	minion.global_position = rand_spawn.global_position + offset
+	# Scale difficulty with wave and stage
+	minion.wave_level = GameManager.current_wave + (3 if current_stage == 2 else 0)
+	minion.max_hp = 85.0 + (GameManager.current_wave * 15.0) + (60.0 if current_stage == 2 else 0.0)
+	minion.current_hp = minion.max_hp
+	minion.move_speed = 5.2 + (GameManager.current_wave * 0.3) + (1.8 if current_stage == 2 else 0.0)
 
 var current_boss_phase: int = 0
+var current_stage: int = 1
 
 func _start_boss_battle() -> void:
 	current_boss_phase = 1
@@ -302,9 +310,8 @@ func _spawn_boss(boss_id: int) -> void:
 func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 	if cleared_boss_id == 1:
 		_reward_materials_all(150)
-		_full_heal_all_players() # Restore full health before Boss 2!
+		_full_heal_all_players()
 		rpc("_broadcast_hud_alert", "💥 BOSS 1 DESTROYED! HEALTH RESTORED! 💥\n⚠️ AN ANCIENT MEGA TITAN AWAKENS! (البيج بوس الثاني قادم - استعدوا!) ⚠️", Color(1.0, 0.85, 0.1))
-		
 		get_tree().create_timer(4.5).timeout.connect(func():
 			if multiplayer.is_server():
 				current_boss_phase = 2
@@ -313,7 +320,25 @@ func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 	elif cleared_boss_id == 2:
 		_reward_materials_all(300)
 		_full_heal_all_players()
-		rpc("_broadcast_hud_alert", "🏆 ALL TITANS OBLITERATED! YOU SAVED CYBERFORT! 🏆", Color(0.2, 1.0, 0.3))
+		if current_stage == 1:
+			# Move to Stage 2 — 4 waves, much harder!
+			current_stage = 2
+			current_boss_phase = 0
+			GameManager.current_wave = 1
+			GameManager.max_waves = 4
+			GameManager.current_state = GameManager.GameState.WAVE_COMBAT
+			rpc("_broadcast_hud_alert", "🔥 STAGE 2 BEGINS! 4 WAVES OF CHAOS! 🔥\n(المرحلة الثانية بدأت - 4 موجات أشرس بكتير، استعد!)", Color(1.0, 0.3, 0.05))
+			get_tree().create_timer(5.0).timeout.connect(func():
+				if multiplayer.is_server():
+					_start_next_wave()
+			)
+		else:
+			# Stage 2 complete — TRUE victory!
+			rpc("_broadcast_hud_alert", "🏆 ALL STAGES CLEARED! YOU ARE LEGEND! 🏆\n(أنهيت اللعبة كاملة - أنت أسطورة!)", Color(0.15, 1.0, 0.3))
+			get_tree().create_timer(2.5).timeout.connect(func():
+				if multiplayer.is_server():
+					GameManager.rpc("trigger_game_over", true)
+			)
 
 @rpc("call_local", "reliable")
 func _broadcast_hud_alert(msg: String, col: Color) -> void:

@@ -106,7 +106,10 @@ func _on_game_over(is_victory: bool) -> void:
 		if is_victory:
 			end_title.text = "🏆 VICTORY! 🏆"
 			end_title.modulate = Color.GREEN
-			end_desc.text = "You eliminated both Titans!\n👑 ADMIN CHARACTER UNLOCKED! (تم فتح شخصية الأدمن 500 HP!) 👑"
+			if GameManager.admin_just_unlocked:
+				end_desc.text = "You eliminated both Titans!\n👑 ADMIN CHARACTER UNLOCKED! (تم فتح شخصية الأدمن 500 HP!) 👑"
+			else:
+				end_desc.text = "You eliminated both Titans!\n🏆 ALL BOSSES DEFEATED! CYBERFORT IS SAVED! 🏆"
 			if try_again_btn:
 				try_again_btn.visible = false
 		else:

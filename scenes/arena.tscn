@@ -82,31 +82,31 @@ material = SubResource("StandardMaterial3D_wall")
 
 [node name="CoverPillar1" type="CSGBox3D" parent="Map"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 2, -10)
-use_collision = true
+use_collision = false
 size = Vector3(4, 4, 4)
 material = SubResource("StandardMaterial3D_cover")
 
 [node name="CoverPillar2" type="CSGBox3D" parent="Map"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 2, -10)
-use_collision = true
+use_collision = false
 size = Vector3(4, 4, 4)
 material = SubResource("StandardMaterial3D_cover")
 
 [node name="CoverPillar3" type="CSGBox3D" parent="Map"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 2, 12)
-use_collision = true
+use_collision = false
 size = Vector3(4, 4, 4)
 material = SubResource("StandardMaterial3D_cover")
 
 [node name="CoverPillar4" type="CSGBox3D" parent="Map"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2, 12)
-use_collision = true
+use_collision = false
 size = Vector3(4, 4, 4)
 material = SubResource("StandardMaterial3D_cover")
 
 [node name="CenterBarrier" type="CSGBox3D" parent="Map"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 2)
-use_collision = true
+use_collision = false
 size = Vector3(10, 2, 2.5)
 material = SubResource("StandardMaterial3D_cover")
 

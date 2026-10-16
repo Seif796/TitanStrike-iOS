@@ -2,19 +2,20 @@ extends Node
 class_name PlayerBotAI
 
 # PlayerBotAI Script (res://scripts/player_bot_ai.gd)
-# Autonomous AI companion for solo play:
-# - Fights minions and bosses actively alongside the human player.
-# - High priority: If the human player is downed, rushes to them and revives them!
-# - Aims accurately with 3D lead targeting and shoots weapons.
-# - Dynamic tactical footwork: advances, backs up, strafes to dodge enemy fire, and jumps over obstacles.
-# - Keeps reasonable squad leash distance from the human player.
+# Autonomous AI companion for solo play (SUPPORT role — not carry):
+# - Fights minions and bosses alongside the human player.
+# - High priority: If human player is downed, rushes to revive them.
+# - Fires in bursts (65% uptime) with slight aim jitter — feels human, not aimbot.
+# - Scans for targets within 30m so it doesn't steal kills across the map.
+# - Respects squad leash so it doesn't wander away from the player.
 
 @onready var bot: Player = get_parent() as Player
 
 var human_player: Player = null
 var current_target: Node3D = null
 var scan_timer: float = 0.0
-var search_interval: float = 0.2
+var search_interval: float = 0.22
+var fire_suppression_timer: float = 0.0  # Controls burst fire rhythm
 
 func _ready() -> void:
 	if not bot:
@@ -30,6 +31,7 @@ func _physics_process(delta: float) -> void:
 			bot.bot_aim_target = Vector3.ZERO
 		return
 	
+	fire_suppression_timer += delta
 	_locate_human_player()
 	
 	scan_timer += delta
@@ -66,7 +68,7 @@ func _locate_human_player() -> void:
 
 func _find_best_target() -> void:
 	current_target = null
-	var closest_dist: float = 45.0
+	var closest_dist: float = 30.0  # Support bot only engages nearby threats
 	
 	var candidates: Array = []
 	candidates.append_array(get_tree().get_nodes_in_group("enemies"))
@@ -102,7 +104,6 @@ func _behavior_rescue_player(delta: float) -> void:
 	bot.bot_aim_target = Vector3.ZERO
 	
 	if dist > 2.2:
-		# Sprint to downed teammate
 		bot.input_vector = Vector2(0, -1.0)
 		if bot.is_on_wall():
 			bot.jump()
@@ -120,10 +121,10 @@ func _behavior_combat(delta: float) -> void:
 		bot.bot_aim_target = Vector3.ZERO
 		return
 	
-	# Squad leash: if human player is far away, don't stay behind forever
+	# Squad leash: if human is far, escort instead of engaging
 	if is_instance_valid(human_player) and not human_player.is_down:
 		var dist_to_human = bot.global_position.distance_to(human_player.global_position)
-		if dist_to_human > 28.0:
+		if dist_to_human > 26.0:
 			_behavior_escort_player(delta)
 			return
 	
@@ -133,32 +134,35 @@ func _behavior_combat(delta: float) -> void:
 	elif "boss_type" in current_target:
 		aim_height = 1.8
 	
+	# Slight aim jitter so bot feels like a teammate, not an aimbot
+	var jitter = Vector3(randf_range(-1.0, 1.0), randf_range(-0.2, 0.5), randf_range(-1.0, 1.0))
 	var target_pos = current_target.global_position + Vector3(0, aim_height, 0)
-	bot.bot_aim_target = target_pos
+	bot.bot_aim_target = target_pos + jitter
 	
-	# Turn to face enemy
 	_turn_towards(current_target.global_position, delta)
 	
 	var to_target = current_target.global_position - bot.global_position
 	var dist = to_target.length()
 	
-	# Tactical range maintenance (7 to 15m)
-	if dist > 15.0:
-		bot.input_vector = Vector2(0, -0.9) # Advance towards enemy
-	elif dist < 5.5:
-		bot.input_vector = Vector2(0, 0.7) # Back away
+	# Tactical range maintenance (8 to 16m)
+	if dist > 16.0:
+		bot.input_vector = Vector2(0, -0.9)
+	elif dist < 6.0:
+		bot.input_vector = Vector2(0, 0.65)
 	else:
-		# Strafe sideways dynamically to dodge enemy projectiles
-		var strafe_x = sin(Time.get_ticks_msec() * 0.003) * 0.75
+		var strafe_x = sin(Time.get_ticks_msec() * 0.003) * 0.65
 		bot.input_vector = Vector2(strafe_x, 0)
 	
 	if bot.is_on_wall():
 		bot.jump()
 	
-	# Open fire on enemy!
-	bot.is_firing = true
+	# Support fire: burst 65% uptime — bot fires for 3s, pauses 1.5s, repeats
+	# This makes the bot feel like a helper, not a game-winning machine
+	if fmod(fire_suppression_timer, 4.5) < 3.0:
+		bot.is_firing = true
+	else:
+		bot.is_firing = false
 	
-	# Auto-reload if magazine depleted
 	if bot.active_weapon and bot.active_weapon.current_ammo <= 0 and not bot.active_weapon.is_reloading:
 		bot.active_weapon.start_reload()
 
@@ -184,4 +188,4 @@ func _turn_towards(target_pos: Vector3, delta: float) -> void:
 	dir.y = 0
 	if dir.length() > 0.1:
 		var target_angle = atan2(-dir.x, -dir.z)
-		bot.rotation.y = lerp_angle(bot.rotation.y, target_angle, 14.0 * delta)
+		bot.rotation.y = lerp_angle(bot.rotation.y, target_angle, 12.0 * delta)

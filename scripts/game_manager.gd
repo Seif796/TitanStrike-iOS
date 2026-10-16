@@ -18,6 +18,7 @@ signal boss_health_updated(current_hp: float, max_hp: float, boss_name: String)
 signal wave_updated(current_wave: int, max_waves: int, enemies_left: int)
 signal game_over_triggered(is_victory: bool)
 signal retry_stage_requested()
+signal admin_newly_unlocked()
 
 var current_state: GameState = GameState.MENU
 var current_wave: int = 1
@@ -29,12 +30,13 @@ var boss_node: Node = null
 var selected_map_id: int = 0
 
 # AI Bot Companion configuration for Solo Play
-var bot_enabled: bool = true
+var bot_enabled: bool = false  # Default OFF — player must choose to enable bot
 var bot_class_id: int = 1 # Default: Berry Striker 🍓
 
 # Progression & Retry system
 const SAVE_PATH = "user://game_save.cfg"
 var admin_unlocked: bool = false
+var admin_just_unlocked: bool = false
 var has_used_retry: bool = false
 
 const MAPS: Dictionary = {
@@ -97,6 +99,7 @@ func save_admin_unlocked() -> void:
 func start_game_scene() -> void:
 	current_state = GameState.WAVE_COMBAT
 	current_wave = 1
+	max_waves = 3
 	has_used_retry = false # Reset retry chance for the new match
 	get_tree().change_scene_to_file("res://scenes/arena.tscn")
 
@@ -112,7 +115,11 @@ func trigger_game_over(is_victory: bool) -> void:
 	
 	current_state = GameState.VICTORY if is_victory else GameState.DEFEAT
 	if is_victory:
+		var was_already_unlocked = admin_unlocked
+		admin_just_unlocked = not was_already_unlocked
 		save_admin_unlocked()
+		if not was_already_unlocked:
+			admin_newly_unlocked.emit()
 	game_over_triggered.emit(is_victory)
 
 @rpc("any_peer", "call_local", "reliable")
