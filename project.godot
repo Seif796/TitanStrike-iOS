@@ -17,7 +17,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 config/name="CyberFort: Titan Strike 3D"
 config/description="3D Co-op Building & Boss Hunt Game for iOS & PC"
 run/main_scene="res://scenes/main_menu.tscn"
-config/features=PackedStringArray("4.3", "Mobile")
+config/features=PackedStringArray("4.7", "Mobile")
 boot_splash/bg_color=Color(0.05, 0.07, 0.1, 1)
 config/icon="res://icon.svg"
 

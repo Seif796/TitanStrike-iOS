@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c4m4dxo48llo6" path="res://assets/watermelon_boy_3d.glb" id="3_melon_glb"]
 [ext_resource type="Shader" path="res://shaders/watermelon_boy.gdshader" id="4_melon_shader"]
 [ext_resource type="PackedScene" path="res://scenes/weapon_model.tscn" id="5_weapon_model"]
+[ext_resource type="PackedScene" path="res://scenes/admin_model.tscn" id="6_admin_model"]
 
 [sub_resource type="Environment" id="Environment_preview"]
 background_mode = 1
@@ -171,6 +172,9 @@ fov = 46.0
 [node name="WatermelonBoy" parent="Model/WatermelonBoyMesh" index="0"]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_preview_melon")
+
+[node name="AdminModel" parent="Model" instance=ExtResource("6_admin_model")]
+visible = false
 
 [node name="Head" type="Node3D" parent="Model"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)

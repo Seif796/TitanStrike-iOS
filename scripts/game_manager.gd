@@ -35,7 +35,7 @@ var bot_class_id: int = 1 # Default: Berry Striker 🍓
 
 # Progression & Retry system
 const SAVE_PATH = "user://game_save.cfg"
-var admin_unlocked: bool = false
+var admin_unlocked: bool = true
 var admin_just_unlocked: bool = false
 var has_used_retry: bool = false
 
@@ -71,7 +71,7 @@ const CLASSES: Dictionary = {
 	3: {
 		"name": "👑 Admin (الأدمن الخارق)",
 		"hp": 500,
-		"speed": 9.2,
+		"speed": 15,
 		"role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor.",
 		"color": Color(1.0, 0.85, 0.1) # Golden Cyber Admin
 	}
@@ -85,9 +85,9 @@ func load_save_data() -> void:
 	var config = ConfigFile.new()
 	var err = config.load(SAVE_PATH)
 	if err == OK:
-		admin_unlocked = config.get_value("progression", "admin_unlocked", false)
+		admin_unlocked = config.get_value("progression", "admin_unlocked", true)
 	else:
-		admin_unlocked = false
+		admin_unlocked = true
 
 func save_admin_unlocked() -> void:
 	admin_unlocked = true

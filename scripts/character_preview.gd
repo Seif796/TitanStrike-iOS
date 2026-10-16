@@ -5,6 +5,7 @@ class_name CharacterPreview
 # Rotates 3D Character and updates textures/colors between Melon Boy (3D model), Berry Striker, Citrus Tank, and Admin.
 
 @onready var melon_boy_3d: Node3D = $Model/WatermelonBoyMesh
+@onready var admin_model: Node3D = $Model/AdminModel
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var chest_mesh: MeshInstance3D = $Model/ChestPlate
 @onready var leg_l: MeshInstance3D = $Model/LeftLeg
@@ -24,6 +25,14 @@ func _physics_process(delta: float) -> void:
 	$Model.rotation.y += rot_speed * delta
 
 func update_class_visual(class_id: int) -> void:
+	if class_id == 3:
+		if admin_model: admin_model.visible = true
+		if melon_boy_3d: melon_boy_3d.visible = false
+		_set_legacy_preview_visible(false)
+		return
+	else:
+		if admin_model: admin_model.visible = false
+	
 	if melon_boy_3d:
 		if class_id == 0:
 			melon_boy_3d.visible = true
@@ -37,22 +46,6 @@ func update_class_visual(class_id: int) -> void:
 				sh_mat.set_shader_parameter("use_vertex_color", true)
 				sh_mat.set_shader_parameter("roughness", 0.35)
 				sh_mat.set_shader_parameter("metallic", 0.05)
-				mesh_inst.material_override = sh_mat
-			return
-		elif class_id == 3:
-			melon_boy_3d.visible = true
-			_set_legacy_preview_visible(false)
-			var mesh_inst = melon_boy_3d.get_node_or_null("WatermelonBoy")
-			if mesh_inst and mesh_inst is MeshInstance3D:
-				mesh_inst.rotation.y = PI
-				var sh_mat = ShaderMaterial.new()
-				sh_mat.shader = melon_shader
-				sh_mat.set_shader_parameter("base_tint", Color(1.0, 0.85, 0.15, 1.0))
-				sh_mat.set_shader_parameter("use_vertex_color", false)
-				sh_mat.set_shader_parameter("roughness", 0.15)
-				sh_mat.set_shader_parameter("metallic", 0.95)
-				sh_mat.set_shader_parameter("emission_color", Color(1.0, 0.75, 0.1, 1.0))
-				sh_mat.set_shader_parameter("emission_energy", 3.0)
 				mesh_inst.material_override = sh_mat
 			return
 		else:

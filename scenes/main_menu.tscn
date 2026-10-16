@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cmainmenu001"]
 
-[ext_resource type="Script" uid="uid://cg37ywqddv0rh" path="res://scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
 [ext_resource type="PackedScene" path="res://scenes/character_preview.tscn" id="2_preview"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
