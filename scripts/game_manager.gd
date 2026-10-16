@@ -44,9 +44,13 @@ var admin_just_unlocked: bool = false
 var has_used_retry: bool = false
 
 const MAPS: Dictionary = {
-	0: { "name": "🍉 Fruit Kingdom Arena (مملكة الفواكه)", "theme_color": Color(0.2, 0.8, 0.3) },
-	1: { "name": "⚡ Cyber Stadium (ساحة السايبر)", "theme_color": Color(0.1, 0.6, 1.0) },
-	2: { "name": "🏜️ Desert Titan Canyon (وادي العمالقة)", "theme_color": Color(0.9, 0.6, 0.2) }
+	0: { "name": "🍉 Fruit Kingdom Arena (مملكة الفواكه الخضراء)", "theme_color": Color(0.2, 0.8, 0.3) },
+	1: { "name": "⚡ Cyber Stadium (ساحة السايبر المستقبلية)", "theme_color": Color(0.1, 0.6, 1.0) },
+	2: { "name": "🏜️ Desert Titan Canyon (وادي العمالقة الصحراوي)", "theme_color": Color(0.9, 0.6, 0.2) },
+	3: { "name": "🌋 Volcanic Magma Core (قلب البركان المشتعل)", "theme_color": Color(1.0, 0.2, 0.05) },
+	4: { "name": "❄️ Frozen Ice Glacier (جليد القطب المتجمد)", "theme_color": Color(0.3, 0.85, 1.0) },
+	5: { "name": "🌌 Cosmic Galaxy Station (محطة المجرة الفضائية)", "theme_color": Color(0.65, 0.2, 0.95) },
+	6: { "name": "🏰 Neon Castle Citadel (قلعة النيون المظلمة)", "theme_color": Color(0.85, 0.15, 0.55) }
 }
 
 # Hero Classes (including unlockable 500 HP Admin)
@@ -142,7 +146,7 @@ func save_admin_unlocked() -> void:
 func start_game_scene() -> void:
 	current_state = GameState.WAVE_COMBAT
 	current_wave = 1
-	max_waves = 3
+	max_waves = 5
 	has_used_retry = false # Reset retry chance for the new match
 	get_tree().change_scene_to_file("res://scenes/arena.tscn")
 

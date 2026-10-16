@@ -21,7 +21,7 @@ func _ready() -> void:
 		map_option.clear()
 		for m_id in GameManager.MAPS:
 			map_option.add_item(GameManager.MAPS[m_id]["name"], m_id)
-		
+		map_option.select(GameManager.selected_map_id)
 		map_option.item_selected.connect(_on_map_selected)
 		if not multiplayer.is_server():
 			map_option.disabled = true

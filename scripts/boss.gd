@@ -185,20 +185,26 @@ func _find_closest_player() -> void:
 # --- ATTACKS ---
 
 func _perform_melee_slam() -> void:
+	if state == BossState.DEFEATED:
+		return
 	can_attack = false
 	state = BossState.MELEE_SLAM
 	rpc("_play_boss_anim", "slam")
 	
 	get_tree().create_timer(0.7).timeout.connect(func():
+		if state == BossState.DEFEATED:
+			return
 		_deal_shockwave_damage()
 		get_tree().create_timer(1.0).timeout.connect(func():
+			if state == BossState.DEFEATED:
+				return
 			state = BossState.CHASE
 			can_attack = true
 		)
 	)
 
 func _deal_shockwave_damage() -> void:
-	if not multiplayer.is_server():
+	if state == BossState.DEFEATED or not multiplayer.is_server():
 		return
 	
 	# Massive slam damage to nearby players and structures
@@ -209,6 +215,8 @@ func _deal_shockwave_damage() -> void:
 			body.take_damage(slam_damage * 1.8)
 
 func _perform_ranged_barrage() -> void:
+	if state == BossState.DEFEATED:
+		return
 	can_attack = false
 	state = BossState.RANGED_BARRAGE
 	rpc("_play_boss_anim", "cast")
@@ -229,12 +237,14 @@ func _perform_ranged_barrage() -> void:
 		)
 	
 	get_tree().create_timer(count * delay + 1.0).timeout.connect(func():
+		if state == BossState.DEFEATED:
+			return
 		state = BossState.CHASE
 		can_attack = true
 	)
 
 func _spawn_boss_orb() -> void:
-	if not multiplayer.is_server():
+	if state == BossState.DEFEATED or not multiplayer.is_server():
 		return
 	var orb = boss_projectile_scene.instantiate()
 	var spawn_pos = projectile_spawn.global_position if projectile_spawn else global_position + Vector3(0, 3.5 * scale.y, 0)
@@ -245,6 +255,8 @@ func _spawn_boss_orb() -> void:
 	get_tree().current_scene.add_child(orb, true)
 
 func _perform_berserk_summon() -> void:
+	if state == BossState.DEFEATED:
+		return
 	can_attack = false
 	state = BossState.BERSERK_ROAR
 	rpc("_play_boss_anim", "roar")
@@ -258,6 +270,8 @@ func _perform_berserk_summon() -> void:
 		get_tree().current_scene.add_child(minion, true)
 	
 	get_tree().create_timer(2.0).timeout.connect(func():
+		if state == BossState.DEFEATED:
+			return
 		state = BossState.CHASE
 		can_attack = true
 	)
@@ -320,18 +334,27 @@ func _check_phase() -> void:
 			eyes_light.light_energy = 7.0
 
 func _die() -> void:
+	if state == BossState.DEFEATED:
+		return
 	state = BossState.DEFEATED
+	can_attack = false
+	target_player = null
+	velocity = Vector3.ZERO
+	
+	# Immediately disable collisions so players and bullets are not blocked
+	var col_shape = get_node_or_null("CollisionShape3D")
+	if col_shape:
+		col_shape.set_deferred("disabled", true)
+	if shockwave_area:
+		shockwave_area.monitoring = false
+	
 	boss_defeated.emit()
 	rpc("_play_boss_anim", "defeat")
 	
-	if is_final_boss:
-		get_tree().create_timer(3.0).timeout.connect(func():
-			GameManager.rpc("trigger_game_over", true)
-		)
-	else:
-		get_tree().create_timer(3.0).timeout.connect(func():
-			queue_free()
-		)
+	# Boss collapses to the floor and disappears completely after 2.4s animation
+	get_tree().create_timer(2.4).timeout.connect(func():
+		queue_free()
+	)
 
 @rpc("unreliable")
 func _sync_boss_transform(pos: Vector3, rot_y: float) -> void:

@@ -201,6 +201,16 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 placeholder_text = "Type your name here..."
 
+[node name="MapLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "🗺️ SELECT BATTLEFIELD MAP (اختر ساحة المعركة):"
+
+[node name="MapOption" type="OptionButton" parent="HBox/RightCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+
 [node name="HSeparator" type="HSeparator" parent="HBox/RightCol/Panel/VBox" unique_id=1607710356]
 layout_mode = 2
 

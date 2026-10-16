@@ -43,31 +43,75 @@ func _apply_map_theme(map_id: int) -> void:
 	var pillar_mat = StandardMaterial3D.new()
 	
 	match map_id:
-		0: # Fruit Kingdom Arena (مملكة الفواكه)
-			floor_mat.albedo_color = Color(0.25, 0.65, 0.2) # Lush green lawn
+		0: # Fruit Kingdom Arena (مملكة الفواكه الخضراء)
+			floor_mat.albedo_color = Color(0.24, 0.68, 0.22) # Lush green lawn
 			floor_mat.roughness = 0.8
-			pillar_mat.albedo_color = Color(0.85, 0.35, 0.15) # Fruit crates
+			pillar_mat.albedo_color = Color(0.9, 0.4, 0.15) # Fruit crates
 			if sun_light:
 				sun_light.light_color = Color(1.0, 0.95, 0.85)
-				sun_light.light_energy = 1.3
-		1: # Cyber Stadium (ساحة السايبر)
-			floor_mat.albedo_color = Color(0.1, 0.12, 0.18)
-			floor_mat.metallic = 0.6
-			floor_mat.roughness = 0.3
-			pillar_mat.albedo_color = Color(0.15, 0.25, 0.4)
+				sun_light.light_energy = 1.4
+		1: # Cyber Stadium (ساحة السايبر المستقبلية)
+			floor_mat.albedo_color = Color(0.08, 0.1, 0.16)
+			floor_mat.metallic = 0.75
+			floor_mat.roughness = 0.25
+			pillar_mat.albedo_color = Color(0.12, 0.22, 0.38)
 			pillar_mat.emission_enabled = true
-			pillar_mat.emission = Color(0, 0.8, 1)
-			pillar_mat.emission_energy_multiplier = 1.5
+			pillar_mat.emission = Color(0, 0.85, 1.0)
+			pillar_mat.emission_energy_multiplier = 3.0
 			if sun_light:
-				sun_light.light_color = Color(0.6, 0.8, 1.0)
-				sun_light.light_energy = 0.9
-		2: # Desert Titan Canyon (وادي العمالقة)
-			floor_mat.albedo_color = Color(0.85, 0.65, 0.35) # Golden desert sand
+				sun_light.light_color = Color(0.5, 0.8, 1.0)
+				sun_light.light_energy = 1.1
+		2: # Desert Titan Canyon (وادي العمالقة الصحراوي)
+			floor_mat.albedo_color = Color(0.88, 0.65, 0.32) # Golden desert sand
 			floor_mat.roughness = 0.9
-			pillar_mat.albedo_color = Color(0.65, 0.45, 0.25) # Canyon sandstone
+			pillar_mat.albedo_color = Color(0.72, 0.38, 0.22) # Canyon sandstone
 			if sun_light:
-				sun_light.light_color = Color(1.0, 0.75, 0.5) # Sunset orange
+				sun_light.light_color = Color(1.0, 0.65, 0.4) # Sunset orange
+				sun_light.light_energy = 1.6
+		3: # Volcanic Magma Core (قلب البركان المشتعل)
+			floor_mat.albedo_color = Color(0.12, 0.08, 0.08) # Obsidian magma rock
+			floor_mat.metallic = 0.4
+			floor_mat.roughness = 0.4
+			pillar_mat.albedo_color = Color(0.25, 0.05, 0.05)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(1.0, 0.25, 0.05) # Glowing lava
+			pillar_mat.emission_energy_multiplier = 4.0
+			if sun_light:
+				sun_light.light_color = Color(1.0, 0.3, 0.15) # Crimson inferno
 				sun_light.light_energy = 1.5
+		4: # Frozen Ice Glacier (جليد القطب المتجمد)
+			floor_mat.albedo_color = Color(0.65, 0.88, 0.95) # Slick ice sheet
+			floor_mat.metallic = 0.5
+			floor_mat.roughness = 0.15
+			pillar_mat.albedo_color = Color(0.3, 0.65, 0.85)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(0.4, 0.9, 1.0) # Crystal glow
+			pillar_mat.emission_energy_multiplier = 2.5
+			if sun_light:
+				sun_light.light_color = Color(0.75, 0.9, 1.0) # Aurora cold light
+				sun_light.light_energy = 1.3
+		5: # Cosmic Galaxy Station (محطة المجرة الفضائية)
+			floor_mat.albedo_color = Color(0.14, 0.08, 0.22) # Deep space floor
+			floor_mat.metallic = 0.8
+			floor_mat.roughness = 0.2
+			pillar_mat.albedo_color = Color(0.2, 0.12, 0.35)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(0.8, 0.2, 1.0) # Stellar nebula violet
+			pillar_mat.emission_energy_multiplier = 3.5
+			if sun_light:
+				sun_light.light_color = Color(0.7, 0.5, 1.0) # Starlight purple
+				sun_light.light_energy = 1.2
+		6: # Neon Castle Citadel (قلعة النيون المظلمة)
+			floor_mat.albedo_color = Color(0.1, 0.1, 0.12) # Gothic dark stone
+			floor_mat.metallic = 0.3
+			floor_mat.roughness = 0.3
+			pillar_mat.albedo_color = Color(0.22, 0.15, 0.25)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(1.0, 0.1, 0.6) # Hot neon magenta
+			pillar_mat.emission_energy_multiplier = 3.5
+			if sun_light:
+				sun_light.light_color = Color(0.9, 0.4, 0.7) # Twilight magenta
+				sun_light.light_energy = 1.2
 	
 	if floor_mesh: floor_mesh.material = floor_mat
 	if pillar1: pillar1.material = pillar_mat
@@ -340,13 +384,13 @@ func _on_boss_stage_cleared(cleared_boss_id: int) -> void:
 			rpc("_broadcast_hud_alert", "👑 BOSS DEFEATED! UNLOCKED SECRET HERO: ADMIN (500 HP)! 👑\n(تم فتح شخصية الأدمن الخارق بـ 500 دم والدروع الذهبية!)", Color(1.0, 0.85, 0.1))
 		
 		if current_stage == 1:
-			# Move to Stage 2 — 4 waves, much harder!
+			# Move to Stage 2 — 5 waves, much harder!
 			current_stage = 2
 			current_boss_phase = 0
 			GameManager.current_wave = 1
-			GameManager.max_waves = 4
+			GameManager.max_waves = 5
 			GameManager.current_state = GameManager.GameState.WAVE_COMBAT
-			var next_msg = "🔥 STAGE 2 BEGINS! 4 WAVES OF CHAOS! 🔥\n(المرحلة الثانية بدأت - 4 موجات أشرس بكتير، استعد!)"
+			var next_msg = "🔥 STAGE 2 BEGINS! 5 WAVES OF TITAN CHAOS! 🔥\n(المرحلة الثانية بدأت - 5 موجات أشرس بكتير، استعد!)"
 			get_tree().create_timer(3.0 if newly_unlocked_admin else 0.5).timeout.connect(func():
 				rpc("_broadcast_hud_alert", next_msg, Color(1.0, 0.3, 0.05))
 			)

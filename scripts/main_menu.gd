@@ -10,6 +10,7 @@ extends Control
 @onready var class_stats: Label = $HBox/LeftCol/Panel/VBox/ClassStats
 
 @onready var code_input: LineEdit = $HBox/RightCol/Panel/VBox/JoinBox/CodeInput
+@onready var map_option: OptionButton = $HBox/RightCol/Panel/VBox/MapOption
 @onready var create_room_btn: Button = $HBox/RightCol/Panel/VBox/CreateRoomBtn
 @onready var join_room_btn: Button = $HBox/RightCol/Panel/VBox/JoinBox/JoinRoomBtn
 @onready var status_label: Label = $HBox/RightCol/Panel/VBox/StatusLabel
@@ -22,6 +23,16 @@ var selected_class: int = 0
 func _ready() -> void:
 	# Force landscape orientation
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
+	
+	# Populate Battlefield Maps
+	if map_option:
+		map_option.clear()
+		for m_id in GameManager.MAPS:
+			map_option.add_item(GameManager.MAPS[m_id]["name"], m_id)
+		map_option.select(GameManager.selected_map_id)
+		map_option.item_selected.connect(func(idx: int):
+			GameManager.selected_map_id = idx
+		)
 	
 	# Populate player classes
 	class_option.clear()
