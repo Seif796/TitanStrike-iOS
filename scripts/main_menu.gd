@@ -198,9 +198,9 @@ func _on_connection_succeeded() -> void:
 	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
 
 func _on_connection_failed() -> void:
-	_speak_prompt("Could not find room with this code!")
-	status_label.text = "⚠️ لم نتمكن من العثور على الغرفة بهذا الكود! تأكد من تشغيل الغرفة ومن شبكة الـ Wi-Fi."
-	status_label.modulate = Color.RED
+	_speak_prompt("Could not connect to room!")
+	status_label.text = "⚠️ تعذر الاتصال بالغرفة!\nتأكد أن الهاتفين متصلان بنفس شبكة الواي فاي أو الهوتسبوت/البلوتوث.\n💡 نصيحة: اكتب رقم الآي بي (Host IP) الظاهر عند صديقك في الغرفة مباشرة!"
+	status_label.modulate = Color(1.0, 0.4, 0.4)
 
 func _on_bluetooth_btn_pressed() -> void:
 	var p_name = _validate_player_name()

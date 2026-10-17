@@ -68,48 +68,59 @@ func generate_room_code() -> String:
 	var ip = get_local_ip()
 	var parts = ip.split(".")
 	if parts.size() == 4:
-		var p3 = int(parts[2])
-		var p4 = int(parts[3])
-		var num = (p3 * 256) + p4
-		# Convert to 4-character hex or base36
-		var hex_code = "%04X" % num
-		current_room_code = hex_code
-		return hex_code
+		var b1 = int(parts[0])
+		var b2 = int(parts[1])
+		var b3 = int(parts[2])
+		var b4 = int(parts[3])
+		current_room_code = "%02X%02X%02X%02X" % [b1, b2, b3, b4]
+		return current_room_code
 	
-	# Fallback 4-digit code
-	current_room_code = str(randi_range(1000, 9999))
+	current_room_code = "7777"
 	return current_room_code
 
 func decode_room_code_to_ip(code: String) -> String:
 	code = code.strip_edges().replace("#", "")
 	
-	# 1. Direct IP address input (e.g. 192.168.44.1 for Bluetooth tethering, 192.168.43.1 for Hotspot)
+	# 1. Direct IPv4 address input (e.g. 192.168.43.1 or 192.168.1.15)
 	if code.find(".") != -1:
-		return code
+		var dots = code.split(".")
+		if dots.size() == 4:
+			return code
+		elif dots.size() == 2:
+			var local_ip = get_local_ip()
+			var l_parts = local_ip.split(".")
+			if l_parts.size() == 4:
+				return "%s.%s.%s.%s" % [l_parts[0], l_parts[1], dots[0], dots[1]]
+			return "192.168.%s.%s" % [dots[0], dots[1]]
 	
 	# 2. Bluetooth / Hotspot keywords
 	var upper = code.to_upper()
-	if upper in ["BT", "BLUETOOTH", "BLUE"]:
-		return get_bluetooth_or_hotspot_host_ip()
-	if upper in ["HOTSPOT", "WIFI", "AP"]:
+	if upper in ["BT", "BLUETOOTH", "BLUE", "HOTSPOT", "WIFI", "AP"]:
 		return get_bluetooth_or_hotspot_host_ip()
 	
-	# 3. Hex code decoding
-	code = code.to_upper()
-	var local_ip = get_local_ip()
-	var parts = local_ip.split(".")
-	if parts.size() != 4:
-		return "127.0.0.1"
+	# 3. 8-character Full IP Hex (100% subnet-independent, e.g. C0A82B01 -> 192.168.43.1)
+	if upper.length() == 8:
+		var b1 = ("0x" + upper.substr(0, 2)).hex_to_int()
+		var b2 = ("0x" + upper.substr(2, 2)).hex_to_int()
+		var b3 = ("0x" + upper.substr(4, 2)).hex_to_int()
+		var b4 = ("0x" + upper.substr(6, 2)).hex_to_int()
+		if b1 > 0:
+			return "%d.%d.%d.%d" % [b1, b2, b3, b4]
 	
-	var base_subnet = "%s.%s" % [parts[0], parts[1]]
-	if code.length() == 4:
-		var num = ("0x" + code).hex_to_int()
+	# 4. 4-character legacy hex code (e.g. 2B01)
+	if upper.length() <= 4 and upper.length() >= 2:
+		var padded = upper.pad_zeros(4)
+		var num = ("0x" + padded).hex_to_int()
 		if num > 0:
 			var p3 = int(num / 256)
 			var p4 = int(num % 256)
-			return "%s.%d.%d" % [base_subnet, p3, p4]
+			var local_ip = get_local_ip()
+			var parts = local_ip.split(".")
+			if parts.size() == 4 and parts[0] == "192":
+				return "%s.%s.%d.%d" % [parts[0], parts[1], p3, p4]
+			return "192.168.%d.%d" % [p3, p4]
 	
-	return local_ip
+	return get_bluetooth_or_hotspot_host_ip()
 
 func get_bluetooth_or_hotspot_host_ip() -> String:
 	var my_ip = get_local_ip()
@@ -125,13 +136,16 @@ func get_bluetooth_or_hotspot_host_ip() -> String:
 # --- CREATE ROOM ---
 
 func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
+	leave_game()
 	local_player_name = player_name
 	local_class_id = class_id
 	peer = ENetMultiplayerPeer.new()
 	var error = peer.create_server(port, MAX_PLAYERS)
 	if error != OK:
-		print("Failed to create room server: ", error)
-		return error
+		print("Failed to create room server on port %d: %d, trying backup port %d..." % [port, error, port + 2])
+		error = peer.create_server(port + 2, MAX_PLAYERS)
+		if error != OK:
+			return error
 	
 	multiplayer.multiplayer_peer = peer
 	players[1] = {
@@ -145,12 +159,13 @@ func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -
 	udp_broadcaster.set_broadcast_enabled(true)
 	udp_broadcaster.set_dest_address("255.255.255.255", DISCOVERY_PORT)
 	
-	print("Room created with Code: ", current_room_code)
+	print("Room created with Code: ", current_room_code, " | Host IP: ", get_local_ip())
 	return OK
 
 # --- JOIN ROOM WITH ROOM CODE ---
 
 func join_room_with_code(code: String, player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
+	leave_game()
 	local_player_name = player_name
 	local_class_id = class_id
 	current_room_code = code.strip_edges().to_upper().replace("#", "")
@@ -165,6 +180,15 @@ func join_room_with_code(code: String, player_name: String, class_id: int, port:
 		return error
 	
 	multiplayer.multiplayer_peer = peer
+	
+	# Connection watchdog: 6 seconds timeout
+	get_tree().create_timer(6.0).timeout.connect(func():
+		if peer and multiplayer.multiplayer_peer == peer and multiplayer.get_unique_id() == 0:
+			print("Connection watchdog timed out to: %s:%d" % [target_ip, port])
+			leave_game()
+			connection_failed.emit()
+	)
+	
 	return OK
 
 func start_discovery_listener() -> void:
@@ -261,7 +285,9 @@ func get_local_ip() -> String:
 		# Standard Wi-Fi LAN subnets
 		if ip.begins_with("192.168."):
 			candidates.push_front(ip)
-		elif ip.begins_with("10.") or (ip.begins_with("172.") and int(ip.split(".")[1]) >= 16 and int(ip.split(".")[1]) <= 31):
+		elif ip.begins_with("172.") and int(ip.split(".")[1]) >= 16 and int(ip.split(".")[1]) <= 31:
+			candidates.push_back(ip)
+		elif ip.begins_with("10."):
 			candidates.push_back(ip)
 	
 	if not candidates.is_empty():

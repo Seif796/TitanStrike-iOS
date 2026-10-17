@@ -61,3 +61,4 @@ text = "-25 DMG!"
 font_size = 32
 outline_size = 6
 outline_modulate = Color(0, 0, 0, 1)
+

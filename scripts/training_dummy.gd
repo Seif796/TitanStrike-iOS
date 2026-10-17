@@ -56,3 +56,4 @@ func take_damage(amount: float, _shooter_id: int = 1) -> void:
 func _update_label() -> void:
 	if label_3d:
 		label_3d.text = "🎯 روبوت التدريب (Training Dummy)\nHP: %.0f / %.0f | Total Dmg: %.0f" % [current_hp, max_hp, total_damage_taken]
+

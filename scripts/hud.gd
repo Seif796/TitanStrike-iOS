@@ -22,6 +22,12 @@ class_name HUD
 @onready var return_to_room_btn: Button = get_node_or_null("EndScreen/Panel/VBox/ReturnToRoomBtn")
 @onready var restart_btn: Button = $EndScreen/Panel/VBox/RestartBtn
 
+@onready var in_game_exit_btn: Button = get_node_or_null("SafeArea/TopRight/InGameExitBtn")
+@onready var pause_menu: Control = get_node_or_null("PauseMenu")
+@onready var resume_btn: Button = get_node_or_null("PauseMenu/Panel/VBox/ResumeBtn")
+@onready var return_lobby_btn: Button = get_node_or_null("PauseMenu/Panel/VBox/ReturnLobbyBtn")
+@onready var leave_match_btn: Button = get_node_or_null("PauseMenu/Panel/VBox/LeaveMatchBtn")
+
 func _ready() -> void:
 	add_to_group("hud")
 	if boss_container:
@@ -32,10 +38,40 @@ func _ready() -> void:
 		end_screen.visible = false
 	if try_again_btn:
 		try_again_btn.visible = false
+	if pause_menu:
+		pause_menu.visible = false
 	
 	GameManager.boss_health_updated.connect(_on_boss_health_updated)
 	GameManager.wave_updated.connect(_on_wave_updated)
 	GameManager.game_over_triggered.connect(_on_game_over)
+	
+	if in_game_exit_btn:
+		in_game_exit_btn.pressed.connect(func():
+			if pause_menu:
+				pause_menu.visible = true
+				if return_lobby_btn:
+					return_lobby_btn.visible = (multiplayer.has_multiplayer_peer() and NetworkManager.players.size() > 1)
+		)
+	
+	if resume_btn:
+		resume_btn.pressed.connect(func():
+			if pause_menu:
+				pause_menu.visible = false
+		)
+	
+	if return_lobby_btn:
+		return_lobby_btn.pressed.connect(func():
+			if multiplayer.is_server():
+				GameManager.rpc("return_to_lobby_together")
+			else:
+				GameManager.rpc_id(1, "request_return_to_lobby")
+		)
+	
+	if leave_match_btn:
+		leave_match_btn.pressed.connect(func():
+			NetworkManager.leave_game()
+			get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+		)
 	
 	if try_again_btn:
 		try_again_btn.pressed.connect(_on_try_again_pressed)
