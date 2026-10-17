@@ -202,9 +202,19 @@ theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_try_again_btn")
 text = "🔄 TRY AGAIN (مرة واحدة)"
 
-[node name="RestartBtn" type="Button" parent="EndScreen/Panel/VBox"]
-custom_minimum_size = Vector2(220, 48)
+[node name="ReturnToRoomBtn" type="Button" parent="EndScreen/Panel/VBox"]
+custom_minimum_size = Vector2(300, 52)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 18
-text = "Return to Menu"
+theme_override_colors/font_color = Color(0.2, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBoxFlat_try_again_btn")
+text = "🏠 العودة للغرفة معاً (Return to Room)"
+
+[node name="RestartBtn" type="Button" parent="EndScreen/Panel/VBox"]
+custom_minimum_size = Vector2(240, 46)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 16
+text = "🚪 خروج للقائمة الرئيسية (Leave Match)"
+

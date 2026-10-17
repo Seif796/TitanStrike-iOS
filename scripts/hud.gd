@@ -19,6 +19,7 @@ class_name HUD
 @onready var end_title: Label = $EndScreen/Panel/VBox/Title
 @onready var end_desc: Label = $EndScreen/Panel/VBox/Desc
 @onready var try_again_btn: Button = $EndScreen/Panel/VBox/TryAgainBtn
+@onready var return_to_room_btn: Button = get_node_or_null("EndScreen/Panel/VBox/ReturnToRoomBtn")
 @onready var restart_btn: Button = $EndScreen/Panel/VBox/RestartBtn
 
 func _ready() -> void:
@@ -37,6 +38,14 @@ func _ready() -> void:
 	
 	if try_again_btn:
 		try_again_btn.pressed.connect(_on_try_again_pressed)
+	
+	if return_to_room_btn:
+		return_to_room_btn.pressed.connect(func():
+			if multiplayer.is_server():
+				GameManager.rpc("return_to_lobby_together")
+			else:
+				GameManager.rpc_id(1, "request_return_to_lobby")
+		)
 	
 	if restart_btn:
 		restart_btn.pressed.connect(func():

@@ -25,3 +25,4 @@ func play_anim(anim_name: String) -> void:
 func set_anim_speed(speed_ratio: float) -> void:
 	if anim_player:
 		anim_player.speed_scale = speed_ratio
+

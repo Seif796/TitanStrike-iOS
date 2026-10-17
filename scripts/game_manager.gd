@@ -159,6 +159,18 @@ func start_game_scene() -> void:
 	get_tree().change_scene_to_file("res://scenes/arena.tscn")
 
 @rpc("call_local", "reliable")
+func return_to_lobby_together() -> void:
+	current_state = GameState.LOBBY
+	current_wave = 1
+	has_used_retry = false
+	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+
+@rpc("any_peer", "reliable")
+func request_return_to_lobby() -> void:
+	if multiplayer.is_server():
+		rpc("return_to_lobby_together")
+
+@rpc("call_local", "reliable")
 func set_state(new_state: int) -> void:
 	current_state = new_state as GameState
 	state_changed.emit(current_state)

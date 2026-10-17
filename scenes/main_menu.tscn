@@ -32,6 +32,20 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_bt"]
+bg_color = Color(0.18, 0.45, 0.92, 0.95)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_scan"]
+bg_color = Color(0.85, 0.5, 0.1, 0.95)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
 [node name="MainMenu" type="Control" unique_id=902313751]
 layout_mode = 3
 anchors_preset = 15
@@ -244,6 +258,26 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
 text = "🔗 JOIN ROOM"
+
+[node name="QuickButtonsBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox" unique_id=778899001]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BluetoothBtn" type="Button" parent="HBox/RightCol/Panel/VBox/QuickButtonsBox" unique_id=778899002]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_bt")
+text = "🔵 دخول بلوتوث (BT)"
+
+[node name="ScanBtn" type="Button" parent="HBox/RightCol/Panel/VBox/QuickButtonsBox" unique_id=778899003]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_scan")
+text = "🔍 بحث تلقائي (Auto-Find)"
 
 [node name="StatusLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=1029960627]
 layout_mode = 2

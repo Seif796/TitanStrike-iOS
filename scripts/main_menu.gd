@@ -13,6 +13,8 @@ extends Control
 @onready var map_option: OptionButton = $HBox/RightCol/Panel/VBox/MapOption
 @onready var create_room_btn: Button = $HBox/RightCol/Panel/VBox/CreateRoomBtn
 @onready var join_room_btn: Button = $HBox/RightCol/Panel/VBox/JoinBox/JoinRoomBtn
+@onready var bt_btn: Button = $HBox/RightCol/Panel/VBox/QuickButtonsBox/BluetoothBtn
+@onready var scan_btn: Button = $HBox/RightCol/Panel/VBox/QuickButtonsBox/ScanBtn
 @onready var status_label: Label = $HBox/RightCol/Panel/VBox/StatusLabel
 @onready var voice_banner: Label = $TopBar/VoiceBanner
 
@@ -91,7 +93,12 @@ func _ready() -> void:
 	
 	create_room_btn.pressed.connect(_on_create_room_pressed)
 	join_room_btn.pressed.connect(_on_join_room_pressed)
+	if bt_btn:
+		bt_btn.pressed.connect(_on_bluetooth_btn_pressed)
+	if scan_btn:
+		scan_btn.pressed.connect(_on_scan_btn_pressed)
 	
+	NetworkManager.room_discovered.connect(_on_room_discovered)
 	NetworkManager.connection_succeeded.connect(_on_connection_succeeded)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	
@@ -191,3 +198,36 @@ func _on_connection_failed() -> void:
 	_speak_prompt("Could not find room with this code!")
 	status_label.text = "⚠️ لم نتمكن من العثور على الغرفة بهذا الكود! تأكد من تشغيل الغرفة ومن شبكة الـ Wi-Fi."
 	status_label.modulate = Color.RED
+
+func _on_bluetooth_btn_pressed() -> void:
+	var p_name = _validate_player_name()
+	if p_name.is_empty():
+		return
+	
+	_speak_prompt("Connecting to host via Bluetooth / Hotspot...")
+	status_label.text = "🔵 جاري الاتصال المباشر عبر البلوتوث / هوتسبوت..."
+	status_label.modulate = Color.CYAN
+	
+	var err = NetworkManager.join_room_with_code("BT", p_name, selected_class)
+	if err != OK:
+		status_label.text = "Connection error: %s" % error_string(err)
+
+func _on_scan_btn_pressed() -> void:
+	var p_name = _validate_player_name()
+	if p_name.is_empty():
+		return
+	
+	_speak_prompt("Scanning for nearby rooms...")
+	status_label.text = "🔍 جاري البحث التلقائي عن غرف قريبة (Wi-Fi / Hotspot / Bluetooth)..."
+	status_label.modulate = Color.YELLOW
+	NetworkManager.start_discovery_listener()
+
+func _on_room_discovered(room_code: String, host_ip: String, map_id: int) -> void:
+	NetworkManager.stop_discovery_listener()
+	status_label.text = "✅ تم العثور على غرفة: #%s (%s)! جاري الدخول..." % [room_code, host_ip]
+	status_label.modulate = Color.GREEN
+	code_input.text = "#" + room_code
+	var p_name = _validate_player_name()
+	if not p_name.is_empty():
+		NetworkManager.join_room_with_code(room_code, p_name, selected_class)
+

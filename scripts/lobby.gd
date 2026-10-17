@@ -1,20 +1,22 @@
 extends Control
 
 # Lobby Script (res://scripts/lobby.gd)
-# Features Room Code, Map Selection, squad list, and auto-launch countdown.
+# Features Room Code, Bluetooth/Hotspot Host IP display, in-lobby Map Selection synchronized to all peers,
+# in-lobby Hero Switching, squad member status, and manual Host launch.
 
 @onready var room_title: Label = $Panel/VBox/Title
 @onready var code_banner: Label = $Panel/VBox/CodeBanner
 @onready var map_option: OptionButton = $Panel/VBox/MapBox/MapOption
+@onready var map_banner_title: Label = $Panel/VBox/MapBanner/BannerVBox/SelectedMapTitle
+@onready var map_banner_notice: Label = $Panel/VBox/MapBanner/BannerVBox/MapNotice
+@onready var hero_option: OptionButton = $Panel/VBox/HeroBox/HeroOption
 @onready var player_list_container: VBoxContainer = $Panel/VBox/PlayerList
-@onready var countdown_label: Label = $Panel/VBox/CountdownLabel
 @onready var start_btn: Button = $Panel/VBox/Actions/StartBtn
 @onready var leave_btn: Button = $Panel/VBox/Actions/LeaveBtn
 
 func _ready() -> void:
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
-	NetworkManager.room_launch_countdown.connect(_on_launch_countdown)
 	
 	# Setup Map Options
 	if map_option:
@@ -26,31 +28,61 @@ func _ready() -> void:
 		if not multiplayer.is_server():
 			map_option.disabled = true
 	
+	_update_map_banner(GameManager.selected_map_id)
+	
+	# Setup In-Lobby Hero Switcher
+	if hero_option:
+		hero_option.clear()
+		for h_id in GameManager.CLASSES:
+			var c = GameManager.CLASSES[h_id]
+			if GameManager.is_hero_unlocked(h_id):
+				hero_option.add_item(c["name"], h_id)
+		
+		var my_id = multiplayer.get_unique_id()
+		var current_class = NetworkManager.local_class_id
+		if NetworkManager.players.has(my_id):
+			current_class = NetworkManager.players[my_id].get("class_id", current_class)
+		
+		for i in range(hero_option.item_count):
+			if hero_option.get_item_id(i) == current_class:
+				hero_option.select(i)
+				break
+		
+		hero_option.item_selected.connect(func(idx: int):
+			var new_class = hero_option.get_item_id(idx)
+			NetworkManager.local_class_id = new_class
+			NetworkManager.rpc("update_player_class", multiplayer.get_unique_id(), new_class)
+		)
+	
 	if start_btn:
 		start_btn.pressed.connect(_on_start_pressed)
 	if leave_btn:
 		leave_btn.pressed.connect(_on_leave_pressed)
 	
-	if countdown_label:
-		countdown_label.visible = false
-	
 	var r_code = NetworkManager.current_room_code
+	var host_ip = NetworkManager.get_local_ip()
 	if multiplayer.is_server():
-		room_title.text = "ROOM CREATED - WAITING FOR SQUAD"
-		code_banner.text = "🔑 ROOM CODE: #%s\n(Share this code with your friend to join!)" % r_code
+		room_title.text = "👑 SQUAD ROOM HOST (أنت صاحب الغرفة)"
+		code_banner.text = "🔑 ROOM CODE: #%s   |   📱 Host IP: %s (للبلوتوث / هوتسبوت)" % [r_code, host_ip]
 		if start_btn:
 			start_btn.visible = true
-			start_btn.text = "🚀 Start Solo / Force"
+			start_btn.disabled = false
+			start_btn.text = "🚀 START BATTLE (ابدأ المعركة)"
+			start_btn.modulate = Color(0.2, 1.0, 0.5)
 	else:
-		room_title.text = "JOINED SQUAD ROOM - READY"
-		code_banner.text = "CONNECTED TO ROOM #%s" % r_code
+		room_title.text = "🎮 SQUAD ROOM - READY (تم الانضمام للغرفة بنجاح)"
+		code_banner.text = "🔑 CONNECTED TO ROOM #%s" % r_code
 		if start_btn:
-			start_btn.visible = false
+			start_btn.visible = true
+			start_btn.disabled = true
+			start_btn.text = "⏳ WAITING FOR HOST (بانتظار الهوست لبدء المعركة)..."
+			start_btn.modulate = Color(0.7, 0.75, 0.85)
 	
 	_update_lobby_ui()
 
 func _on_map_selected(index: int) -> void:
 	GameManager.selected_map_id = index
+	_update_map_banner(index)
 	if multiplayer.is_server():
 		rpc("_sync_map_selection", index)
 
@@ -59,6 +91,21 @@ func _sync_map_selection(map_id: int) -> void:
 	GameManager.selected_map_id = map_id
 	if map_option:
 		map_option.selected = map_id
+	_update_map_banner(map_id)
+
+func _update_map_banner(map_id: int) -> void:
+	var m_data = GameManager.MAPS.get(map_id, GameManager.MAPS[0])
+	if map_banner_title:
+		map_banner_title.text = "🗺️ BATTLEFIELD: %s" % m_data["name"]
+		map_banner_title.modulate = m_data.get("theme_color", Color(0.2, 1, 0.5))
+	
+	if map_banner_notice:
+		if multiplayer.is_server():
+			map_banner_notice.text = "🎯 You are the Host. Choose any battlefield above for your squad!"
+			map_banner_notice.modulate = Color(0.9, 0.95, 1.0)
+		else:
+			map_banner_notice.text = "🎯 Selected by Host! All squad members will enter this map together."
+			map_banner_notice.modulate = Color(0.3, 1.0, 0.6)
 
 func _update_lobby_ui() -> void:
 	for child in player_list_container.get_children():
@@ -69,7 +116,7 @@ func _update_lobby_ui() -> void:
 		var c_data = GameManager.CLASSES.get(p.get("class_id", 0), GameManager.CLASSES[0])
 		var label = Label.new()
 		var is_host = (peer_id == 1)
-		var role_tag = " [ROOM HOST]" if is_host else " [SQUAD AGENT]"
+		var role_tag = " [👑 ROOM HOST]" if is_host else " [⚡ SQUAD AGENT]"
 		label.text = "• %s - Hero: %s %s" % [p.get("name", "Player"), c_data["name"], role_tag]
 		label.add_theme_color_override("font_color", c_data["color"])
 		label.add_theme_font_size_override("font_size", 18)
@@ -82,12 +129,6 @@ func _update_lobby_ui() -> void:
 		bot_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
 		bot_label.add_theme_font_size_override("font_size", 18)
 		player_list_container.add_child(bot_label)
-
-func _on_launch_countdown(sec: int) -> void:
-	if countdown_label:
-		countdown_label.visible = true
-		countdown_label.text = "⚡ PLAYER JOINED! LAUNCHING IN %d..." % sec
-		countdown_label.modulate = Color.GREEN
 
 func _on_start_pressed() -> void:
 	if multiplayer.is_server():
