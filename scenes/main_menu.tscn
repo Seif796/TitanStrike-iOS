@@ -46,6 +46,13 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_train"]
+bg_color = Color(0.65, 0.25, 0.85, 0.95)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
 [node name="MainMenu" type="Control" unique_id=902313751]
 layout_mode = 3
 anchors_preset = 15
@@ -173,6 +180,13 @@ text = "🤖 AI BOT COMPANION (اختر بطل البوت المساعد):"
 [node name="BotOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+
+[node name="TrainingBtn" type="Button" parent="HBox/LeftCol/Panel/VBox" unique_id=987654321]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_train")
+text = "🎯 طور التدريب الفردي (Training Grounds)"
 
 [node name="RightCol" type="Control" parent="HBox" unique_id=1210280399]
 custom_minimum_size = Vector2(550, 0)

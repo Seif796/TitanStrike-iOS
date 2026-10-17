@@ -6,6 +6,7 @@ extends Control
 
 @onready var room_title: Label = $Panel/VBox/Title
 @onready var code_banner: Label = $Panel/VBox/CodeBanner
+@onready var mode_option: OptionButton = $Panel/VBox/ModeBox/ModeOption
 @onready var map_option: OptionButton = $Panel/VBox/MapBox/MapOption
 @onready var map_banner_title: Label = $Panel/VBox/MapBanner/BannerVBox/SelectedMapTitle
 @onready var map_banner_notice: Label = $Panel/VBox/MapBanner/BannerVBox/MapNotice
@@ -17,6 +18,18 @@ extends Control
 func _ready() -> void:
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
+	
+	# Setup Game Mode Options
+	if mode_option:
+		mode_option.clear()
+		mode_option.add_item("🤖 Squad Co-op vs Robots (تعاوني ضد الروبوتات)", 0)
+		mode_option.add_item("⚔️ 1v1 PvP Duel (مبارزة 1 ضد 1)", 1)
+		mode_option.select(int(GameManager.selected_game_mode))
+		if multiplayer.is_server():
+			mode_option.disabled = false
+			mode_option.item_selected.connect(_on_mode_selected)
+		else:
+			mode_option.disabled = true
 	
 	# Setup Map Options
 	if map_option:
@@ -80,6 +93,18 @@ func _ready() -> void:
 	
 	_update_lobby_ui()
 
+func _on_mode_selected(index: int) -> void:
+	GameManager.selected_game_mode = index as GameManager.GameMode
+	if multiplayer.is_server():
+		rpc("_sync_game_mode", index)
+
+@rpc("call_local", "reliable")
+func _sync_game_mode(mode_id: int) -> void:
+	GameManager.selected_game_mode = mode_id as GameManager.GameMode
+	if mode_option:
+		mode_option.selected = mode_id
+	_update_lobby_ui()
+
 func _on_map_selected(index: int) -> void:
 	GameManager.selected_map_id = index
 	_update_map_banner(index)
@@ -111,18 +136,21 @@ func _update_lobby_ui() -> void:
 	for child in player_list_container.get_children():
 		child.queue_free()
 	
+	var is_pvp = (GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL)
 	for peer_id in NetworkManager.players:
 		var p = NetworkManager.players[peer_id]
 		var c_data = GameManager.CLASSES.get(p.get("class_id", 0), GameManager.CLASSES[0])
 		var label = Label.new()
 		var is_host = (peer_id == 1)
 		var role_tag = " [👑 ROOM HOST]" if is_host else " [⚡ SQUAD AGENT]"
+		if is_pvp:
+			role_tag = " [⚔️ DUELIST 1 - HOST]" if is_host else " [⚔️ DUELIST 2 - CHALLENGER]"
 		label.text = "• %s - Hero: %s %s" % [p.get("name", "Player"), c_data["name"], role_tag]
 		label.add_theme_color_override("font_color", c_data["color"])
 		label.add_theme_font_size_override("font_size", 18)
 		player_list_container.add_child(label)
 	
-	if NetworkManager.players.size() <= 1 and GameManager.bot_enabled:
+	if not is_pvp and NetworkManager.players.size() <= 1 and GameManager.bot_enabled:
 		var bot_c = GameManager.CLASSES.get(GameManager.bot_class_id, GameManager.CLASSES[1])
 		var bot_label = Label.new()
 		bot_label.text = "• 🤖 AI Companion [SQUAD BOT] - Hero: %s" % bot_c["name"]

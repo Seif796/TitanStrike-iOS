@@ -13,6 +13,30 @@ enum GameState {
 	DEFEAT
 }
 
+enum GameMode {
+	COOP_WAVES, # 0: Squad Co-op vs Robots & Titans
+	PVP_DUEL,   # 1: 1v1 PvP Duel (Player vs Player)
+	TRAINING    # 2: Solo Training Grounds
+}
+
+const GAME_MODES: Dictionary = {
+	GameMode.COOP_WAVES: {
+		"name": "🤖 Squad Co-op (تعاوني ضد الروبوتات)",
+		"desc": "Team up with your squad to battle 5 waves of robots and eliminate the Titans! Features Revive Station and Bot companion."
+	},
+	GameMode.PVP_DUEL: {
+		"name": "⚔️ 1v1 PvP Duel (مبارزة 1 ضد 1)",
+		"desc": "Duel against your friend! No robots, pure combat skills. First to eliminate the other wins!"
+	},
+	GameMode.TRAINING: {
+		"name": "🎯 Training Grounds (طور التدريب والتمارين)",
+		"desc": "Solo practice with a Training Dummy, infinite ammo, and damage meters to master all heroes!"
+	}
+}
+
+var selected_game_mode: GameMode = GameMode.COOP_WAVES
+signal game_mode_changed(new_mode: GameMode)
+
 signal state_changed(new_state: GameState)
 signal boss_health_updated(current_hp: float, max_hp: float, boss_name: String)
 signal wave_updated(current_wave: int, max_waves: int, enemies_left: int)
@@ -158,6 +182,14 @@ func start_game_scene() -> void:
 	has_used_retry = false # Reset retry chance for the new match
 	get_tree().change_scene_to_file("res://scenes/arena.tscn")
 
+func start_training_mode(hero_id: int = 0) -> void:
+	selected_game_mode = GameMode.TRAINING
+	NetworkManager.leave_game()
+	NetworkManager.local_player_name = "Trainee"
+	NetworkManager.local_class_id = hero_id
+	current_state = GameState.WAVE_COMBAT
+	get_tree().change_scene_to_file("res://scenes/arena.tscn")
+
 @rpc("call_local", "reliable")
 func return_to_lobby_together() -> void:
 	current_state = GameState.LOBBY
@@ -198,6 +230,30 @@ func request_retry_stage() -> void:
 	retry_stage_requested.emit()
 
 func check_all_players_down() -> void:
+	if selected_game_mode == GameMode.TRAINING:
+		return
+	
+	if selected_game_mode == GameMode.PVP_DUEL:
+		# In 1v1 PvP, if any player is downed, the other player wins!
+		if not multiplayer.is_server():
+			return
+		var players = get_tree().get_nodes_in_group("players")
+		var alive_players = []
+		var dead_players = []
+		for p in players:
+			if p.has_method("is_downed") and p.is_downed():
+				dead_players.append(p)
+			else:
+				alive_players.append(p)
+		
+		if not dead_players.is_empty():
+			# Duel ended! Alive player gets Victory, Dead player gets Defeat
+			for dp in dead_players:
+				dp.rpc("notify_pvp_result", false)
+			for ap in alive_players:
+				ap.rpc("notify_pvp_result", true)
+		return
+	
 	if not multiplayer.is_server():
 		return
 	

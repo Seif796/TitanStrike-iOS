@@ -6,6 +6,7 @@ extends Control
 @onready var name_input: LineEdit = $HBox/RightCol/Panel/VBox/NameInput
 @onready var class_option: OptionButton = $HBox/LeftCol/Panel/VBox/ClassOption
 @onready var bot_option: OptionButton = $HBox/LeftCol/Panel/VBox/BotOption
+@onready var training_btn: Button = $HBox/LeftCol/Panel/VBox/TrainingBtn
 @onready var class_desc: Label = $HBox/LeftCol/Panel/VBox/ClassDesc
 @onready var class_stats: Label = $HBox/LeftCol/Panel/VBox/ClassStats
 
@@ -93,6 +94,8 @@ func _ready() -> void:
 	
 	create_room_btn.pressed.connect(_on_create_room_pressed)
 	join_room_btn.pressed.connect(_on_join_room_pressed)
+	if training_btn:
+		training_btn.pressed.connect(_on_training_pressed)
 	if bt_btn:
 		bt_btn.pressed.connect(_on_bluetooth_btn_pressed)
 	if scan_btn:
@@ -221,6 +224,16 @@ func _on_scan_btn_pressed() -> void:
 	status_label.text = "🔍 جاري البحث التلقائي عن غرف قريبة (Wi-Fi / Hotspot / Bluetooth)..."
 	status_label.modulate = Color.YELLOW
 	NetworkManager.start_discovery_listener()
+	
+	# Smart fallback probe after 1.8s in case UDP broadcast is filtered by OS
+	get_tree().create_timer(1.8).timeout.connect(func():
+		if NetworkManager.udp_listener and NetworkManager.peer == null:
+			var candidate_ip = NetworkManager.get_bluetooth_or_hotspot_host_ip()
+			status_label.text = "🔵 محاولة الدخول لمضيف البلوتوث / هوتسبوت (%s)..." % candidate_ip
+			status_label.modulate = Color.CYAN
+			NetworkManager.stop_discovery_listener()
+			NetworkManager.join_room_with_code("BT", p_name, selected_class)
+	)
 
 func _on_room_discovered(room_code: String, host_ip: String, map_id: int) -> void:
 	NetworkManager.stop_discovery_listener()
@@ -230,4 +243,8 @@ func _on_room_discovered(room_code: String, host_ip: String, map_id: int) -> voi
 	var p_name = _validate_player_name()
 	if not p_name.is_empty():
 		NetworkManager.join_room_with_code(room_code, p_name, selected_class)
+
+func _on_training_pressed() -> void:
+	_speak_prompt("Entering Training Grounds...")
+	GameManager.start_training_mode(selected_class)
 

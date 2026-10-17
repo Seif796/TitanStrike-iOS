@@ -90,6 +90,20 @@ theme_override_font_sizes/font_size = 18
 text = "🔑 ROOM CODE: #B4E2"
 horizontal_alignment = 1
 
+[node name="ModeBox" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ModeLabel" type="Label" parent="Panel/VBox/ModeBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "🎮 Game Mode (نمط اللعب):"
+
+[node name="ModeOption" type="OptionButton" parent="Panel/VBox/ModeBox"]
+custom_minimum_size = Vector2(380, 42)
+layout_mode = 2
+
 [node name="MapBox" type="HBoxContainer" parent="Panel/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 12

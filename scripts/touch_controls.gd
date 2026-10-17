@@ -50,6 +50,24 @@ func _ready() -> void:
 func bind_player(p: Player) -> void:
 	player_ref = p
 
+func _process(_delta: float) -> void:
+	if revive_btn and player_ref and is_instance_valid(player_ref):
+		var show_revive = false
+		if not player_ref.is_down:
+			for station in get_tree().get_nodes_in_group("revive_stations"):
+				if station.has_method("can_revive") and station.can_revive():
+					if player_ref.global_position.distance_to(station.global_position) < 6.0:
+						show_revive = true
+						revive_btn.text = "⚡ إنعاش الزميل (REVIVE)"
+						break
+			if not show_revive and player_ref.interact_area:
+				for body in player_ref.interact_area.get_overlapping_bodies():
+					if body is Player and body != player_ref and body.is_down:
+						show_revive = true
+						revive_btn.text = "❤️ إنعاش الزميل (REVIVE)"
+						break
+		revive_btn.visible = show_revive
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:

@@ -39,7 +39,13 @@ func _physics_process(delta: float) -> void:
 
 func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("players"):
-		# Don't hurt friendly players in co-op!
+		if GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL:
+			var target_peer = body.get("peer_id")
+			if target_peer != null and target_peer != shooter_peer_id:
+				if body.has_method("take_damage"):
+					body.take_damage(damage)
+					_spawn_impact()
+					queue_free()
 		return
 	
 	if body.has_method("take_damage"):

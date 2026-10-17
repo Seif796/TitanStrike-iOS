@@ -23,6 +23,7 @@ class_name HUD
 @onready var restart_btn: Button = $EndScreen/Panel/VBox/RestartBtn
 
 func _ready() -> void:
+	add_to_group("hud")
 	if boss_container:
 		boss_container.visible = false
 	if alert_label:
@@ -84,13 +85,27 @@ func update_weapon_info(w_name: String) -> void:
 	if weapon_label:
 		weapon_label.text = w_name
 
-func show_downed_alert(is_down: bool) -> void:
+func show_downed_alert(is_down: bool, spectating_name: String = "") -> void:
 	if alert_label:
 		if is_down:
-			alert_label.text = "⚠️ DOWNED! WAIT FOR TEAMMATE TO REVIVE! ⚠️"
+			if not spectating_name.is_empty():
+				alert_label.text = "💀 لقد سقطت في المعركة! (DOWNED)\n👁️ وضع المشاهدة: تتابع الآن %s\n⚡ توجه لجهاز الإنعاش (Revive Station) لتعود للحياة!" % spectating_name
+			else:
+				alert_label.text = "💀 لقد سقطت في المعركة! (DOWNED)\n⚡ انتظر إنعاشك عبر جهاز الإنعاش!"
 			alert_label.visible = true
+			alert_label.modulate = Color(1.0, 0.3, 0.3)
 		else:
 			alert_label.visible = false
+
+func show_alert(text: String, col: Color = Color.WHITE, duration: float = 3.0) -> void:
+	if alert_label:
+		alert_label.text = text
+		alert_label.modulate = col
+		alert_label.visible = true
+		get_tree().create_timer(duration).timeout.connect(func():
+			if alert_label.text == text:
+				alert_label.visible = false
+		)
 
 func _on_boss_health_updated(current: float, max_val: float, boss_title: String = "") -> void:
 	if boss_container:
@@ -104,7 +119,11 @@ func _on_boss_health_updated(current: float, max_val: float, boss_title: String 
 
 func _on_wave_updated(wave: int, max_w: int, left: int) -> void:
 	if wave_label:
-		if wave > max_w:
+		if GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL:
+			wave_label.text = "⚔️ 1v1 PVP DUEL | مبارزة 1 ضد 1 ⚔️"
+		elif GameManager.selected_game_mode == GameManager.GameMode.TRAINING:
+			wave_label.text = "🎯 طور التدريب الحر (Training Grounds) | ذخيرة غير محدودة"
+		elif wave > max_w:
 			wave_label.text = "⚔️ TITAN BOSS BATTLE ⚔️"
 		else:
 			wave_label.text = "Wave %d / %d | Minions Left: %d" % [wave, max_w, left]
@@ -112,23 +131,35 @@ func _on_wave_updated(wave: int, max_w: int, left: int) -> void:
 func _on_game_over(is_victory: bool) -> void:
 	if end_screen:
 		end_screen.visible = true
-		if is_victory:
-			end_title.text = "🏆 VICTORY! 🏆"
-			end_title.modulate = Color.GREEN
-			if GameManager.admin_just_unlocked:
-				end_desc.text = "You eliminated both Titans!\n👑 ADMIN CHARACTER UNLOCKED! (تم فتح شخصية الأدمن 500 HP!) 👑"
+		if GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL:
+			if is_victory:
+				end_title.text = "🏆 VICTORY! فزت بالمبارزة 1v1! 🏆"
+				end_title.modulate = Color.GREEN
+				end_desc.text = "You eliminated your opponent in the 1v1 Duel!\nاضغط للعودة إلى الغرفة لمبارزة جديدة!"
 			else:
-				end_desc.text = "You eliminated both Titans!\n🏆 ALL BOSSES DEFEATED! CYBERFORT IS SAVED! 🏆"
+				end_title.text = "💀 DEFEAT! خسرت في المبارزة! 💀"
+				end_title.modulate = Color.RED
+				end_desc.text = "You were eliminated in the 1v1 Duel.\nاضغط للعودة إلى الغرفة لمبارزة جديدة!"
 			if try_again_btn:
 				try_again_btn.visible = false
 		else:
-			end_title.text = "💀 DEFEAT 💀"
-			end_title.modulate = Color.RED
-			if not GameManager.has_used_retry:
-				end_desc.text = "All squad members were eliminated!\nYou have 1 emergency retry to replay this stage."
-				if try_again_btn:
-					try_again_btn.visible = true
-			else:
-				end_desc.text = "All squad members were eliminated.\n(Used 1 retry chance - No retries remaining)"
+			if is_victory:
+				end_title.text = "🏆 VICTORY! 🏆"
+				end_title.modulate = Color.GREEN
+				if GameManager.admin_just_unlocked:
+					end_desc.text = "You eliminated both Titans!\n👑 ADMIN CHARACTER UNLOCKED! (تم فتح شخصية الأدمن 500 HP!) 👑"
+				else:
+					end_desc.text = "You eliminated both Titans!\n🏆 ALL BOSSES DEFEATED! CYBERFORT IS SAVED! 🏆"
 				if try_again_btn:
 					try_again_btn.visible = false
+			else:
+				end_title.text = "💀 DEFEAT 💀"
+				end_title.modulate = Color.RED
+				if not GameManager.has_used_retry:
+					end_desc.text = "All squad members were eliminated!\nYou have 1 emergency retry to replay this stage."
+					if try_again_btn:
+						try_again_btn.visible = true
+				else:
+					end_desc.text = "All squad members were eliminated.\n(Used 1 retry chance - No retries remaining)"
+					if try_again_btn:
+						try_again_btn.visible = false

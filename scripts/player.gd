@@ -59,6 +59,16 @@ var melon_shader = preload("res://shaders/watermelon_boy.gdshader")
 var sync_position: Vector3 = Vector3.ZERO
 var sync_rotation_y: float = 0.0
 
+# Network sync optimization (throttled to 20 ticks/sec to save mobile data & reduce lag)
+var network_sync_timer: float = 0.0
+const NETWORK_SYNC_INTERVAL: float = 0.05
+var last_synced_pos: Vector3 = Vector3.ZERO
+var last_synced_rot: float = 0.0
+
+# Spectator camera
+var spectate_target: Node3D = null
+var default_cam_transform: Transform3D
+
 func _enter_tree() -> void:
 	var id_from_name = name.to_int()
 	if id_from_name > 0:
@@ -95,6 +105,8 @@ func _ready() -> void:
 			building_system.set_physics_process(false)
 	elif is_local_player():
 		camera.current = true
+		if camera:
+			default_cam_transform = camera.transform
 	else:
 		camera.current = false
 		if building_system:
@@ -185,12 +197,24 @@ func _physics_process(delta: float) -> void:
 			try_fire()
 		move_and_slide()
 	elif is_local_player():
-		_handle_camera_and_input(delta)
-		_process_movement(delta)
-		move_and_slide()
+		if is_down:
+			_update_spectator_camera(delta)
+		else:
+			_handle_camera_and_input(delta)
+			_process_movement(delta)
+			move_and_slide()
 		
+		# Low-bandwidth sync: throttled to 20Hz (saves ~65% mobile bandwidth)
 		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_transform", global_position, rotation.y, is_firing)
+			network_sync_timer += delta
+			if network_sync_timer >= NETWORK_SYNC_INTERVAL:
+				network_sync_timer = 0.0
+				var pos_changed = global_position.distance_squared_to(last_synced_pos) > 0.001
+				var rot_changed = abs(rotation.y - last_synced_rot) > 0.01
+				if pos_changed or rot_changed or is_firing:
+					last_synced_pos = global_position
+					last_synced_rot = rotation.y
+					rpc("_sync_transform", global_position, rotation.y, is_firing)
 	else:
 		global_position = global_position.lerp(sync_position, 15.0 * delta)
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, 15.0 * delta)
@@ -374,11 +398,46 @@ func _apply_damage(amount: float) -> void:
 func _enter_downed_state() -> void:
 	is_down = true
 	downed_state_changed.emit(true)
+	
+	if is_local_player() and GameManager.selected_game_mode != GameManager.GameMode.PVP_DUEL:
+		var teammate_name = ""
+		for p in get_tree().get_nodes_in_group("players"):
+			if p != self and is_instance_valid(p) and not p.is_down:
+				teammate_name = p.name
+				if NetworkManager.players.has(p.peer_id):
+					teammate_name = NetworkManager.players[p.peer_id].get("name", teammate_name)
+				elif p.is_bot:
+					teammate_name = "🤖 Bot Companion"
+				break
+		
+		var hud = get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("show_downed_alert"):
+			hud.show_downed_alert(true, teammate_name)
+	
 	GameManager.check_all_players_down()
+
+func _update_spectator_camera(delta: float) -> void:
+	if spectate_target == null or not is_instance_valid(spectate_target) or (spectate_target.has_method("is_downed") and spectate_target.is_downed()):
+		spectate_target = null
+		for p in get_tree().get_nodes_in_group("players"):
+			if p != self and is_instance_valid(p):
+				if not p.has_method("is_downed") or not p.is_downed():
+					spectate_target = p
+					break
+	
+	if spectate_target and camera:
+		var target_head = spectate_target.global_position + Vector3(0, 2.2, 0)
+		var cam_offset = -spectate_target.global_transform.basis.z * 4.0 + Vector3(0, 1.8, 0)
+		var desired_pos = spectate_target.global_position + cam_offset
+		camera.global_position = camera.global_position.lerp(desired_pos, 7.0 * delta)
+		camera.look_at(target_head, Vector3.UP)
 
 @rpc("call_local", "reliable")
 func revive() -> void:
 	is_down = false
+	spectate_target = null
+	if camera and default_cam_transform != Transform3D():
+		camera.transform = default_cam_transform
 	current_hp = max_hp * 0.6
 	health_changed.emit(current_hp, max_hp)
 	downed_state_changed.emit(false)
@@ -386,6 +445,9 @@ func revive() -> void:
 @rpc("call_local", "reliable")
 func full_restore() -> void:
 	is_down = false
+	spectate_target = null
+	if camera and default_cam_transform != Transform3D():
+		camera.transform = default_cam_transform
 	current_hp = max_hp
 	health_changed.emit(current_hp, max_hp)
 	downed_state_changed.emit(false)
@@ -395,6 +457,16 @@ func full_restore() -> void:
 		active_weapon.ammo_changed.emit(active_weapon.current_ammo, active_weapon.max_ammo, false)
 
 func _try_revive_teammate() -> void:
+	if is_down:
+		return
+	
+	# 1. First check if near any Revive Station terminal
+	for station in get_tree().get_nodes_in_group("revive_stations"):
+		if station.has_method("try_activate_from_player") and global_position.distance_to(station.global_position) < 5.5:
+			if station.try_activate_from_player(self):
+				return
+	
+	# 2. Check if near downed player body
 	for body in interact_area.get_overlapping_bodies():
 		if body is Player and body != self and body.is_down:
 			if multiplayer.has_multiplayer_peer():
@@ -405,6 +477,11 @@ func _try_revive_teammate() -> void:
 
 func is_downed() -> bool:
 	return is_down
+
+@rpc("call_local", "reliable")
+func notify_pvp_result(won: bool) -> void:
+	if is_local_player():
+		GameManager.trigger_game_over(won)
 
 @rpc("unreliable")
 func _sync_transform(pos: Vector3, rot_y: float, firing: bool = false) -> void:

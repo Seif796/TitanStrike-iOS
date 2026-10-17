@@ -1,0 +1,75 @@
+[gd_scene load_steps=7 format=3 uid="uid://crevivestation001"]
+
+[ext_resource type="Script" path="res://scripts/revive_station.gd" id="1_station"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_base"]
+albedo_color = Color(0.12, 0.16, 0.22, 1)
+metallic = 0.8
+roughness = 0.2
+emission_enabled = true
+emission = Color(0.1, 0.85, 0.6, 1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_screen"]
+albedo_color = Color(0.05, 0.08, 0.12, 1)
+metallic = 0.5
+roughness = 0.1
+emission_enabled = true
+emission = Color(0.2, 1, 0.6, 1)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_beacon"]
+transparency = 1
+albedo_color = Color(0.2, 1, 0.65, 0.4)
+emission_enabled = true
+emission = Color(0.2, 1, 0.65, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_area"]
+height = 4.0
+radius = 4.5
+
+[node name="ReviveStation" type="Node3D"]
+script = ExtResource("1_station")
+
+[node name="Base" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+radius = 2.6
+height = 0.4
+sides = 24
+material = SubResource("StandardMaterial3D_base")
+
+[node name="TerminalScreen" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+size = Vector3(1.2, 1.6, 0.5)
+material = SubResource("StandardMaterial3D_screen")
+
+[node name="BeaconBeam" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12, 0)
+radius = 0.9
+height = 24.0
+sides = 16
+material = SubResource("StandardMaterial3D_beacon")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+light_color = Color(0.2, 1, 0.6, 1)
+light_energy = 2.5
+omni_range = 8.0
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)
+billboard = 1
+text = "⚡ جهاز الإنعاش (Revive Station) ⚡
+(جاهز لإحياء الأبطال)"
+font_size = 28
+outline_size = 6
+outline_modulate = Color(0, 0, 0, 1)
+
+[node name="Area3D" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("CylinderShape3D_area")

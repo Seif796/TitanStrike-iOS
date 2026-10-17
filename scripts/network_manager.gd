@@ -41,8 +41,15 @@ func _process(delta: float) -> void:
 		if broadcast_timer >= 1.0:
 			broadcast_timer = 0.0
 			var host_ip = get_local_ip()
-			var msg = "TITANSTRIKE:%s:%s:%d:%d" % [current_room_code, host_ip, DEFAULT_PORT, GameManager.selected_map_id]
-			udp_broadcaster.put_packet(msg.to_utf8_buffer())
+			var msg = "TITANSTRIKE:%s:%s:%d:%d:%d" % [current_room_code, host_ip, DEFAULT_PORT, GameManager.selected_map_id, int(GameManager.selected_game_mode)]
+			var buf = msg.to_utf8_buffer()
+			udp_broadcaster.set_dest_address("255.255.255.255", DISCOVERY_PORT)
+			udp_broadcaster.put_packet(buf)
+			var parts = host_ip.split(".")
+			if parts.size() == 4:
+				var subnet_bc = "%s.%s.%s.255" % [parts[0], parts[1], parts[2]]
+				udp_broadcaster.set_dest_address(subnet_bc, DISCOVERY_PORT)
+				udp_broadcaster.put_packet(buf)
 	
 	# Listen for rooms if discovery listener is active
 	if udp_listener and udp_listener.get_available_packet_count() > 0:
@@ -189,16 +196,19 @@ func _on_peer_connected(id: int) -> void:
 	if multiplayer.is_server():
 		for p_id in players:
 			rpc_id(id, "_register_player", p_id, players[p_id])
-		# Sync the currently chosen map to the new player immediately!
-		rpc_id(id, "_sync_initial_lobby_map", GameManager.selected_map_id)
+		# Sync the currently chosen map and game mode to the new player immediately!
+		rpc_id(id, "_sync_initial_lobby_map", GameManager.selected_map_id, int(GameManager.selected_game_mode))
 		lobby_updated.emit()
 
 @rpc("any_peer", "call_local", "reliable")
-func _sync_initial_lobby_map(map_id: int) -> void:
+func _sync_initial_lobby_map(map_id: int, mode_id: int = 0) -> void:
 	GameManager.selected_map_id = map_id
+	GameManager.selected_game_mode = mode_id as GameManager.GameMode
 	var cur_scene = get_tree().current_scene
 	if cur_scene and cur_scene.has_method("_sync_map_selection"):
 		cur_scene._sync_map_selection(map_id)
+	if cur_scene and cur_scene.has_method("_sync_game_mode"):
+		cur_scene._sync_game_mode(mode_id)
 
 @rpc("any_peer", "call_local", "reliable")
 func update_player_class(p_id: int, new_c_id: int) -> void:

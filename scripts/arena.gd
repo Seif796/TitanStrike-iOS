@@ -27,6 +27,8 @@ extends Node3D
 var player_scene = preload("res://scenes/player.tscn")
 var minion_scene = preload("res://scenes/minion.tscn")
 var boss_scene = preload("res://scenes/boss.tscn")
+var revive_station_scene = preload("res://scenes/revive_station.tscn")
+var training_dummy_scene = preload("res://scenes/training_dummy.tscn")
 
 var local_player: Player = null
 
@@ -35,8 +37,12 @@ func _ready() -> void:
 	_spawn_players()
 	GameManager.retry_stage_requested.connect(_on_retry_stage_requested)
 	
-	if multiplayer.is_server():
-		get_tree().create_timer(2.0).timeout.connect(_start_next_wave)
+	if GameManager.selected_game_mode == GameManager.GameMode.TRAINING:
+		_setup_training_mode()
+	elif GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL:
+		_setup_pvp_mode()
+	else:
+		_setup_coop_mode()
 
 func _apply_map_theme(map_id: int) -> void:
 	var floor_mat = StandardMaterial3D.new()
@@ -119,9 +125,38 @@ func _apply_map_theme(map_id: int) -> void:
 	if pillar3: pillar3.material = pillar_mat
 	if pillar4: pillar4.material = pillar_mat
 
+func _setup_coop_mode() -> void:
+	# Spawn Revive Station terminal in the central tactical zone
+	var station = revive_station_scene.instantiate()
+	station.name = "ReviveStation"
+	station.position = Vector3(0, 0, 10)
+	add_child(station)
+	
+	if multiplayer.is_server():
+		get_tree().create_timer(2.0).timeout.connect(_start_next_wave)
+
+func _setup_pvp_mode() -> void:
+	GameManager.wave_updated.emit(1, 1, 0)
+	get_tree().create_timer(1.2).timeout.connect(func():
+		rpc("_broadcast_hud_alert", "⚔️ 1v1 PVP DUEL: FIGHT! ⚔️\n(المبارزة بدأت! اهزم خصمك للفوز!)", Color(1.0, 0.4, 0.2))
+	)
+
+func _setup_training_mode() -> void:
+	GameManager.wave_updated.emit(1, 1, 0)
+	var dummy = training_dummy_scene.instantiate()
+	dummy.name = "TrainingDummy"
+	dummy.position = Vector3(0, 0, 0)
+	add_child(dummy)
+	
+	get_tree().create_timer(1.0).timeout.connect(func():
+		rpc("_broadcast_hud_alert", "🎯 TRAINING GROUNDS (طور التدريب) 🎯\n(تدرب على إطلاق النار والحركة بحرية)", Color(0.2, 0.9, 1.0))
+	)
+
 func _spawn_players() -> void:
 	var spawn_nodes = spawn_points.get_children()
 	var spawn_index = 0
+	var is_pvp = (GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL)
+	var is_training = (GameManager.selected_game_mode == GameManager.GameMode.TRAINING)
 	
 	if NetworkManager.players.is_empty():
 		var p = player_scene.instantiate()
@@ -129,11 +164,11 @@ func _spawn_players() -> void:
 		p.peer_id = 1
 		p.class_id = NetworkManager.local_class_id
 		players_container.add_child(p)
-		p.global_position = spawn_nodes[0].global_position
+		p.global_position = Vector3(0, 0, 18) if is_training else spawn_nodes[0].global_position
 		_setup_local_player(p)
 		
-		# Solo player: deploy AI Bot companion if enabled
-		if GameManager.bot_enabled:
+		# Solo player: deploy AI Bot companion only in Co-op if enabled
+		if not is_training and not is_pvp and GameManager.bot_enabled:
 			var bot_pos = spawn_nodes[1].global_position if spawn_nodes.size() > 1 else spawn_nodes[0].global_position + Vector3(3, 0, 0)
 			_spawn_bot_companion(bot_pos)
 		return
@@ -146,18 +181,25 @@ func _spawn_players() -> void:
 		p.class_id = p_info.get("class_id", 0)
 		
 		var spawn_pos = Vector3.ZERO
-		if spawn_index < spawn_nodes.size():
-			spawn_pos = spawn_nodes[spawn_index].global_position
+		if is_pvp:
+			# Opposite sides in 1v1 PvP
+			spawn_pos = Vector3(0, 0, 22) if spawn_index == 0 else Vector3(0, 0, -22)
 			spawn_index += 1
+		else:
+			if spawn_index < spawn_nodes.size():
+				spawn_pos = spawn_nodes[spawn_index].global_position
+				spawn_index += 1
 		
 		players_container.add_child(p)
 		p.global_position = spawn_pos
+		if is_pvp and spawn_pos.z < 0:
+			p.rotation.y = PI # Face south towards opponent
 		
 		if peer_id == multiplayer.get_unique_id():
 			_setup_local_player(p)
 	
-	# If only 1 player in the squad, spawn the Bot to join forces!
-	if NetworkManager.players.size() == 1 and GameManager.bot_enabled:
+	# In co-op, spawn Bot if 1 player and bot enabled
+	if not is_pvp and not is_training and NetworkManager.players.size() == 1 and GameManager.bot_enabled:
 		var bot_pos = spawn_nodes[1].global_position if spawn_nodes.size() > 1 else spawn_nodes[0].global_position + Vector3(3, 0, 0)
 		_spawn_bot_companion(bot_pos)
 
