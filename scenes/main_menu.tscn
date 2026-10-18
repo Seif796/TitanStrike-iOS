@@ -162,7 +162,7 @@ custom_minimum_size = Vector2(170, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
-text = "👤 ضيف (Guest)"
+text = "👤 تسجيل الدخول"
 
 [node name="FriendsPillBtn" type="Button" parent="TopHeader/HeaderHBox"]
 custom_minimum_size = Vector2(150, 42)
@@ -648,7 +648,7 @@ theme_override_constants/separation = 12
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "ادخل الكود هنا (مثل: ADMIN2026, TITAN, BERRY, CITRUS)..."
+placeholder_text = "ادخل الكود هنا (مثل: BERRY2026, CITRUS2026, TITAN)..."
 
 [node name="RedeemBtn" type="Button" parent="ViewSettings/SettingsCard/VBox/RedeemHBox"]
 custom_minimum_size = Vector2(170, 44)
@@ -960,7 +960,7 @@ text = "🎉 أعضاء البارتي الحاليين:"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 14
-text = "البارتي: [Guest]"
+text = "البارتي: [فارغ]"
 
 [node name="PartyActionsHBox" type="HBoxContainer" parent="ViewFriends/FriendsCard/VBox/PartySection/PartyVBox"]
 layout_mode = 2

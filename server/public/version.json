@@ -1,14 +1,16 @@
 {
-  "version": "1.1.0",
-  "version_code": 2,
+  "version": "1.1.1",
+  "version_code": 3,
   "release_date": "2026-10-18",
-  "title": "تحديث الخادم التلقائي",
+  "title": "تحسين الموسيقى وإلزام تسجيل الدخول",
   "changelog": [
-    "إضافة نظام التحديث التلقائي OTA",
-    "ربط اللعبة بالسيرفر المباشر"
+    "تحسين جودة ونقاء الموسيقى السايبر بشكل احترافي",
+    "إلزام تسجيل الدخول فور فتح اللعبة والانتقال المباشر لـ Start",
+    "إلغاء وضع Guest تماماً",
+    "إلغاء كود ADMIN2026 وجعل الأدمن حصرياً للفوز باللعبة"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 104474,
-  "sha256": "1e1a21a1deeb3b7408ecba986d9c6f28dd91622b22330a8d3bcd9aaf57c3f14d",
+  "file_size_bytes": 105287,
+  "sha256": "e6e7c07cdeaeacab61d1c67b67fa47d950324b807c5b5479122e50e90b29d7f4",
   "mandatory": false
 }

@@ -98,9 +98,6 @@ var is_signup_mode: bool = false
 func _ready() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
 	
-	# Show Home by default
-	_switch_view(view_home)
-	
 	# Connect Navigation buttons
 	start_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
@@ -137,8 +134,9 @@ func _ready() -> void:
 		_switch_view(view_home)
 	)
 	account_back_btn.pressed.connect(func():
-		AudioManager.play_sfx("click")
-		_switch_view(view_home)
+		if AccountManager.is_logged_in():
+			AudioManager.play_sfx("click")
+			_switch_view(view_home)
 	)
 	friends_back_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
@@ -152,6 +150,12 @@ func _ready() -> void:
 	_setup_mode_select_view()
 	
 	_refresh_top_pills()
+	
+	# Mandatory Sign In / Sign Up at startup if not logged in
+	if not AccountManager.is_logged_in():
+		_switch_view(view_account)
+	else:
+		_switch_view(view_home)
 
 func _switch_view(target_view: Control) -> void:
 	view_home.visible = (target_view == view_home)
@@ -172,11 +176,12 @@ func _refresh_top_pills() -> void:
 		account_pill_btn.text = "👤 " + AccountManager.get_current_user()
 		account_pill_btn.modulate = Color(0.2, 0.95, 0.6)
 		name_input.text = AccountManager.get_current_user()
+		account_back_btn.visible = true
 	else:
-		account_pill_btn.text = "👤 ضيف (Guest)"
-		account_pill_btn.modulate = Color.WHITE
-		if name_input.text.is_empty():
-			name_input.text = "Guest_%d" % (randi() % 900 + 100)
+		account_pill_btn.text = "👤 تسجيل الدخول"
+		account_pill_btn.modulate = Color(1.0, 0.85, 0.2)
+		name_input.text = ""
+		account_back_btn.visible = false
 	
 	var friends = AccountManager.get_friends()
 	friends_pill_btn.text = "👥 الأصدقاء (%d)" % friends.size()
@@ -363,6 +368,7 @@ func _setup_account_view() -> void:
 		AccountManager.sign_out()
 		_refresh_top_pills()
 		_refresh_account_ui()
+		_switch_view(view_account)
 	)
 	
 	AccountManager.user_logged_in.connect(func(_u):
@@ -391,6 +397,7 @@ func _refresh_account_ui() -> void:
 	if AccountManager.is_logged_in():
 		logged_in_box.visible = true
 		auth_box.visible = false
+		account_back_btn.visible = true
 		var user = AccountManager.get_current_user()
 		welcome_label.text = "✅ مرحباً بك يا بطل: " + user
 		
@@ -402,6 +409,7 @@ func _refresh_account_ui() -> void:
 	else:
 		logged_in_box.visible = false
 		auth_box.visible = true
+		account_back_btn.visible = false
 		_update_auth_tab_styles()
 
 func _on_auth_submit() -> void:
@@ -416,10 +424,16 @@ func _on_auth_submit() -> void:
 	
 	if res["success"]:
 		AudioManager.play_sfx("success")
-		auth_status_label.text = res["message"]
+		auth_status_label.text = res["message"] + " جاري تحويلك لبدء اللعبة..."
 		auth_status_label.modulate = Color.GREEN
 		auth_username_input.text = ""
 		auth_password_input.text = ""
+		_refresh_top_pills()
+		_refresh_account_ui()
+		# Immediately transition directly to Start screen (Mode Select) as requested!
+		get_tree().create_timer(0.4).timeout.connect(func():
+			_switch_view(view_mode_select)
+		)
 	else:
 		AudioManager.play_sfx("error")
 		auth_status_label.text = res["message"]
@@ -561,7 +575,7 @@ func _refresh_hero_options() -> void:
 			match id:
 				1: unlock_hint = "Win Wave 1"
 				2: unlock_hint = "Win Wave 2"
-				3: unlock_hint = "Beat Bosses / Redeem ADMIN2026"
+				3: unlock_hint = "Beat Big Bosses to unlock"
 			class_option.add_item("🔒 %s (Locked - %s)" % [c["name"], unlock_hint], id)
 		else:
 			class_option.add_item(c["name"], id)
@@ -613,7 +627,7 @@ func _on_class_selected(index: int) -> void:
 		match index:
 			1: req_msg = "فوز بالجولة الأولى (Wave 1) أو استخدم كود BERRY2026!"
 			2: req_msg = "فوز بالجولة الثانية (Wave 2) أو استخدم كود CITRUS2026!"
-			3: req_msg = "اهزم البيج بوس أو استخدم كود ADMIN2026 في الإعدادات!"
+			3: req_msg = "اهزم البيج بوس في الجولة الأخيرة لفتح بطل الأدمن الخارق!"
 		status_label.text = "🔒 البطل مقفول! " + req_msg
 		status_label.modulate = Color.YELLOW
 		_speak_prompt("Hero locked! " + req_msg)

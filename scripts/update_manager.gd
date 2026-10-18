@@ -194,3 +194,4 @@ func apply_update() -> bool:
 			return true
 		download_failed.emit("تعذر تطبيق وتثبيت حزمة التحديث في محرك اللعبة.")
 		return false
+
