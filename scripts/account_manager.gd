@@ -231,3 +231,4 @@ func redeem_code(code_raw: String) -> Dictionary:
 		return {"success": true, "message": reward_text}
 	
 	return {"success": false, "message": "❌ فشل استرداد الكود."}
+

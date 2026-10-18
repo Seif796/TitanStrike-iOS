@@ -546,9 +546,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -460.0
-offset_top = -240.0
+offset_top = -285.0
 offset_right = 460.0
-offset_bottom = 260.0
+offset_bottom = 295.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -564,7 +564,7 @@ offset_right = -26.0
 offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 
 [node name="AudioHeader" type="Label" parent="ViewSettings/SettingsCard/VBox"]
 layout_mode = 2
@@ -645,28 +645,54 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="RedeemInput" type="LineEdit" parent="ViewSettings/SettingsCard/VBox/RedeemHBox"]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "ادخل الكود هنا (مثل: ADMIN2026, TITAN, BERRY, CITRUS)..."
 
 [node name="RedeemBtn" type="Button" parent="ViewSettings/SettingsCard/VBox/RedeemHBox"]
-custom_minimum_size = Vector2(170, 48)
+custom_minimum_size = Vector2(170, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
 text = "🎁 استرداد (Redeem)"
 
 [node name="RedeemStatus" type="Label" parent="ViewSettings/SettingsCard/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 
-[node name="RedeemHints" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+[node name="HSeparator3" type="HSeparator" parent="ViewSettings/SettingsCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 0.8)
-theme_override_font_sizes/font_size = 12
-text = "💡 أكواد متاحة: ADMIN2026 (لفتح الأدمن 500 HP), TITAN, BERRY2026, CITRUS2026, ALLHEROES"
+
+[node name="UpdateHeader" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "🌐 خادم التحديثات المباشرة (OTA UPDATE SERVER):"
+
+[node name="UpdateHBox" type="HBoxContainer" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ServerUrlInput" type="LineEdit" parent="ViewSettings/SettingsCard/VBox/UpdateHBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "رابط السيرفر (e.g. http://127.0.0.1:8080 أو IP الجهاز)"
+
+[node name="CheckUpdateBtn" type="Button" parent="ViewSettings/SettingsCard/VBox/UpdateHBox"]
+custom_minimum_size = Vector2(170, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_settings")
+text = "🔍 فحص التحديثات"
+
+[node name="VersionStatusLabel" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 13
+text = "الإصدار المثبت: v1.0.0 (Build 1) | السيرفر متصل"
 horizontal_alignment = 1
 
 [node name="ViewAccount" type="Control" parent="."]
@@ -954,3 +980,106 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
 text = "🚪 مغادرة البارتي"
+
+[node name="UpdateModal" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="UpdateModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Card" type="Panel" parent="UpdateModal"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -230.0
+offset_right = 340.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="UpdateModal/Card"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="ModalTitle" type="Label" parent="UpdateModal/Card/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "🚀 تحديث جديد متوفر للعبة! (UPDATE AVAILABLE)"
+horizontal_alignment = 1
+
+[node name="ModalVersionTag" type="Label" parent="UpdateModal/Card/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 15
+text = "الإصدار الجديد: v1.1.0 (Build 2)"
+horizontal_alignment = 1
+
+[node name="ChangelogScroll" type="ScrollContainer" parent="UpdateModal/Card/VBox"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ChangelogLabel" type="Label" parent="UpdateModal/Card/VBox/ChangelogScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "• ميزات وتحسينات جديدة..."
+autowrap_mode = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="UpdateModal/Card/VBox"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+
+[node name="ProgressLabel" type="Label" parent="UpdateModal/Card/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "جاهز للتحديث. اضغط على تحديث الآن للبدء."
+horizontal_alignment = 1
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="UpdateModal/Card/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="UpdateNowBtn" type="Button" parent="UpdateModal/Card/VBox/ButtonsHBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_start")
+text = "🔄 تحديث اللعبة الآن (Update Now)"
+
+[node name="UpdateLaterBtn" type="Button" parent="UpdateModal/Card/VBox/ButtonsHBox"]
+custom_minimum_size = Vector2(140, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "❌ لاحقاً (Later)"

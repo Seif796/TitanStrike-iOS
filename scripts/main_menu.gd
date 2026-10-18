@@ -53,6 +53,19 @@ extends Control
 @onready var redeem_input: LineEdit = $ViewSettings/SettingsCard/VBox/RedeemHBox/RedeemInput
 @onready var redeem_btn: Button = $ViewSettings/SettingsCard/VBox/RedeemHBox/RedeemBtn
 @onready var redeem_status: Label = $ViewSettings/SettingsCard/VBox/RedeemStatus
+@onready var server_url_input: LineEdit = $ViewSettings/SettingsCard/VBox/UpdateHBox/ServerUrlInput
+@onready var check_update_btn: Button = $ViewSettings/SettingsCard/VBox/UpdateHBox/CheckUpdateBtn
+@onready var version_status_label: Label = $ViewSettings/SettingsCard/VBox/VersionStatusLabel
+
+# --- Update Modal Controls ---
+@onready var update_modal: Control = $UpdateModal
+@onready var modal_title: Label = $UpdateModal/Card/VBox/ModalTitle
+@onready var modal_version_tag: Label = $UpdateModal/Card/VBox/ModalVersionTag
+@onready var changelog_label: Label = $UpdateModal/Card/VBox/ChangelogScroll/ChangelogLabel
+@onready var progress_bar: ProgressBar = $UpdateModal/Card/VBox/ProgressBar
+@onready var progress_label: Label = $UpdateModal/Card/VBox/ProgressLabel
+@onready var update_now_btn: Button = $UpdateModal/Card/VBox/ButtonsHBox/UpdateNowBtn
+@onready var update_later_btn: Button = $UpdateModal/Card/VBox/ButtonsHBox/UpdateLaterBtn
 
 # --- Account Controls ---
 @onready var account_back_btn: Button = $ViewAccount/AccountNavBar/AccountBackBtn
@@ -133,6 +146,7 @@ func _ready() -> void:
 	)
 	
 	_setup_settings_view()
+	_setup_update_system()
 	_setup_account_view()
 	_setup_friends_view()
 	_setup_mode_select_view()
@@ -208,7 +222,128 @@ func _on_redeem_pressed() -> void:
 		redeem_status.modulate = Color(1.0, 0.4, 0.4)
 
 # ==============================================================================
-# 2. ACCOUNTS (SIGN IN, SIGN UP, SIGN OUT)
+# 2. OTA UPDATE SYSTEM & SERVER
+# ==============================================================================
+func _setup_update_system() -> void:
+	if server_url_input:
+		server_url_input.text = UpdateManager.server_url
+		server_url_input.text_submitted.connect(func(new_url):
+			UpdateManager.save_server_url(new_url)
+			_update_version_badge()
+		)
+	
+	if check_update_btn:
+		check_update_btn.pressed.connect(func():
+			AudioManager.play_sfx("click")
+			if server_url_input:
+				UpdateManager.save_server_url(server_url_input.text)
+			version_status_label.text = "🔍 جاري فحص خادم التحديثات..."
+			version_status_label.modulate = Color.YELLOW
+			UpdateManager.check_for_updates()
+		)
+	
+	_update_version_badge()
+	
+	UpdateManager.update_available.connect(_on_update_available)
+	UpdateManager.update_checked.connect(_on_update_checked)
+	UpdateManager.download_progress.connect(_on_update_download_progress)
+	UpdateManager.download_failed.connect(_on_update_download_failed)
+	UpdateManager.update_installed.connect(_on_update_installed)
+	
+	if update_later_btn:
+		update_later_btn.pressed.connect(func():
+			AudioManager.play_sfx("click")
+			update_modal.visible = false
+		)
+	
+	if update_now_btn:
+		update_now_btn.pressed.connect(func():
+			AudioManager.play_sfx("click")
+			update_now_btn.disabled = true
+			update_later_btn.disabled = true
+			update_now_btn.text = "⏳ جاري التحميل من السيرفر..."
+			progress_label.text = "بدء تنزيل حزمة التحديث..."
+			progress_label.modulate = Color(0.3, 0.85, 1.0)
+			UpdateManager.start_download_update()
+		)
+
+func _update_version_badge() -> void:
+	if version_status_label:
+		version_status_label.text = "الإصدار المثبت: v%s (Build %d) | السيرفر: %s" % [
+			UpdateManager.current_version,
+			UpdateManager.current_build,
+			UpdateManager.server_url
+		]
+		version_status_label.modulate = Color(0.2, 0.95, 0.6)
+
+func _on_update_checked(has_update: bool, info: Dictionary) -> void:
+	if not has_update:
+		if info.has("error"):
+			version_status_label.text = "⚠️ تعذر الوصول للسيرفر: " + str(info["error"])
+			version_status_label.modulate = Color(1.0, 0.4, 0.4)
+		else:
+			version_status_label.text = "✅ اللعبة على أحدث إصدار v%s (Build %d)" % [
+				UpdateManager.current_version,
+				UpdateManager.current_build
+			]
+			version_status_label.modulate = Color.GREEN
+
+func _on_update_available(info: Dictionary) -> void:
+	AudioManager.play_sfx("redeem")
+	modal_version_tag.text = "الإصدار الجديد: v%s (Build %d) — %s" % [
+		info.get("version", "1.1.0"),
+		int(info.get("version_code", 2)),
+		info.get("title", "تحديث جديد")
+	]
+	
+	var changelog_items = info.get("changelog", [])
+	var notes_text = ""
+	if changelog_items is Array:
+		for item in changelog_items:
+			notes_text += "• " + str(item) + "\n"
+	else:
+		notes_text = str(changelog_items)
+	changelog_label.text = notes_text
+	
+	var size_mb = round(float(info.get("file_size_bytes", 0)) / (1024.0 * 1024.0) * 100.0) / 100.0
+	progress_label.text = "حجم التحديث: %.2f MB | جاهز للتحميل والتثبيت التلقائي." % size_mb
+	progress_label.modulate = Color(0.3, 0.85, 1.0)
+	progress_bar.value = 0.0
+	
+	update_now_btn.disabled = false
+	update_later_btn.disabled = false
+	update_now_btn.text = "🔄 تحديث اللعبة الآن (Update Now)"
+	
+	update_modal.visible = true
+
+func _on_update_download_progress(downloaded: int, total: int, pct: float) -> void:
+	progress_bar.value = pct * 100.0
+	var dl_mb = float(downloaded) / (1024.0 * 1024.0)
+	var tot_mb = float(total) / (1024.0 * 1024.0)
+	progress_label.text = "جاري التحميل... %.1f / %.1f MB (%d%%)" % [dl_mb, tot_mb, int(pct * 100.0)]
+
+func _on_update_download_failed(msg: String) -> void:
+	AudioManager.play_sfx("error")
+	progress_label.text = "❌ " + msg
+	progress_label.modulate = Color.RED
+	update_now_btn.disabled = false
+	update_later_btn.disabled = false
+	update_now_btn.text = "🔄 إعادة المحاولة (Retry)"
+
+func _on_update_installed() -> void:
+	AudioManager.play_sfx("success")
+	progress_bar.value = 100.0
+	progress_label.text = "✅ تم تثبيت التحديث بنجاح! جاري إعادة تشغيل اللعبة وتطبيق التحديث..."
+	progress_label.modulate = Color.GREEN
+	
+	_update_version_badge()
+	
+	get_tree().create_timer(1.2).timeout.connect(func():
+		get_tree().reload_current_scene()
+	)
+
+# ==============================================================================
+# 3. ACCOUNTS (SIGN IN, SIGN UP, SIGN OUT)
 # ==============================================================================
 func _setup_account_view() -> void:
 	tab_sign_in_btn.pressed.connect(func():

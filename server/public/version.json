@@ -1,0 +1,14 @@
+{
+  "version": "1.1.0",
+  "version_code": 2,
+  "release_date": "2026-10-18",
+  "title": "تحديث الخادم التلقائي",
+  "changelog": [
+    "إضافة نظام التحديث التلقائي OTA",
+    "ربط اللعبة بالسيرفر المباشر"
+  ],
+  "download_url": "/downloads/update.zip",
+  "file_size_bytes": 104474,
+  "sha256": "1e1a21a1deeb3b7408ecba986d9c6f28dd91622b22330a8d3bcd9aaf57c3f14d",
+  "mandatory": false
+}

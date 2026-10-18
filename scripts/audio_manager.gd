@@ -238,3 +238,4 @@ func _generate_redeem_fanfare() -> AudioStreamWAV:
 	wav.stereo = false
 	wav.data = byte_array
 	return wav
+
