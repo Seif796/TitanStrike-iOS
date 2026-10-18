@@ -4,21 +4,86 @@
 [ext_resource type="PackedScene" path="res://scenes/character_preview.tscn" id="2_preview"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.04, 0.06, 0.09, 1)
+bg_color = Color(0.03, 0.05, 0.08, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.08, 0.11, 0.17, 0.95)
+bg_color = Color(0.07, 0.1, 0.16, 0.96)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 0.8, 1, 0.45)
+border_color = Color(0, 0.8, 1, 0.5)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_create"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbar"]
+bg_color = Color(0.05, 0.08, 0.13, 0.95)
+border_width_bottom = 2
+border_color = Color(0, 0.75, 1, 0.4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_start"]
+bg_color = Color(0.08, 0.72, 0.45, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 1, 0.7, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_settings"]
+bg_color = Color(0.15, 0.45, 0.85, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.7, 1, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_friends"]
+bg_color = Color(0.5, 0.25, 0.8, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.7, 0.4, 1, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_exit"]
+bg_color = Color(0.8, 0.2, 0.25, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.4, 0.4, 0.8)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_back"]
+bg_color = Color(0.2, 0.25, 0.35, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.5, 0.6, 0.7, 0.6)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_action"]
 bg_color = Color(0, 0.65, 0.95, 0.95)
 corner_radius_top_left = 10
 corner_radius_top_right = 10
@@ -46,14 +111,7 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_train"]
-bg_color = Color(0.65, 0.25, 0.85, 0.95)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-
-[node name="MainMenu" type="Control" unique_id=902313751]
+[node name="MainMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -62,7 +120,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="Background" type="Panel" parent="." unique_id=480663104]
+[node name="Background" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -71,50 +129,172 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 
-[node name="TopBar" type="VBoxContainer" parent="." unique_id=2083202187]
+[node name="TopHeader" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 14.0
-offset_bottom = 85.0
+offset_bottom = 60.0
 grow_horizontal = 2
-theme_override_constants/separation = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbar")
 
-[node name="Title" type="Label" parent="TopBar" unique_id=1791709186]
+[node name="HeaderHBox" type="HBoxContainer" parent="TopHeader"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_right = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="GameTitle" type="Label" parent="TopHeader/HeaderHBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0, 0.92, 1, 1)
-theme_override_font_sizes/font_size = 32
-text = "🛡️ CYBERFORT: TITAN STRIKE 3D"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+text = "⚡ CYBERFORT: TITAN STRIKE 3D ⚡"
+vertical_alignment = 1
 
-[node name="VoiceBanner" type="Label" parent="TopBar" unique_id=1620217159]
+[node name="AccountPillBtn" type="Button" parent="TopHeader/HeaderHBox"]
+custom_minimum_size = Vector2(170, 42)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 15
-text = "🎙️ Welcome! Enter your name and select your hero."
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "👤 ضيف (Guest)"
 
-[node name="HBox" type="HBoxContainer" parent="." unique_id=619783984]
+[node name="FriendsPillBtn" type="Button" parent="TopHeader/HeaderHBox"]
+custom_minimum_size = Vector2(150, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "👥 الأصدقاء (0)"
+
+[node name="ViewHome" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HomeCenterBox" type="VBoxContainer" parent="ViewHome"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -580.0
-offset_top = -250.0
-offset_right = 580.0
-offset_bottom = 300.0
+offset_left = -260.0
+offset_top = -210.0
+offset_right = 260.0
+offset_bottom = 220.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 26
+theme_override_constants/separation = 18
 alignment = 1
 
-[node name="LeftCol" type="Control" parent="HBox" unique_id=909454555]
-custom_minimum_size = Vector2(550, 0)
+[node name="SubTitle" type="Label" parent="ViewHome/HomeCenterBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "🛡️ 3D CO-OP BUILDING & BOSS HUNT BATTLE"
+horizontal_alignment = 1
+
+[node name="StartBtn" type="Button" parent="ViewHome/HomeCenterBox"]
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_start")
+text = "▶️ START (ابدأ اللعب)"
+
+[node name="SettingsBtn" type="Button" parent="ViewHome/HomeCenterBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_settings")
+text = "⚙️ SETTINGS (الإعدادات والأصوات والكود)"
+
+[node name="FriendsBtn" type="Button" parent="ViewHome/HomeCenterBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_friends")
+text = "👥 FRIENDS & PARTY (الأصدقاء والبارتي)"
+
+[node name="ExitBtn" type="Button" parent="ViewHome/HomeCenterBox"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_exit")
+text = "🚪 EXIT (خروج من اللعبة)"
+
+[node name="HomeFooter" type="Label" parent="ViewHome/HomeCenterBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.6, 0.7, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "Titan Strike v2.5 | Multi-platform Mobile & PC"
+horizontal_alignment = 1
+
+[node name="ViewModeSelect" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ModeNavBar" type="HBoxContainer" parent="ViewModeSelect"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 8.0
+offset_right = -20.0
+offset_bottom = 48.0
+grow_horizontal = 2
+theme_override_constants/separation = 16
+
+[node name="ModeBackBtn" type="Button" parent="ViewModeSelect/ModeNavBar"]
+custom_minimum_size = Vector2(140, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "🔙 الرئيسية (Menu)"
+
+[node name="ModeTitle" type="Label" parent="ViewModeSelect/ModeNavBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "اختر نمط اللعب - SELECT GAME MODE (Singleplayer or Multiplayer)"
+vertical_alignment = 1
+
+[node name="HBox" type="HBoxContainer" parent="ViewModeSelect"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -600.0
+offset_top = -265.0
+offset_right = 600.0
+offset_bottom = 305.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="LeftCol" type="Control" parent="ViewModeSelect/HBox"]
+custom_minimum_size = Vector2(580, 0)
 layout_mode = 2
 
-[node name="Panel" type="Panel" parent="HBox/LeftCol" unique_id=104799318]
+[node name="Panel" type="Panel" parent="ViewModeSelect/HBox/LeftCol"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -123,76 +303,83 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="HBox/LeftCol/Panel" unique_id=848698170]
+[node name="VBox" type="VBoxContainer" parent="ViewModeSelect/HBox/LeftCol/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 16.0
-offset_right = -20.0
-offset_bottom = -16.0
+offset_left = 16.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
-[node name="SectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=455534327]
+[node name="SectionTitle" type="Label" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "👤 CHOOSE YOUR CHARACTER (اختر البطل):"
+theme_override_font_sizes/font_size = 16
+text = "👤 اختر بطلك (CHOOSE HERO & SOLO PLAY):"
 
-[node name="ClassOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox" unique_id=1839428694]
-custom_minimum_size = Vector2(0, 44)
+[node name="ClassOption" type="OptionButton" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 
-[node name="PreviewContainer" type="SubViewportContainer" parent="HBox/LeftCol/Panel/VBox" unique_id=1591270355]
-custom_minimum_size = Vector2(0, 260)
+[node name="PreviewContainer" type="SubViewportContainer" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="HBox/LeftCol/Panel/VBox/PreviewContainer" unique_id=2112628944]
+[node name="SubViewport" type="SubViewport" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox/PreviewContainer"]
 handle_input_locally = false
-size = Vector2i(510, 260)
+size = Vector2i(548, 200)
 render_target_update_mode = 4
 
-[node name="CharacterPreview" parent="HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" instance=ExtResource("2_preview")]
+[node name="CharacterPreview" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox/PreviewContainer/SubViewport" instance=ExtResource("2_preview")]
 
-[node name="ClassDesc" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=1508342876]
+[node name="ClassDesc" type="Label" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "Class description..."
 autowrap_mode = 2
 
-[node name="ClassStats" type="Label" parent="HBox/LeftCol/Panel/VBox" unique_id=1551617652]
+[node name="ClassStats" type="Label" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "Health & Speed stats"
 
-[node name="BotSectionTitle" type="Label" parent="HBox/LeftCol/Panel/VBox"]
+[node name="BotSectionTitle" type="Label" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
-theme_override_font_sizes/font_size = 14
-text = "🤖 AI BOT COMPANION (اختر بطل البوت المساعد):"
+theme_override_font_sizes/font_size = 13
+text = "🤖 البوت المساعد في اللعب الفردي (AI BOT):"
 
-[node name="BotOption" type="OptionButton" parent="HBox/LeftCol/Panel/VBox"]
-custom_minimum_size = Vector2(0, 40)
+[node name="BotOption" type="OptionButton" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 
-[node name="TrainingBtn" type="Button" parent="HBox/LeftCol/Panel/VBox" unique_id=987654321]
+[node name="SoloWaveBtn" type="Button" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_train")
-text = "🎯 طور التدريب الفردي (Training Grounds)"
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_start")
+text = "👤 بدء طور الموجات الفردي (Solo Waves)"
 
-[node name="RightCol" type="Control" parent="HBox" unique_id=1210280399]
-custom_minimum_size = Vector2(550, 0)
+[node name="TrainingBtn" type="Button" parent="ViewModeSelect/HBox/LeftCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_settings")
+text = "🎯 ساحة التدريب والتمارين (Training Grounds)"
+
+[node name="RightCol" type="Control" parent="ViewModeSelect/HBox"]
+custom_minimum_size = Vector2(580, 0)
 layout_mode = 2
 
-[node name="Panel" type="Panel" parent="HBox/RightCol" unique_id=1965680161]
+[node name="Panel" type="Panel" parent="ViewModeSelect/HBox/RightCol"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -201,100 +388,569 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="HBox/RightCol/Panel" unique_id=471323408]
+[node name="VBox" type="VBoxContainer" parent="ViewModeSelect/HBox/RightCol/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 22.0
+offset_left = 18.0
+offset_top = 12.0
+offset_right = -18.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="SectionTitle" type="Label" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "🌐 MULTIPLAYER CO-OP (لعب جماعي وغرف):"
+
+[node name="NameHBox" type="HBoxContainer" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/NameHBox"]
+layout_mode = 2
+text = "اسمك (Name):"
+
+[node name="NameInput" type="LineEdit" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/NameHBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "اكتب اسمك هنا..."
+
+[node name="MapHBox" type="HBoxContainer" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MapLabel" type="Label" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/MapHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
+text = "الماب (Map):"
+
+[node name="MapOption" type="OptionButton" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/MapHBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator" type="HSeparator" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+
+[node name="CreateRoomBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_action")
+text = "➕ إنشاء غرفة جديدة (Create Room)"
+
+[node name="JoinBox" type="HBoxContainer" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CodeInput" type="LineEdit" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/JoinBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "كود الغرفة أو الآي بي (#RoomCode / IP)"
+
+[node name="JoinRoomBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/JoinBox"]
+custom_minimum_size = Vector2(160, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
+text = "🔗 انضمام (Join)"
+
+[node name="QuickButtonsBox" type="HBoxContainer" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BluetoothBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/QuickButtonsBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_bt")
+text = "🔵 دخول بلوتوث (BT)"
+
+[node name="ScanBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/QuickButtonsBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_scan")
+text = "🔍 بحث تلقائي (Auto-Find)"
+
+[node name="PartyPlayBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_friends")
+text = "🎉 بدء غرفة مع البارتي (Start With Party)"
+
+[node name="VoiceBanner" type="Label" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 13
+text = "🎙️ مرحباً بك! اختر بطلك وابدأ اللعب"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="ViewModeSelect/HBox/RightCol/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ViewSettings" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsNavBar" type="HBoxContainer" parent="ViewSettings"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_constants/separation = 16
+
+[node name="SettingsBackBtn" type="Button" parent="ViewSettings/SettingsNavBar"]
+custom_minimum_size = Vector2(140, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "🔙 الرئيسية (Menu)"
+
+[node name="SettingsTitle" type="Label" parent="ViewSettings/SettingsNavBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "⚙️ إعدادات اللعبة والصوت والأكواد (SETTINGS & AUDIO & REDEEM CODE)"
+vertical_alignment = 1
+
+[node name="SettingsCard" type="Panel" parent="ViewSettings"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -240.0
+offset_right = 460.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="ViewSettings/SettingsCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 26.0
 offset_top = 18.0
-offset_right = -22.0
+offset_right = -26.0
 offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 14
 
-[node name="SectionTitle" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=2112264684]
+[node name="AudioHeader" type="Label" parent="ViewSettings/SettingsCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "🌐 MULTIPLAYER CO-OP ROOMS (الغرف):"
+theme_override_colors/font_color = Color(0, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "🎵 إعدادات الصوت والموسيقى (Sound & Music Volume):"
 
-[node name="NameLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=653752544]
+[node name="MusicHBox" type="HBoxContainer" parent="ViewSettings/SettingsCard/VBox"]
 layout_mode = 2
-text = "Your Callsign / اسمك في اللعبة (إجباري):"
+theme_override_constants/separation = 14
 
-[node name="NameInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox" unique_id=2077374339]
+[node name="MusicLabel" type="Label" parent="ViewSettings/SettingsCard/VBox/MusicHBox"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "صوت الموسيقى (BGM):"
+
+[node name="MusicSlider" type="HSlider" parent="ViewSettings/SettingsCard/VBox/MusicHBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.01
+value = 0.65
+
+[node name="MusicValLabel" type="Label" parent="ViewSettings/SettingsCard/VBox/MusicHBox"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "65%"
+horizontal_alignment = 2
+
+[node name="SfxHBox" type="HBoxContainer" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SfxLabel" type="Label" parent="ViewSettings/SettingsCard/VBox/SfxHBox"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "المؤثرات الصوتية (SFX):"
+
+[node name="SfxSlider" type="HSlider" parent="ViewSettings/SettingsCard/VBox/SfxHBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.01
+value = 0.8
+
+[node name="SfxValLabel" type="Label" parent="ViewSettings/SettingsCard/VBox/SfxHBox"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "80%"
+horizontal_alignment = 2
+
+[node name="MuteCheck" type="CheckBox" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "🔇 كتم جميع الأصوات (Mute All Audio)"
+
+[node name="HalalNote" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 13
+text = "✅ موسيقى خلفية إلكترونية سايبورغ نقية وخالية من أي محرمات (Halal Cyber Synth Ambience)."
+
+[node name="HSeparator2" type="HSeparator" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+
+[node name="RedeemHeader" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 17
+text = "🎁 استرداد كود الهدية (REDEEM GIFT CODE):"
+
+[node name="RedeemHBox" type="HBoxContainer" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RedeemInput" type="LineEdit" parent="ViewSettings/SettingsCard/VBox/RedeemHBox"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-placeholder_text = "Type your name here..."
+size_flags_horizontal = 3
+placeholder_text = "ادخل الكود هنا (مثل: ADMIN2026, TITAN, BERRY, CITRUS)..."
 
-[node name="MapLabel" type="Label" parent="HBox/RightCol/Panel/VBox"]
+[node name="RedeemBtn" type="Button" parent="ViewSettings/SettingsCard/VBox/RedeemHBox"]
+custom_minimum_size = Vector2(170, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
+text = "🎁 استرداد (Redeem)"
+
+[node name="RedeemStatus" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="RedeemHints" type="Label" parent="ViewSettings/SettingsCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 0.8)
+theme_override_font_sizes/font_size = 12
+text = "💡 أكواد متاحة: ADMIN2026 (لفتح الأدمن 500 HP), TITAN, BERRY2026, CITRUS2026, ALLHEROES"
+horizontal_alignment = 1
+
+[node name="ViewAccount" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AccountNavBar" type="HBoxContainer" parent="ViewAccount"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_constants/separation = 16
+
+[node name="AccountBackBtn" type="Button" parent="ViewAccount/AccountNavBar"]
+custom_minimum_size = Vector2(140, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "🔙 الرئيسية (Menu)"
+
+[node name="AccountTitle" type="Label" parent="ViewAccount/AccountNavBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "👤 إدارة الحساب والتسجيل (SIGN IN / SIGN UP / SIGN OUT)"
+vertical_alignment = 1
+
+[node name="AccountCard" type="Panel" parent="ViewAccount"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -230.0
+offset_right = 400.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="ViewAccount/AccountCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 20.0
+offset_right = -28.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="LoggedInBox" type="VBoxContainer" parent="ViewAccount/AccountCard/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="WelcomeUserLabel" type="Label" parent="ViewAccount/AccountCard/VBox/LoggedInBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 20
+text = "✅ مرحباً بك يا بطل: [Username]"
+horizontal_alignment = 1
+
+[node name="AccountInfoLabel" type="Label" parent="ViewAccount/AccountCard/VBox/LoggedInBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "حسابك نشط ومحفوظ محلياً على الجهاز."
+horizontal_alignment = 1
+
+[node name="HeroesStatusLabel" type="Label" parent="ViewAccount/AccountCard/VBox/LoggedInBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "حالة الأبطال: ولد البطيخ مفتوح"
+horizontal_alignment = 1
+
+[node name="SignOutBtn" type="Button" parent="ViewAccount/AccountCard/VBox/LoggedInBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_exit")
+text = "🚪 تسجيل الخروج (Sign Out)"
+
+[node name="AuthBox" type="VBoxContainer" parent="ViewAccount/AccountCard/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="AuthModeHBox" type="HBoxContainer" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TabSignInBtn" type="Button" parent="ViewAccount/AccountCard/VBox/AuthBox/AuthModeHBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_settings")
+text = "🔑 تسجيل الدخول (Sign In)"
+
+[node name="TabSignUpBtn" type="Button" parent="ViewAccount/AccountCard/VBox/AuthBox/AuthModeHBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "➕ إنشاء حساب جديد (Sign Up)"
+
+[node name="AuthTitleLabel" type="Label" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "سجل الدخول لحفظ تقدمك واللعب مع أصدقائك:"
+
+[node name="AuthUsernameInput" type="LineEdit" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+placeholder_text = "اسم المستخدم (Username)..."
+
+[node name="AuthPasswordInput" type="LineEdit" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+secret = true
+placeholder_text = "كلمة المرور (Password)..."
+
+[node name="AuthSubmitBtn" type="Button" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_start")
+text = "دخول (Sign In)"
+
+[node name="AuthStatusLabel" type="Label" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ViewFriends" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FriendsNavBar" type="HBoxContainer" parent="ViewFriends"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_constants/separation = 16
+
+[node name="FriendsBackBtn" type="Button" parent="ViewFriends/FriendsNavBar"]
+custom_minimum_size = Vector2(140, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "🔙 الرئيسية (Menu)"
+
+[node name="FriendsTitle" type="Label" parent="ViewFriends/FriendsNavBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "👥 الأصدقاء والبارتي (FRIENDS & PARTY)"
+vertical_alignment = 1
+
+[node name="FriendsCard" type="Panel" parent="ViewFriends"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -240.0
+offset_right = 460.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="ViewFriends/FriendsCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = -24.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="AddFriendHBox" type="HBoxContainer" parent="ViewFriends/FriendsCard/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FriendNameInput" type="LineEdit" parent="ViewFriends/FriendsCard/VBox/AddFriendHBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "اكتب اسم صديقك (Username) لإضافته..."
+
+[node name="AddFriendBtn" type="Button" parent="ViewFriends/FriendsCard/VBox/AddFriendHBox"]
+custom_minimum_size = Vector2(170, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
+text = "➕ إضافة صديق (Add)"
+
+[node name="FriendsStatusLabel" type="Label" parent="ViewFriends/FriendsCard/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+
+[node name="FriendsListScroll" type="ScrollContainer" parent="ViewFriends/FriendsCard/VBox"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FriendsListVBox" type="VBoxContainer" parent="ViewFriends/FriendsCard/VBox/FriendsListScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="PartySection" type="PanelContainer" parent="ViewFriends/FriendsCard/VBox"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+
+[node name="PartyVBox" type="VBoxContainer" parent="ViewFriends/FriendsCard/VBox/PartySection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PartyHeader" type="Label" parent="ViewFriends/FriendsCard/VBox/PartySection/PartyVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+text = "🎉 أعضاء البارتي الحاليين:"
+
+[node name="PartyMembersLabel" type="Label" parent="ViewFriends/FriendsCard/VBox/PartySection/PartyVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 14
-text = "🗺️ SELECT BATTLEFIELD MAP (اختر ساحة المعركة):"
+text = "البارتي: [Guest]"
 
-[node name="MapOption" type="OptionButton" parent="HBox/RightCol/Panel/VBox"]
-custom_minimum_size = Vector2(0, 44)
+[node name="PartyActionsHBox" type="HBoxContainer" parent="ViewFriends/FriendsCard/VBox/PartySection/PartyVBox"]
 layout_mode = 2
+theme_override_constants/separation = 12
 
-[node name="HSeparator" type="HSeparator" parent="HBox/RightCol/Panel/VBox" unique_id=1607710356]
-layout_mode = 2
-
-[node name="CreateRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox" unique_id=344761581]
-custom_minimum_size = Vector2(0, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 19
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_create")
-text = "➕ CREATE ROOM (إنشاء غرفة)"
-
-[node name="OrLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=1664963144]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
-theme_override_font_sizes/font_size = 14
-text = "— OR JOIN BY ROOM CODE (انضمام بكود الغرفة) —"
-horizontal_alignment = 1
-
-[node name="JoinBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox" unique_id=661306863]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="CodeInput" type="LineEdit" parent="HBox/RightCol/Panel/VBox/JoinBox" unique_id=1295413165]
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "كود الغرفة أو الآي بي (e.g. #C0A8... / 192.168.43.1)"
-
-[node name="JoinRoomBtn" type="Button" parent="HBox/RightCol/Panel/VBox/JoinBox" unique_id=872449460]
-custom_minimum_size = Vector2(180, 52)
-layout_mode = 2
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
-text = "🔗 JOIN ROOM"
-
-[node name="QuickButtonsBox" type="HBoxContainer" parent="HBox/RightCol/Panel/VBox" unique_id=778899001]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="BluetoothBtn" type="Button" parent="HBox/RightCol/Panel/VBox/QuickButtonsBox" unique_id=778899002]
-custom_minimum_size = Vector2(0, 46)
+[node name="StartWithPartyBtn" type="Button" parent="ViewFriends/FriendsCard/VBox/PartySection/PartyVBox/PartyActionsHBox"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_bt")
-text = "🔵 دخول بلوتوث (BT)"
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_start")
+text = "🚀 بدء اللعب مع البارتي (Start Game)"
 
-[node name="ScanBtn" type="Button" parent="HBox/RightCol/Panel/VBox/QuickButtonsBox" unique_id=778899003]
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_scan")
-text = "🔍 بحث تلقائي (Auto-Find)"
-
-[node name="StatusLabel" type="Label" parent="HBox/RightCol/Panel/VBox" unique_id=1029960627]
+[node name="LeavePartyBtn" type="Button" parent="ViewFriends/FriendsCard/VBox/PartySection/PartyVBox/PartyActionsHBox"]
+custom_minimum_size = Vector2(150, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-autowrap_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
+text = "🚪 مغادرة البارتي"

@@ -53,7 +53,7 @@ func bind_player(p: Player) -> void:
 func _process(_delta: float) -> void:
 	if revive_btn and player_ref and is_instance_valid(player_ref):
 		var show_revive = false
-		if not player_ref.is_down:
+		if not player_ref.is_down and NetworkManager.players.size() > 1:
 			for station in get_tree().get_nodes_in_group("revive_stations"):
 				if station.has_method("can_revive") and station.can_revive():
 					if player_ref.global_position.distance_to(station.global_position) < 6.0:
