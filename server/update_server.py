@@ -108,121 +108,17 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
         elif path == "/" or path == "/index.html":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.end_headers()
-            v_data = load_version_info()
-            html = f"""<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <title>CyberFort: Titan Strike - Update Server</title>
-    <style>
-        body {{
-            background: #0b0f19;
-            color: #e0f2fe;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }}
-        .card {{
-            background: #111827;
-            border: 2px solid #00f0ff;
-            border-radius: 16px;
-            padding: 28px;
-            max-width: 650px;
-            width: 100%;
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
-        }}
-        h1 {{ color: #00f0ff; margin-top: 0; font-size: 26px; text-align: center; }}
-        .badge {{
-            display: inline-block;
-            background: #059669;
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }}
-        .info-row {{
-            margin: 12px 0;
-            font-size: 16px;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #1f2937;
-            padding-bottom: 8px;
-        }}
-        .btn {{
-            display: block;
-            text-align: center;
-            background: #0284c7;
-            color: white;
-            text-decoration: none;
-            padding: 14px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 17px;
-            margin-top: 20px;
-            transition: 0.2s;
-        }}
-        .btn:hover {{ background: #0369a1; }}
-        ul {{ padding-right: 20px; color: #94a3b8; }}
-        li {{ margin-bottom: 6px; }}
-        .code {{
-            background: #030712;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-family: monospace;
-            direction: ltr;
-            text-align: left;
-            color: #38bdf8;
-            font-size: 13px;
-        }}
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>🚀 سيرفر تحديثات لعبة CYBERFORT TITAN STRIKE</h1>
-        <div style="text-align: center;">
-            <span class="badge">🟢 السيرفر متصل وشغال (Online)</span>
-        </div>
-        
-        <div class="info-row">
-            <span>الإصدار الحالي المتوفر:</span>
-            <strong style="color: #38bdf8;">v{v_data.get('version')} (Build {v_data.get('version_code')})</strong>
-        </div>
-        <div class="info-row">
-            <span>عنوان التحديث:</span>
-            <span>{v_data.get('title')}</span>
-        </div>
-        <div class="info-row">
-            <span>تاريخ الإصدار:</span>
-            <span>{v_data.get('release_date')}</span>
-        </div>
-        <div class="info-row">
-            <span>حجم التحديث:</span>
-            <span>{round(v_data.get('file_size_bytes', 0) / (1024*1024), 2)} MB</span>
-        </div>
-
-        <h3 style="color: #facc15; margin-bottom: 8px;">📝 سجل التغييرات في التحديث (Changelog):</h3>
-        <ul>
-            {"".join(f"<li>{item}</li>" for item in v_data.get('changelog', []))}
-        </ul>
-
-        <a class="btn" href="{v_data.get('download_url', '/downloads/update.zip')}">📥 تحميل ملف التحديث مباشرة (.zip)</a>
-
-        <div style="margin-top: 24px;">
-            <p style="margin-bottom: 6px; color: #94a3b8;">رابط فحص التحديثات في اللعبة (API Endpoint):</p>
-            <div class="code">http://{get_lan_ip()}:{PORT}/api/version</div>
-        </div>
-    </div>
-</body>
-</html>"""
-            self.wfile.write(html.encode("utf-8"))
-            return
+            index_file = PUBLIC_DIR / "index.html"
+            if index_file.is_file():
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                with open(index_file, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+            else:
+                self.send_error(404, "index.html not found")
+                return
 
         super().do_GET()
 
@@ -232,16 +128,20 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(content_length)
             try:
                 data = json.loads(body.decode("utf-8"))
-                current = load_version_info()
-                current.update(data)
-                save_version_info(current)
+                from publish_update import publish_update
+                version = data.get("version", "1.1.3")
+                version_code = int(data.get("version_code", 5))
+                title = data.get("title", "تحديث جديد من لوحة التحكم")
+                changelog = data.get("changelog", ["تحسينات عامة على النظام واللعبة"])
+                mandatory = data.get("mandatory", False)
+                updated_data = publish_update(version, version_code, title, changelog, mandatory)
                 self.send_response(200)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                self.wfile.write(json.dumps({"success": True, "message": "Version updated successfully!"}).encode("utf-8"))
+                self.wfile.write(json.dumps({"success": True, "message": "Version updated successfully!", "data": updated_data}).encode("utf-8"))
             except Exception as e:
-                self.send_error(400, f"Invalid JSON payload: {e}")
+                self.send_error(500, f"Publish error: {e}")
             return
         self.send_error(404, "Endpoint not found")
 
