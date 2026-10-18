@@ -53,8 +53,7 @@ extends Control
 @onready var redeem_input: LineEdit = $ViewSettings/SettingsCard/VBox/RedeemHBox/RedeemInput
 @onready var redeem_btn: Button = $ViewSettings/SettingsCard/VBox/RedeemHBox/RedeemBtn
 @onready var redeem_status: Label = $ViewSettings/SettingsCard/VBox/RedeemStatus
-@onready var server_url_input: LineEdit = $ViewSettings/SettingsCard/VBox/UpdateHBox/ServerUrlInput
-@onready var check_update_btn: Button = $ViewSettings/SettingsCard/VBox/UpdateHBox/CheckUpdateBtn
+@onready var check_update_btn: Button = $ViewSettings/SettingsCard/VBox/CheckUpdateBtn
 @onready var version_status_label: Label = $ViewSettings/SettingsCard/VBox/VersionStatusLabel
 
 # --- Update Modal Controls ---
@@ -230,19 +229,10 @@ func _on_redeem_pressed() -> void:
 # 2. OTA UPDATE SYSTEM & SERVER
 # ==============================================================================
 func _setup_update_system() -> void:
-	if server_url_input:
-		server_url_input.text = UpdateManager.server_url
-		server_url_input.text_submitted.connect(func(new_url):
-			UpdateManager.save_server_url(new_url)
-			_update_version_badge()
-		)
-	
 	if check_update_btn:
 		check_update_btn.pressed.connect(func():
 			AudioManager.play_sfx("click")
-			if server_url_input:
-				UpdateManager.save_server_url(server_url_input.text)
-			version_status_label.text = "🔍 جاري فحص خادم التحديثات..."
+			version_status_label.text = "🔍 جاري فحص التحديثات في الخلفية..."
 			version_status_label.modulate = Color.YELLOW
 			UpdateManager.check_for_updates()
 		)
@@ -274,18 +264,17 @@ func _setup_update_system() -> void:
 
 func _update_version_badge() -> void:
 	if version_status_label:
-		version_status_label.text = "الإصدار المثبت: v%s (Build %d) | السيرفر: %s" % [
+		version_status_label.text = "حالة اللعبة: الإصدار v%s (Build %d) | متصل بخادم التحديثات" % [
 			UpdateManager.current_version,
-			UpdateManager.current_build,
-			UpdateManager.server_url
+			UpdateManager.current_build
 		]
 		version_status_label.modulate = Color(0.2, 0.95, 0.6)
 
 func _on_update_checked(has_update: bool, info: Dictionary) -> void:
 	if not has_update:
 		if info.has("error"):
-			version_status_label.text = "⚠️ تعذر الوصول للسيرفر: " + str(info["error"])
-			version_status_label.modulate = Color(1.0, 0.4, 0.4)
+			version_status_label.text = "⚠️ لم يتم العثور على تحديثات جديدة حالياً"
+			version_status_label.modulate = Color(0.7, 0.8, 0.9)
 		else:
 			version_status_label.text = "✅ اللعبة على أحدث إصدار v%s (Build %d)" % [
 				UpdateManager.current_version,
@@ -625,8 +614,8 @@ func _on_class_selected(index: int) -> void:
 	if not GameManager.is_hero_unlocked(index):
 		var req_msg = ""
 		match index:
-			1: req_msg = "فوز بالجولة الأولى (Wave 1) أو استخدم كود BERRY2026!"
-			2: req_msg = "فوز بالجولة الثانية (Wave 2) أو استخدم كود CITRUS2026!"
+			1: req_msg = "فوز بالجولة الأولى (Wave 1) أو استرد كود الهدية السري لفتح بطلة الفراولة!"
+			2: req_msg = "فوز بالجولة الثانية (Wave 2) أو استرد كود الهدية السري لفتح البرتقال المدرّع!"
 			3: req_msg = "اهزم البيج بوس في الجولة الأخيرة لفتح بطل الأدمن الخارق!"
 		status_label.text = "🔒 البطل مقفول! " + req_msg
 		status_label.modulate = Color.YELLOW
@@ -723,7 +712,7 @@ func _on_connection_succeeded() -> void:
 func _on_connection_failed() -> void:
 	AudioManager.play_sfx("error")
 	_speak_prompt("Could not connect to room!")
-	status_label.text = "⚠️ تعذر الاتصال بالغرفة!\nتأكد أن كلا الجهازين على نفس شبكة الواي فاي أو الهوتسبوت/البلوتوث.\n💡 نصيحة: اكتب كود الغرفة أو رقم الآي بي (Host IP) مباشرة!"
+	status_label.text = "⚠️ تعذر الاتصال بالغرفة!\nتأكد أن كلا الجهازين متصلان بنفس الشبكة (Wi-Fi أو Hotspot/Bluetooth) وتأكد من كود الغرفة."
 	status_label.modulate = Color(1.0, 0.4, 0.4)
 
 func _on_bluetooth_btn_pressed() -> void:
@@ -753,16 +742,15 @@ func _on_scan_btn_pressed() -> void:
 	
 	get_tree().create_timer(1.8).timeout.connect(func():
 		if NetworkManager.udp_listener and NetworkManager.peer == null:
-			var candidate_ip = NetworkManager.get_bluetooth_or_hotspot_host_ip()
-			status_label.text = "🔵 محاولة الدخول لمضيف البلوتوث / هوتسبوت (%s)..." % candidate_ip
+			status_label.text = "🔵 جاري الاتصال التلقائي بمضيف البلوتوث / هوتسبوت..."
 			status_label.modulate = Color.CYAN
 			NetworkManager.stop_discovery_listener()
 			NetworkManager.join_room_with_code("BT", p_name, selected_class)
 	)
 
-func _on_room_discovered(room_code: String, host_ip: String, _map_id: int) -> void:
+func _on_room_discovered(room_code: String, _host_ip: String, _map_id: int) -> void:
 	NetworkManager.stop_discovery_listener()
-	status_label.text = "✅ تم العثور على غرفة: #%s (%s)! جاري الدخول..." % [room_code, host_ip]
+	status_label.text = "✅ تم العثور على غرفة: #%s! جاري الدخول..." % room_code
 	status_label.modulate = Color.GREEN
 	code_input.text = "#" + room_code
 	var p_name = _validate_player_name()

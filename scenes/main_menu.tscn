@@ -453,7 +453,7 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "كود الغرفة أو الآي بي (#RoomCode / IP)"
+placeholder_text = "ادخل كود الغرفة (#RoomCode)..."
 
 [node name="JoinRoomBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/JoinBox"]
 custom_minimum_size = Vector2(160, 44)
@@ -648,7 +648,7 @@ theme_override_constants/separation = 12
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "ادخل الكود هنا (مثل: BERRY2026, CITRUS2026, TITAN)..."
+placeholder_text = "ادخل كود الهدية السري هنا..."
 
 [node name="RedeemBtn" type="Button" parent="ViewSettings/SettingsCard/VBox/RedeemHBox"]
 custom_minimum_size = Vector2(170, 44)
@@ -669,30 +669,20 @@ layout_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 16
-text = "🌐 خادم التحديثات المباشرة (OTA UPDATE SERVER):"
+text = "🔄 تحديثات اللعبة المباشرة (LIVE UPDATES):"
 
-[node name="UpdateHBox" type="HBoxContainer" parent="ViewSettings/SettingsCard/VBox"]
+[node name="CheckUpdateBtn" type="Button" parent="ViewSettings/SettingsCard/VBox"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="ServerUrlInput" type="LineEdit" parent="ViewSettings/SettingsCard/VBox/UpdateHBox"]
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "رابط السيرفر (e.g. http://127.0.0.1:8080 أو IP الجهاز)"
-
-[node name="CheckUpdateBtn" type="Button" parent="ViewSettings/SettingsCard/VBox/UpdateHBox"]
-custom_minimum_size = Vector2(170, 40)
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_settings")
-text = "🔍 فحص التحديثات"
+text = "🔍 التحقق من وجود تحديثات جديدة الآن (Check For Updates)"
 
 [node name="VersionStatusLabel" type="Label" parent="ViewSettings/SettingsCard/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 13
-text = "الإصدار المثبت: v1.0.0 (Build 1) | السيرفر متصل"
+text = "حالة اللعبة: متصل ومحدث إلى أحدث إصدار"
 horizontal_alignment = 1
 
 [node name="ViewAccount" type="Control" parent="."]

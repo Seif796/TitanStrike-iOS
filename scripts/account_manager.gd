@@ -223,7 +223,7 @@ func redeem_code(code_raw: String) -> Dictionary:
 			reward_text = "🕷️ كود سبايدر نشط! استمتع بالقفز العالي وشباك العنكبوت!"
 			success = true
 		_:
-			return {"success": false, "message": "❌ الكود غير صحيح! تأكد من كتابة الكود بدقة (مثال: BERRY2026 أو CITRUS2026 أو TITAN)."}
+			return {"success": false, "message": "❌ كود الهدية غير صحيح أو منتهي الصلاحية!"}
 	
 	if success:
 		if accounts_data["users"].has(cur):
