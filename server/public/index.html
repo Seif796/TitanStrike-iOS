@@ -630,6 +630,10 @@
         <p>
             تحكم كامل في إتاحة وتعطيل أبطال اللعبة، تعديل طاقاتهم وسرعتهم، وبث التحديثات والإعدادات فورياً عبر شبكة الواي فاي أو الإنترنت لكافة الأجهزة المحمولة والكمبيوتر!
         </p>
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 700;">
+            <span>🛡️</span>
+            <span>حماية الراوتر مفعلة: الدخول للموقع مقتصر فقط على الأجهزة المتصلة بنفس راوتر الواي فاي المنزلي (Router LAN Only)</span>
+        </div>
     </header>
 
     <div class="container">
@@ -765,55 +769,54 @@
             </div>
         </div>
 
-        <!-- NETWORK CONNECTIVITY SECTION (INTERNET & WI-FI) -->
+        <!-- NETWORK CONNECTIVITY SECTION (ROUTER WI-FI PROTECTION) -->
         <h2 class="section-title" id="network">
             <span>🌐</span>
-            <span>الاتصال عبر الإنترنت والشبكات (Multi-Network Access)</span>
+            <span>شبكة الاتصال وحماية الراوتر (Router Network Access)</span>
         </h2>
         <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 14px;">
-            تسمح هذه الروابط للأجهزة بالاتصال بالسيرفر واللعب سوياً سواء كانوا على نفس شبكة الواي فاي أو متصلين عبر باقة الهاتف الخلوي والإنترنت (4G / 5G / Fiber):
+            🔒 <b>تم تفعيل حماية الراوتر للموقع:</b> لا يستطيع أي شخص من خارج شبكة الراوتر الدخول للموقع أو لوحة التحكم! فقط الأجهزة المتصلة براوتر الواي فاي المنزلي يمكنها الدخول.
         </p>
 
         <div class="grid-2">
-            <!-- INTERNET WAN CARD -->
-            <div class="net-card" style="border-color: rgba(139, 92, 246, 0.4);">
-                <div class="net-card-header">
-                    <span class="net-card-title" style="color: #c084fc;">
-                        <span>🌍</span>
-                        <span>الاتصال عبر الإنترنت والبيانات (Public WAN / 4G / 5G)</span>
-                    </span>
-                    <span class="hero-badge badge-enabled">خارجي (Remote)</span>
-                </div>
-                <p style="font-size: 13px; color: var(--text-muted);">
-                    لأجهزة الموبايل المتصلة بالإنترنت من أي مكان خارج المنزل أو عبر شبكة 4G/5G:
-                </p>
-                <div class="net-url-box" id="box-wan">
-                    <span id="url-wan">http://105.197.151.212:8080</span>
-                    <button class="btn btn-primary btn-copy" onclick="copyText('url-wan')">📋 نسخ</button>
-                </div>
-                <div style="font-size: 12px; color: #a78bfa;">
-                    ✅ اللعبة تتصل بهذا العنوان تلقائياً في الخلفية عند فتح اللعبة بدون الحاجة لكتابته يدوياً!
-                </div>
-            </div>
-
             <!-- LOCAL WI-FI CARD -->
-            <div class="net-card" style="border-color: rgba(0, 240, 255, 0.4);">
+            <div class="net-card" style="border-color: rgba(0, 240, 255, 0.6); background: rgba(8, 24, 40, 0.95);">
                 <div class="net-card-header">
                     <span class="net-card-title" style="color: #38bdf8;">
                         <span>📶</span>
-                        <span>الاتصال عبر شبكة الواي فاي المحلية (Local Wi-Fi LAN)</span>
+                        <span>رابط الدخول للموقع عبر راوتر الواي فاي (Local Router LAN)</span>
                     </span>
-                    <span class="hero-badge badge-enabled">محلي (Wi-Fi)</span>
+                    <span class="hero-badge badge-enabled">مسموح بالدخول ✅</span>
                 </div>
                 <p style="font-size: 13px; color: var(--text-muted);">
-                    للأجهزة المتصلة على نفس راوتر أو شبكة الواي فاي المحلية بالمنزل:
+                    استخدم هذا الرابط من أي موبايل أو كمبيوتر متصل بنفس راوتر الواي فاي للدخول للوحة التحكم:
                 </p>
                 <div class="net-url-box" id="box-lan">
                     <span id="url-lan">http://192.168.1.17:8080</span>
-                    <button class="btn btn-primary btn-copy" onclick="copyText('url-lan')">📋 نسخ</button>
+                    <button class="btn btn-primary btn-copy" onclick="copyText('url-lan')">📋 نسخ الرابط</button>
                 </div>
                 <div style="font-size: 12px; color: #38bdf8;">
-                    ⚡ سرعة فائقة وزمن استجابة أقل من 1ms للتحديث واللعب الجماعي المباشر.
+                    ⚡ سرعة فائقة وحماية كاملة — خاص بالراوتر الخاص بك فقط.
+                </div>
+            </div>
+
+            <!-- INTERNET WAN CARD -->
+            <div class="net-card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(24, 12, 18, 0.9);">
+                <div class="net-card-header">
+                    <span class="net-card-title" style="color: #f87171;">
+                        <span>🌍</span>
+                        <span>الاتصال الخارجي عبر الإنترنت (Public WAN)</span>
+                    </span>
+                    <span class="hero-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">محظور للدخول للموقع ⛔</span>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted);">
+                    حالة حماية لوحة التحكم من الأجهزة الخارجية والإنترنت:
+                </p>
+                <div class="net-url-box" id="box-wan" style="border-color: rgba(239, 68, 68, 0.3);">
+                    <span id="url-wan" style="color: #f87171;">http://105.197.151.212:8080 (محظور 403)</span>
+                </div>
+                <div style="font-size: 12px; color: #fca5a5;">
+                    🛡️ أي جهاز يحاول الدخول للموقع من خارج الراوتر يُمنع فوراً بصفحة 403 Forbidden.
                 </div>
             </div>
         </div>

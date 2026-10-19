@@ -15,6 +15,7 @@ import socket
 import urllib.parse
 import urllib.request
 import threading
+import ipaddress
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -116,6 +117,17 @@ def get_wan_ip():
     except Exception:
         return "105.197.151.212"
 
+def is_local_router_client(client_ip: str) -> bool:
+    """Returns True if the client IP belongs to the local router subnet (Wi-Fi/LAN/localhost)."""
+    try:
+        clean_ip = str(client_ip).replace("::ffff:", "").strip()
+        if clean_ip in ("127.0.0.1", "::1", "localhost"):
+            return True
+        ip = ipaddress.ip_address(clean_ip)
+        return ip.is_private or ip.is_loopback
+    except Exception:
+        return False
+
 def load_version_info():
     if not VERSION_FILE.exists():
         save_version_info(DEFAULT_VERSION_DATA)
@@ -149,6 +161,43 @@ def save_game_config(data):
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
+
+    def check_router_access(self) -> bool:
+        """Blocks access to the website & admin controls if client is not on the local router Wi-Fi/LAN."""
+        client_ip = self.client_address[0]
+        if not is_local_router_client(client_ip):
+            self.send_response(403)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            blocked_html = f"""<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>403 - الوصول محظور (خاص براوتر الشبكة المحلية فقط)</title>
+<style>
+body {{ background: #070a12; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; }}
+.card {{ background: rgba(239, 68, 68, 0.08); border: 2px solid #ef4444; border-radius: 20px; padding: 40px 30px; max-width: 540px; box-shadow: 0 0 50px rgba(239, 68, 68, 0.25); }}
+.badge {{ display: inline-block; background: #ef4444; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: bold; font-size: 14px; margin-bottom: 20px; }}
+h1 {{ color: #ff5c5c; margin: 0 0 15px; font-size: 26px; }}
+p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
+.info-box {{ background: rgba(0, 0, 0, 0.4); border-radius: 12px; padding: 14px; font-size: 14px; color: #94a3b8; font-family: monospace; }}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="badge">🛡️ حماية شبكة الراوتر مفعلة</div>
+<h1>⛔ محظور: الموقع متاح فقط من الراوتر</h1>
+<p>عذراً! هذا الموقع ولوحة التحكم مخصصة <b>حصرياً للأجهزة المتصلة براوتر الواي فاي المنزلي (Local Wi-Fi / Router)</b>.</p>
+<p>لا يُسمح لأي جهاز خارج نطاق الراوتر بالدخول إلى لوحة التحكم أو الموقع.</p>
+<div class="info-box">عنوان IP جهازك: <b>{client_ip}</b> (خارج شبكة الراوتر)</div>
+</div>
+</body>
+</html>"""
+            self.wfile.write(blocked_html.encode("utf-8"))
+            return False
+        return True
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -187,6 +236,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/devices":
+            if not self.check_router_access():
+                return
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -202,6 +253,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/network_info":
+            if not self.check_router_access():
+                return
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -213,6 +266,7 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
                 "port": PORT,
                 "lan_url": f"http://{get_lan_ip()}:{PORT}",
                 "wan_url": f"http://{get_wan_ip()}:{PORT}",
+                "router_only_protection": True,
                 "status": "ONLINE"
             }
             self.wfile.write(json.dumps(net_data, ensure_ascii=False).encode("utf-8"))
@@ -238,6 +292,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
         elif path == "/" or path == "/index.html":
+            if not self.check_router_access():
+                return
             index_file = PUBLIC_DIR / "index.html"
             if index_file.is_file():
                 self.send_response(200)
@@ -251,6 +307,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, "index.html not found")
                 return
 
+        if not self.check_router_access():
+            return
         super().do_GET()
 
     def do_POST(self):
@@ -258,6 +316,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
 
         if path == "/api/publish":
+            if not self.check_router_access():
+                return
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -279,6 +339,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/game_config":
+            if not self.check_router_access():
+                return
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -308,6 +370,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path in ("/api/server_status", "/api/server_toggle"):
+            if not self.check_router_access():
+                return
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
@@ -337,6 +401,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/shutdown":
+            if not self.check_router_access():
+                return
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -426,6 +492,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/device_action":
+            if not self.check_router_access():
+                return
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
