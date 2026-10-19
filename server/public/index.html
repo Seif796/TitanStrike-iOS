@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberFort: Titan Strike 3D | مركز العمليات والتحكم بالسيرفر</title>
+    <link rel="icon" type="image/png" href="/images/app_icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
@@ -657,14 +658,14 @@
 
     <!-- NAVBAR -->
     <nav>
-        <a href="/" class="brand">
-            <span class="brand-logo">⚡</span>
+        <a href="/" class="brand" style="display: flex; align-items: center; gap: 10px;">
+            <img src="/images/app_icon.png" alt="CyberFort Icon" style="width: 36px; height: 36px; border-radius: 9px; box-shadow: 0 0 12px rgba(0, 240, 255, 0.45); border: 1px solid rgba(0, 240, 255, 0.5);">
             <span class="brand-name">CYBERFORT 3D</span>
         </a>
 
         <div class="nav-links">
             <a href="#control-center" class="nav-link">🎮 التحكم بالشخصيات</a>
-            <a href="#art-gallery" class="nav-link">🖼️ صور الأبطال</a>
+            <a href="#art-gallery" class="nav-link">🖼️ صور الأبطال والأيقونة</a>
             <a href="#network" class="nav-link">🌐 شبكات الاتصال والإنترنت</a>
             <a href="#version-info" class="nav-link">📦 حالة التحديثات</a>
             <a href="#publisher" class="nav-link">🚀 نشر باتش</a>
@@ -678,6 +679,18 @@
 
     <!-- HERO HEADER -->
     <header class="hero">
+        <div style="margin-bottom: 20px; display: inline-flex; flex-direction: column; align-items: center;">
+            <img src="/images/app_icon.png" alt="CyberFort 3D App Icon" style="width: 125px; height: 125px; border-radius: 28px; box-shadow: 0 0 35px rgba(0, 240, 255, 0.45); border: 2.5px solid rgba(0, 240, 255, 0.6); transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                <a href="/images/app_icon.png" download="CyberFort_App_Icon.png" class="btn btn-primary" style="padding: 7px 16px; font-size: 12px; text-decoration: none;">
+                    <span>⬇️ تنزيل أيقونة التطبيق (PNG HD)</span>
+                </a>
+                <a href="/images/app_icon.svg" download="CyberFort_App_Icon.svg" class="btn btn-outline" style="padding: 7px 16px; font-size: 12px; text-decoration: none;">
+                    <span>⬇️ صيغة الفيكتور (SVG)</span>
+                </a>
+            </div>
+        </div>
+
         <div class="hero-tag">⚡ LIVE GAME CONTROL & OTA PATCH CENTER</div>
         <h1>مركز التحكم المباشر بالسيرفر والشخصيات</h1>
         <p>
@@ -830,8 +843,37 @@
         <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 14px;">
             📸 يمكنك تنزيل الصور الأصلية لشخصيات اللعبة بجودة كاملة على هاتفك أو جهازك بنقرة واحدة، كما تم حفظ نسخة منها مباشرة على اللابتوب في مجلد <b>سطح المكتب (Desktop)</b> و<b>التنزيلات (Downloads)</b>!
         </p>
+        <div class="grid-3" style="margin-bottom: 36px;">
+            <!-- OFFICIAL APP ICON CARD -->
+            <div class="card" style="border: 2px solid rgba(0, 240, 255, 0.5); background: rgba(8, 24, 40, 0.95); display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 28px;">⚡</span>
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800; color: #00f0ff;">أيقونة التطبيق (App Icon)</h3>
+                            <span style="font-size: 12px; color: var(--text-muted);">الأيقونة الرسمية لـ CyberFort 3D</span>
+                        </div>
+                    </div>
+                    <span class="hero-badge badge-enabled">Official Icon</span>
+                </div>
+                
+                <div style="width: 100%; height: 340px; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <img src="/images/app_icon.png" alt="CyberFort App Icon" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 28px; box-shadow: 0 0 30px rgba(0,240,255,0.4);">
+                </div>
 
-        <div class="grid-2" style="margin-bottom: 36px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding-top: 8px;">
+                    <span style="font-size: 12px; color: #94a3b8;">📁 محفوظة على اللابتوب: <code>Desktop/app_icon.png</code></span>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="/images/app_icon.png" download="CyberFort_App_Icon.png" class="btn btn-primary" style="padding: 10px 14px; font-size: 12px; text-decoration: none;">
+                            <span>⬇️ تنزيل PNG</span>
+                        </a>
+                        <a href="/images/app_icon.svg" download="CyberFort_App_Icon.svg" class="btn btn-outline" style="padding: 10px 14px; font-size: 12px; text-decoration: none;">
+                            <span>⬇️ تنزيل SVG</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- MELON BOY ART CARD -->
             <div class="card" style="border: 2px solid rgba(16, 185, 129, 0.4); background: rgba(8, 20, 28, 0.95); display: flex; flex-direction: column; gap: 14px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
