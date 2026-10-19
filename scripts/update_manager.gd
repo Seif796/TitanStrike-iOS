@@ -1,10 +1,11 @@
 extends Node
 
 # UpdateManager Autoload (res://scripts/update_manager.gd)
-# Handles Over-The-Air (OTA) Game Updates & Live Game Configuration Sync:
+# Handles Over-The-Air (OTA) Game Updates, Live Game Configuration Sync,
+# and Real-Time Server Heartbeat Monitoring (with Automatic Force-Quit on Server Shutdown):
 # Version checking, multi-network auto fallback (WAN / LAN / Localhost),
 # background download with progress tracking, live hero configuration syncing,
-# and runtime resource patching via ProjectSettings.load_resource_pack().
+# periodic quiet refresh, and runtime resource patching via ProjectSettings.load_resource_pack().
 
 signal update_checked(has_update: bool, version_info: Dictionary)
 signal update_available(version_info: Dictionary)
@@ -13,6 +14,7 @@ signal download_completed(file_path: String)
 signal download_failed(error_message: String)
 signal update_installed()
 signal game_config_synced(config: Dictionary)
+signal server_status_updated(is_open: bool, status_str: String)
 
 const CONFIG_PATH: String = "user://update_config.cfg"
 const STATE_PATH: String = "user://version_state.json"
@@ -38,12 +40,18 @@ var latest_server_info: Dictionary = {}
 
 var is_checking: bool = false
 var is_downloading: bool = false
+var is_server_open: bool = true
+var _shutdown_in_progress: bool = false
+var _heartbeat_ticks: int = 0
+
 var _candidate_index: int = 0
 var _candidates_to_try: Array[String] = []
 
 var _check_http: HTTPRequest = null
 var _config_http: HTTPRequest = null
 var _download_http: HTTPRequest = null
+var _status_http: HTTPRequest = null
+var _heartbeat_timer: Timer = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -65,8 +73,22 @@ func _ready() -> void:
 	add_child(_download_http)
 	_download_http.request_completed.connect(_on_download_request_completed)
 	
-	# Automatically check for updates and sync game config on startup
+	_status_http = HTTPRequest.new()
+	_status_http.timeout = 2.5
+	add_child(_status_http)
+	_status_http.request_completed.connect(_on_status_request_completed)
+	
+	# Setup periodic quiet background heartbeat refresh timer (every 3 seconds)
+	_heartbeat_timer = Timer.new()
+	_heartbeat_timer.wait_time = 3.0
+	_heartbeat_timer.autostart = true
+	_heartbeat_timer.one_shot = false
+	add_child(_heartbeat_timer)
+	_heartbeat_timer.timeout.connect(check_server_heartbeat)
+	
+	# Automatically check for updates, sync game config, and check heartbeat on startup
 	get_tree().create_timer(1.0).timeout.connect(func():
+		check_server_heartbeat()
 		check_for_updates()
 		sync_game_config()
 	)
@@ -122,8 +144,101 @@ func _save_installed_state(v_info: Dictionary) -> void:
 		file.store_string(JSON.stringify(data, "\t"))
 		file.close()
 
+# ==============================================================================
+# HEARTBEAT & SERVER STATUS MONITORING (Periodic Refresh)
+# ==============================================================================
+func check_server_heartbeat() -> void:
+	if _shutdown_in_progress or is_downloading:
+		return
+	
+	_heartbeat_ticks += 1
+	var endpoint = server_url.trim_suffix("/") + "/api/server_status"
+	_status_http.request(endpoint)
+	
+	# Quietly refresh game configuration every 9 seconds without disrupting user
+	if _heartbeat_ticks % 3 == 0:
+		sync_game_config()
+
+func _on_status_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if _shutdown_in_progress:
+		return
+		
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		is_server_open = false
+		server_status_updated.emit(false, "close")
+		return
+	
+	var json = JSON.new()
+	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+		var st = str(json.data.get("status", "OPEN")).to_upper()
+		if st == "CLOSED" or st == "CLOSE":
+			is_server_open = false
+			server_status_updated.emit(false, "close")
+			_trigger_server_closed_shutdown()
+		else:
+			is_server_open = true
+			server_status_updated.emit(true, "Open")
+	else:
+		is_server_open = false
+		server_status_updated.emit(false, "close")
+
+func _trigger_server_closed_shutdown() -> void:
+	if _shutdown_in_progress:
+		return
+	_shutdown_in_progress = true
+	
+	# Stop heartbeat
+	if _heartbeat_timer:
+		_heartbeat_timer.stop()
+		
+	# Create high-priority fullscreen shutdown notice overlay
+	var canvas = CanvasLayer.new()
+	canvas.layer = 128
+	
+	var bg = ColorRect.new()
+	bg.color = Color(0.04, 0.06, 0.1, 0.96)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	canvas.add_child(bg)
+	
+	var alert_box = VBoxContainer.new()
+	alert_box.set_anchors_preset(Control.PRESET_CENTER)
+	alert_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	alert_box.custom_minimum_size = Vector2(700, 300)
+	alert_box.position = Vector2(-350, -150)
+	
+	var icon = Label.new()
+	icon.text = "🚨"
+	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon.add_theme_font_size_override("font_size", 44)
+	alert_box.add_child(icon)
+	
+	var title = Label.new()
+	title.text = "تم إيقاف وإغلاق السيرفر من قِبل المدير!"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
+	alert_box.add_child(title)
+	
+	var sub = Label.new()
+	sub.text = "\nServer has been CLOSED by admin.\nClosing game for all players..."
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 17)
+	sub.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
+	alert_box.add_child(sub)
+	
+	canvas.add_child(alert_box)
+	get_tree().root.add_child(canvas)
+	
+	# Wait 1.4s so players see the alert, then quit cleanly
+	get_tree().create_timer(1.4).timeout.connect(func():
+		get_tree().quit()
+	)
+
+# ==============================================================================
+# VERSION & CONFIG SYNC
+# ==============================================================================
 func check_for_updates() -> void:
-	if is_checking:
+	if is_checking or _shutdown_in_progress:
 		return
 	is_checking = true
 	
@@ -152,7 +267,6 @@ func _try_check_candidate() -> void:
 
 func _on_check_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		# Current candidate failed, try next one
 		_candidate_index += 1
 		if _candidate_index < _candidates_to_try.size():
 			_try_check_candidate()
@@ -164,7 +278,6 @@ func _on_check_request_completed(result: int, response_code: int, _headers: Pack
 	
 	is_checking = false
 	
-	# Successfully connected! Save this candidate as our primary server_url
 	if _candidate_index < _candidates_to_try.size():
 		var working_url = _candidates_to_try[_candidate_index]
 		if working_url != server_url:
@@ -185,10 +298,11 @@ func _on_check_request_completed(result: int, response_code: int, _headers: Pack
 	if has_new:
 		update_available.emit(info)
 	
-	# Also trigger live config sync now that we verified connection
 	sync_game_config()
 
 func sync_game_config() -> void:
+	if _shutdown_in_progress:
+		return
 	var endpoint = server_url.trim_suffix("/") + "/api/game_config"
 	_config_http.request(endpoint)
 
@@ -197,11 +311,12 @@ func _on_config_request_completed(result: int, response_code: int, _headers: Pac
 		return
 	var json = JSON.new()
 	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+		# Quietly apply server configuration without changing user interface selections
 		GameManager.apply_server_config(json.data)
 		game_config_synced.emit(json.data)
 
 func start_download_update() -> void:
-	if is_downloading:
+	if is_downloading or _shutdown_in_progress:
 		return
 	if latest_server_info.is_empty():
 		download_failed.emit("لا توجد معلومات تحديث متوفرة حالياً.")

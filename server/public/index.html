@@ -617,9 +617,9 @@
             <a href="#publisher" class="nav-link">🚀 نشر باتش</a>
         </div>
 
-        <div class="status-pill">
+        <div class="status-pill" id="nav-server-pill">
             <div class="status-pulse"></div>
-            <span>السيرفر متصل أونلاين 🟢</span>
+            <span>Server: Open 🟢</span>
         </div>
     </nav>
 
@@ -633,6 +633,39 @@
     </header>
 
     <div class="container">
+
+        <!-- MASTER SERVER POWER CONTROL (NEW USER REQUEST) -->
+        <div class="card" id="server-power-card" style="margin-bottom: 28px; border: 2px solid rgba(16, 185, 129, 0.4); background: rgba(8, 18, 30, 0.95); box-shadow: 0 0 25px rgba(0, 240, 255, 0.12);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div id="srv-power-icon" style="font-size: 34px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.15); border-radius: 16px; border: 2px solid #10b981;">
+                        🟢
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h2 style="font-size: 20px; font-weight: 900; color: white;">حالة تشغيل السيرفر (Server Power Control)</h2>
+                            <span id="srv-status-badge" class="hero-badge badge-enabled" style="font-size: 13px; padding: 4px 14px;">
+                                Server: Open 🟢
+                            </span>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+                            💡 إذا ضغطت على <b>إيقاف السيرفر</b>، سيتم حجب السيرفر فوراً وستقوم اللعبة بإغلاق نفسها فوراً لدى جميع اللاعبين المتصلين!
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                    <button type="button" id="btn-toggle-server" onclick="toggleServerPower()" class="btn btn-danger" style="font-size: 15px; padding: 12px 24px;">
+                        <span>🔴</span>
+                        <span id="btn-toggle-server-text">إيقاف السيرفر وإغلاق اللعبة على اللاعبين (Close Server)</span>
+                    </button>
+                    <button type="button" onclick="shutdownServerProcess()" class="btn btn-outline" style="font-size: 13px; padding: 12px 18px; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+                        <span>⚠️</span>
+                        <span>إطفاء البرنامج نهائياً (Shutdown)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- LIVE HEROES CONTROL CENTER (NEW REQUEST) -->
         <h2 class="section-title" id="control-center">
@@ -1083,9 +1116,121 @@
             }
         }
 
+        let isServerOpen = true;
+
+        async function fetchServerStatus() {
+            try {
+                const res = await fetch('/api/server_status');
+                if (!res.ok) {
+                    updateServerStatusUI(false);
+                    return;
+                }
+                const data = await res.json();
+                isServerOpen = (data.status === "OPEN" || data.status === "ONLINE");
+                updateServerStatusUI(isServerOpen);
+            } catch (e) {
+                updateServerStatusUI(false);
+            }
+        }
+
+        function updateServerStatusUI(isOpen) {
+            isServerOpen = isOpen;
+            const badge = document.getElementById('srv-status-badge');
+            const icon = document.getElementById('srv-power-icon');
+            const btn = document.getElementById('btn-toggle-server');
+            const btnText = document.getElementById('btn-toggle-server-text');
+            const navPill = document.getElementById('nav-server-pill');
+            const card = document.getElementById('server-power-card');
+
+            if (isOpen) {
+                if (badge) {
+                    badge.className = 'hero-badge badge-enabled';
+                    badge.innerText = 'Server: Open 🟢 (مفتوح)';
+                }
+                if (icon) {
+                    icon.innerHTML = '🟢';
+                    icon.style.borderColor = '#10b981';
+                    icon.style.background = 'rgba(16, 185, 129, 0.15)';
+                }
+                if (btn) {
+                    btn.className = 'btn btn-danger';
+                }
+                if (btnText) {
+                    btnText.innerText = 'إيقاف السيرفر وإغلاق اللعبة على الجميع (Close Server)';
+                }
+                if (navPill) {
+                    navPill.innerHTML = '<div class="status-pulse"></div><span>Server: Open 🟢</span>';
+                }
+                if (card) {
+                    card.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+                }
+            } else {
+                if (badge) {
+                    badge.className = 'hero-badge badge-disabled';
+                    badge.innerText = 'Server: close 🔴 (مغلق)';
+                }
+                if (icon) {
+                    icon.innerHTML = '🔴';
+                    icon.style.borderColor = '#ef4444';
+                    icon.style.background = 'rgba(239, 68, 68, 0.15)';
+                }
+                if (btn) {
+                    btn.className = 'btn btn-success';
+                }
+                if (btnText) {
+                    btnText.innerText = '🟢 تشغيل وفتح السيرفر الآن (Open Server)';
+                }
+                if (navPill) {
+                    navPill.innerHTML = '<div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div><span>Server: close 🔴</span>';
+                }
+                if (card) {
+                    card.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                }
+            }
+        }
+
+        async function toggleServerPower() {
+            const nextStatus = isServerOpen ? "CLOSED" : "OPEN";
+            try {
+                const res = await fetch('/api/server_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: nextStatus })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    isServerOpen = (data.status === "OPEN");
+                    updateServerStatusUI(isServerOpen);
+                    if (isServerOpen) {
+                        showToast("🟢 تم تشغيل السيرفر بنجاح وأصبح متاحاً للاعبين (Server: Open)!");
+                    } else {
+                        showToast("🚨 تم إيقاف السيرفر! ستغلق اللعبة فوراً لدى جميع اللاعبين (Server: close)");
+                    }
+                }
+            } catch (e) {
+                showToast("❌ تعذر الاتصال بالسيرفر!");
+            }
+        }
+
+        async function shutdownServerProcess() {
+            if (!confirm("⚠️ هل أنت متأكد من إطفاء برنامج السيرفر نهائياً؟ سيتم إيقاف الخدمة بالكامل.")) return;
+            try {
+                await fetch('/api/shutdown', { method: 'POST' });
+                showToast("⚠️ تم إرسال أمر إطفاء برنامج السيرفر.");
+                updateServerStatusUI(false);
+            } catch (e) {
+                showToast("⚠️ تم إرسال أمر الإطفاء.");
+                updateServerStatusUI(false);
+            }
+        }
+
+        fetchServerStatus();
         fetchNetworkInfo();
         fetchGameConfig();
         fetchVersion();
+
+        // Keep status synchronized every 3 seconds
+        setInterval(fetchServerStatus, 3000);
     </script>
 </body>
 </html>

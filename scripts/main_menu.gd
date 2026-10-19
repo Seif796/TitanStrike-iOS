@@ -54,6 +54,7 @@ extends Control
 @onready var redeem_btn: Button = $ViewSettings/SettingsCard/VBox/RedeemHBox/RedeemBtn
 @onready var redeem_status: Label = $ViewSettings/SettingsCard/VBox/RedeemStatus
 @onready var check_update_btn: Button = $ViewSettings/SettingsCard/VBox/CheckUpdateBtn
+@onready var server_state_label: Label = $ViewSettings/SettingsCard/VBox/ServerStatusHBox/ServerStateLabel
 @onready var version_status_label: Label = $ViewSettings/SettingsCard/VBox/VersionStatusLabel
 
 # --- Update Modal Controls ---
@@ -224,6 +225,20 @@ func _setup_settings_view() -> void:
 	mute_check.button_pressed = AudioManager.is_muted
 	mute_check.toggled.connect(func(b: bool):
 		AudioManager.set_muted(b)
+	)
+	
+	# Server status indicator (Open in green / close in red)
+	if server_state_label:
+		server_state_label.text = "Open" if UpdateManager.is_server_open else "close"
+		server_state_label.modulate = Color(0.2, 0.95, 0.5) if UpdateManager.is_server_open else Color(1.0, 0.25, 0.25)
+	
+	UpdateManager.server_status_updated.connect(func(is_open: bool, status_str: String):
+		if server_state_label:
+			server_state_label.text = status_str
+			if is_open:
+				server_state_label.modulate = Color(0.2, 0.95, 0.5)
+			else:
+				server_state_label.modulate = Color(1.0, 0.25, 0.25)
 	)
 	
 	redeem_btn.pressed.connect(_on_redeem_pressed)

@@ -174,6 +174,18 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(cfg_data, ensure_ascii=False).encode("utf-8"))
             return
 
+        elif path == "/api/server_status":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            cfg_data = load_game_config()
+            st = cfg_data.get("server_status", "OPEN").upper()
+            is_open = (st == "OPEN")
+            self.wfile.write(json.dumps({"status": st, "is_open": is_open}, ensure_ascii=False).encode("utf-8"))
+            return
+
         elif path == "/api/network_info":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -280,6 +292,48 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, f"Game config error: {e}")
             return
 
+        elif path in ("/api/server_status", "/api/server_toggle"):
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                current_config = load_game_config()
+                current_st = current_config.get("server_status", "OPEN").upper()
+                if "status" in data:
+                    new_st = str(data["status"]).strip().upper()
+                else:
+                    new_st = "CLOSED" if current_st == "OPEN" else "OPEN"
+                
+                current_config["server_status"] = new_st
+                save_game_config(current_config)
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "status": new_st,
+                    "is_open": (new_st == "OPEN"),
+                    "message": f"Server status updated to {new_st}"
+                }, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Server toggle error: {e}")
+            return
+
+        elif path == "/api/shutdown":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "message": "Server process is stopping..."}).encode("utf-8"))
+            def kill_soon():
+                import time
+                time.sleep(0.5)
+                os._exit(0)
+            threading.Thread(target=kill_soon, daemon=True).start()
+            return
+
         self.send_error(404, "Endpoint not found")
 
     def end_headers(self):
@@ -296,6 +350,7 @@ def run_server():
     lan_ip = get_lan_ip()
     wan_ip = get_wan_ip()
     handler = UpdateRequestHandler
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(("0.0.0.0", PORT), handler) as httpd:
         print("=" * 70)
         print("⚡ CyberFort: Titan Strike 3D - Live Control & OTA Server")
