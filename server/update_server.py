@@ -186,6 +186,21 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"status": st, "is_open": is_open}, ensure_ascii=False).encode("utf-8"))
             return
 
+        elif path == "/api/devices":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            cfg_data = load_game_config()
+            dev_sec = cfg_data.get("device_security", {
+                "whitelist_enabled": True,
+                "allowed_devices": [],
+                "pending_devices": []
+            })
+            self.wfile.write(json.dumps(dev_sec, ensure_ascii=False).encode("utf-8"))
+            return
+
         elif path == "/api/network_info":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -332,6 +347,164 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
                 time.sleep(0.5)
                 os._exit(0)
             threading.Thread(target=kill_soon, daemon=True).start()
+            return
+
+        elif path == "/api/verify_device":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                device_id = str(data.get("device_id", "")).strip()
+                device_name = str(data.get("device_name", "Unknown Device")).strip()
+                os_name = str(data.get("os", "Unknown OS")).strip()
+                username = str(data.get("username", "")).strip()
+
+                current_config = load_game_config()
+                dev_sec = current_config.get("device_security", {
+                    "whitelist_enabled": True,
+                    "allowed_devices": [],
+                    "pending_devices": []
+                })
+
+                if not dev_sec.get("whitelist_enabled", True):
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"allowed": True, "message": "Whitelist disabled - access granted"}, ensure_ascii=False).encode("utf-8"))
+                    return
+
+                clean_id = device_id.strip("{} ").lower()
+                matched = None
+                for dev in dev_sec.get("allowed_devices", []):
+                    if dev.get("id", "").strip("{} ").lower() == clean_id:
+                        matched = dev
+                        break
+
+                if matched and matched.get("status", "APPROVED") == "APPROVED":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "allowed": True, 
+                        "device_id": device_id,
+                        "device_name": matched.get("name", device_name),
+                        "message": "Authorized device recognized"
+                    }, ensure_ascii=False).encode("utf-8"))
+                    return
+                else:
+                    # Record into pending_devices if not already there
+                    pending = dev_sec.get("pending_devices", [])
+                    exists_pending = any(p.get("id", "").strip("{} ").lower() == clean_id for p in pending)
+                    if not exists_pending and clean_id:
+                        pending.append({
+                            "id": device_id,
+                            "name": device_name,
+                            "os": os_name,
+                            "username": username,
+                            "ip": self.client_address[0],
+                            "requested_at": "2026-10-19"
+                        })
+                        dev_sec["pending_devices"] = pending
+                        current_config["device_security"] = dev_sec
+                        save_game_config(current_config)
+
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "allowed": False,
+                        "device_id": device_id,
+                        "reason": "UNAUTHORIZED_DEVICE",
+                        "message": "⛔ هذا الجهاز غير مصرح له بالدخول. يرجى طلب التصريح من مدير السيرفر."
+                    }, ensure_ascii=False).encode("utf-8"))
+                    return
+            except Exception as e:
+                self.send_error(500, f"Verify device error: {e}")
+            return
+
+        elif path == "/api/device_action":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                action = data.get("action", "")
+                target_id = str(data.get("device_id", "")).strip()
+                custom_name = str(data.get("device_name", "")).strip()
+
+                current_config = load_game_config()
+                dev_sec = current_config.get("device_security", {
+                    "whitelist_enabled": True,
+                    "allowed_devices": [],
+                    "pending_devices": []
+                })
+
+                if action == "approve":
+                    clean_id = target_id.strip("{} ").lower()
+                    # Find in pending or create
+                    found_item = None
+                    new_pending = []
+                    for p in dev_sec.get("pending_devices", []):
+                        if p.get("id", "").strip("{} ").lower() == clean_id:
+                            found_item = p
+                        else:
+                            new_pending.append(p)
+                    dev_sec["pending_devices"] = new_pending
+
+                    # Add to allowed
+                    dev_name = custom_name or (found_item.get("name") if found_item else "📱 هاتف مصرح له (Authorized Mobile)")
+                    allowed = dev_sec.get("allowed_devices", [])
+                    # Remove existing if any
+                    allowed = [a for a in allowed if a.get("id", "").strip("{} ").lower() != clean_id]
+                    allowed.append({
+                        "id": target_id,
+                        "name": dev_name,
+                        "status": "APPROVED",
+                        "approved_at": "2026-10-19"
+                    })
+                    dev_sec["allowed_devices"] = allowed
+
+                elif action == "remove":
+                    clean_id = target_id.strip("{} ").lower()
+                    dev_sec["allowed_devices"] = [
+                        a for a in dev_sec.get("allowed_devices", [])
+                        if a.get("id", "").strip("{} ").lower() != clean_id
+                    ]
+
+                elif action == "toggle_whitelist":
+                    new_val = not dev_sec.get("whitelist_enabled", True)
+                    dev_sec["whitelist_enabled"] = new_val
+
+                elif action == "add_manual":
+                    clean_id = target_id.strip("{} ").lower()
+                    allowed = dev_sec.get("allowed_devices", [])
+                    allowed = [a for a in allowed if a.get("id", "").strip("{} ").lower() != clean_id]
+                    allowed.append({
+                        "id": target_id,
+                        "name": custom_name or "📱 جهاز يدوي مصرح له",
+                        "status": "APPROVED",
+                        "approved_at": "2026-10-19"
+                    })
+                    dev_sec["allowed_devices"] = allowed
+
+                current_config["device_security"] = dev_sec
+                save_game_config(current_config)
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "action": action,
+                    "device_security": dev_sec,
+                    "message": "Device action completed successfully!"
+                }, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_error(500, f"Device action error: {e}")
             return
 
         self.send_error(404, "Endpoint not found")

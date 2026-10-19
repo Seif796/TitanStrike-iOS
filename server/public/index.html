@@ -667,6 +667,68 @@
             </div>
         </div>
 
+        <!-- AUTHORIZED DEVICES & WHITELIST MANAGEMENT (NEW USER REQUEST) -->
+        <h2 class="section-title" id="device-security">
+            <span>🛡️</span>
+            <span>حماية وتصريح الأجهزة المصرح لها بالدخول (Authorized Devices Whitelist)</span>
+        </h2>
+        <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 14px;">
+            🔒 لمنع أي شخص غريب من الدخول: يمكنك قفل اللعبة بحيث <b>لا يستطيع الدخول إلا اللاب توب والتليفون المصرح لهما فقط!</b> أي جهاز غريب يتم حجبه ورفضه فوراً.
+        </p>
+
+        <div class="card" style="margin-bottom: 32px; border: 2px solid rgba(139, 92, 246, 0.4); background: rgba(14, 18, 36, 0.95);">
+            <!-- Master Whitelist Toggle -->
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); gap: 14px;">
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: #c084fc;">نظام حصر الدخول على أجهزتك فقط (Device Whitelist Filter)</h3>
+                    <p style="color: var(--text-muted); font-size: 13px;">عند تفعيل هذا الخيار، لن يستطيع أي جهاز فتح اللعبة إلا الأجهزة الموجودة في القائمة أدناه.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="whitelist-toggle-badge" class="hero-badge badge-enabled" style="font-size: 13px;">
+                        مفعل (أجهزتك فقط) 🟢
+                    </span>
+                    <button type="button" onclick="toggleWhitelistMode()" class="btn btn-primary" style="padding: 8px 18px; font-size: 13px;">
+                        <span>🔄</span>
+                        <span id="btn-whitelist-text">تبديل وضع الحماية</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Approved Devices List -->
+            <div style="margin-top: 18px;">
+                <h4 style="font-size: 15px; font-weight: 800; color: #34d399; margin-bottom: 12px;">
+                    ✅ الأجهزة المصرح لها بالدخول حالياً (Approved Devices):
+                </h4>
+                <div id="allowed-devices-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Pending Devices List -->
+            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
+                <h4 style="font-size: 15px; font-weight: 800; color: #facc15; margin-bottom: 12px;">
+                    ⏳ أجهزة تحاول الدخول بانتظار تصريحك (Pending Access Requests):
+                </h4>
+                <div id="pending-devices-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Manual Device Add Form -->
+            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <h4 style="font-size: 14px; font-weight: 800; color: #38bdf8; margin-bottom: 10px;">
+                    ➕ إضافة كود جهاز أو تليفون يدوياً (Manual Add):
+                </h4>
+                <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px;">
+                    <input type="text" id="manual-dev-id" class="form-input" placeholder="ادخل كود الجهاز (Device ID مثل {88b5ac79-...})">
+                    <input type="text" id="manual-dev-name" class="form-input" placeholder="اسم الجهاز (مثلاً: تليفوني الخاص)">
+                    <button type="button" onclick="addManualDevice()" class="btn btn-success" style="padding: 10px 18px;">
+                        <span>➕ تصريح وإضافة</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- LIVE HEROES CONTROL CENTER (NEW REQUEST) -->
         <h2 class="section-title" id="control-center">
             <span>🎮</span>
@@ -1224,13 +1286,176 @@
             }
         }
 
+        let currentDeviceSecurity = null;
+
+        async function fetchDevices() {
+            try {
+                const res = await fetch('/api/devices');
+                if (!res.ok) return;
+                currentDeviceSecurity = await res.json();
+                renderDevices(currentDeviceSecurity);
+            } catch (e) {
+                console.error("Failed to fetch devices", e);
+            }
+        }
+
+        function renderDevices(sec) {
+            if (!sec) return;
+            const isEnabled = sec.whitelist_enabled !== false;
+            const badge = document.getElementById('whitelist-toggle-badge');
+            const btnText = document.getElementById('btn-whitelist-text');
+            if (badge) {
+                badge.className = isEnabled ? 'hero-badge badge-enabled' : 'hero-badge badge-disabled';
+                badge.innerText = isEnabled ? 'مفعل (أجهزتك المصرح لها فقط) 🟢' : 'معطل (مفتوح للجميع) ⚠️';
+            }
+            if (btnText) {
+                btnText.innerText = isEnabled ? 'تعطيل الحظر (فتح للكل)' : 'تفعيل الحظر (حصر على أجهزتك)';
+            }
+
+            const allowedContainer = document.getElementById('allowed-devices-list');
+            if (allowedContainer) {
+                allowedContainer.innerHTML = '';
+                const allowedList = sec.allowed_devices || [];
+                if (allowedList.length === 0) {
+                    allowedContainer.innerHTML = '<div style="color: #94a3b8; font-size: 13px;">لا توجد أجهزة مصرح لها حالياً.</div>';
+                } else {
+                    allowedList.forEach(dev => {
+                        const row = document.createElement('div');
+                        row.style = 'display: flex; justify-content: space-between; align-items: center; background: rgba(3, 7, 18, 0.7); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px 16px;';
+                        row.innerHTML = `
+                            <div>
+                                <span style="font-weight: 800; font-size: 15px; color: #34d399;">${dev.name || 'جهاز مصرح له'}</span>
+                                <div style="font-family: monospace; font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                                    ID: ${dev.id}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" onclick="removeDevice('${dev.id}')" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+                                    ❌ إزالة الجهاز
+                                </button>
+                            </div>
+                        `;
+                        allowedContainer.appendChild(row);
+                    });
+                }
+            }
+
+            const pendingContainer = document.getElementById('pending-devices-list');
+            if (pendingContainer) {
+                pendingContainer.innerHTML = '';
+                const pendingList = sec.pending_devices || [];
+                if (pendingList.length === 0) {
+                    pendingContainer.innerHTML = '<div style="color: #94a3b8; font-size: 13px;">لا توجد طلبات دخول جديدة من أجهزة أخرى حالياً.</div>';
+                } else {
+                    pendingList.forEach(dev => {
+                        const row = document.createElement('div');
+                        row.style = 'display: flex; justify-content: space-between; align-items: center; background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 10px; padding: 12px 16px;';
+                        row.innerHTML = `
+                            <div>
+                                <span style="font-weight: 800; font-size: 15px; color: #facc15;">📱 ${dev.name || 'هاتف غير معروف'} (${dev.os || 'Mobile'})</span>
+                                <div style="font-family: monospace; font-size: 12px; color: #e2e8f0; margin-top: 2px;">
+                                    ID: ${dev.id} | IP: ${dev.ip || ''}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" onclick="approveDevice('${dev.id}', '${dev.name || '📱 موبايلي المصرح له'}')" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
+                                    ✅ تصريح وموافقة على هذا الجهاز
+                                </button>
+                                <button type="button" onclick="removeDevice('${dev.id}')" class="btn btn-outline" style="padding: 8px 14px; font-size: 13px; color: #f87171;">
+                                    ❌ رفض
+                                </button>
+                            </div>
+                        `;
+                        pendingContainer.appendChild(row);
+                    });
+                }
+            }
+        }
+
+        async function approveDevice(deviceId, defaultName) {
+            const name = prompt("اكتب اسماً لتمييز هذا الجهاز (مثلاً: موبايلي الخاص):", defaultName || "📱 موبايلي الخاص");
+            if (name === null) return;
+            try {
+                const res = await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'approve', device_id: deviceId, device_name: name })
+                });
+                if (res.ok) {
+                    showToast("🎉 تم التصريح والموافقة على الجهاز بنجاح! يمكنه الآن فتح اللعبة فوراً.");
+                    fetchDevices();
+                }
+            } catch (e) {
+                showToast("❌ تعذر إرسال أمر الموافقة!");
+            }
+        }
+
+        async function removeDevice(deviceId) {
+            if (!confirm("هل أنت متأكد من حذف وإلغاء تصريح هذا الجهاز؟ لن يستطيع فتح اللعبة بعدها.")) return;
+            try {
+                const res = await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'remove', device_id: deviceId })
+                });
+                if (res.ok) {
+                    showToast("✅ تم إزالة الجهاز وحظره من الدخول.");
+                    fetchDevices();
+                }
+            } catch (e) {
+                showToast("❌ تعذر تنفيذ العملية!");
+            }
+        }
+
+        async function toggleWhitelistMode() {
+            try {
+                const res = await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'toggle_whitelist' })
+                });
+                if (res.ok) {
+                    showToast("✅ تم تغيير وضع حماية وتصريح الأجهزة بنجاح!");
+                    fetchDevices();
+                }
+            } catch (e) {
+                showToast("❌ تعذر تغيير الوضع!");
+            }
+        }
+
+        async function addManualDevice() {
+            const devId = document.getElementById('manual-dev-id').value.trim();
+            const devName = document.getElementById('manual-dev-name').value.trim() || "📱 جهاز مصرح له";
+            if (!devId) {
+                alert("يرجى كتابة كود الجهاز أولاً (Device ID)!");
+                return;
+            }
+            try {
+                const res = await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'add_manual', device_id: devId, device_name: devName })
+                });
+                if (res.ok) {
+                    showToast("🎉 تم إضافة وتصريح الجهاز بنجاح!");
+                    document.getElementById('manual-dev-id').value = '';
+                    document.getElementById('manual-dev-name').value = '';
+                    fetchDevices();
+                }
+            } catch (e) {
+                showToast("❌ تعذر إضافة الجهاز!");
+            }
+        }
+
         fetchServerStatus();
+        fetchDevices();
         fetchNetworkInfo();
         fetchGameConfig();
         fetchVersion();
 
         // Keep status synchronized every 3 seconds
         setInterval(fetchServerStatus, 3000);
+        setInterval(fetchDevices, 4000);
     </script>
 </body>
 </html>

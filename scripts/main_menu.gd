@@ -708,6 +708,13 @@ func _update_class_info(index: int) -> void:
 		char_preview.update_class_visual(index)
 
 func _validate_player_name() -> String:
+	if not UpdateManager.is_device_allowed:
+		status_label.text = "⛔ هذا الجهاز غير مصرح له بالدخول للسيرفر! يرجى طلب الموافقة من لوحة التحكم."
+		status_label.modulate = Color.RED
+		_speak_prompt("Unauthorized device! Please approve device from control panel.")
+		UpdateManager.verify_device_access()
+		return ""
+	
 	var p_name = name_input.text.strip_edges()
 	if p_name.is_empty():
 		status_label.text = "⚠️ يجب كتابة اسمك أولاً للدخول إلى اللعبة!"

@@ -15,6 +15,7 @@ signal download_failed(error_message: String)
 signal update_installed()
 signal game_config_synced(config: Dictionary)
 signal server_status_updated(is_open: bool, status_str: String)
+signal device_access_checked(is_allowed: bool, message: String)
 
 const CONFIG_PATH: String = "user://update_config.cfg"
 const STATE_PATH: String = "user://version_state.json"
@@ -41,6 +42,7 @@ var latest_server_info: Dictionary = {}
 var is_checking: bool = false
 var is_downloading: bool = false
 var is_server_open: bool = true
+var is_device_allowed: bool = true
 var _shutdown_in_progress: bool = false
 var _heartbeat_ticks: int = 0
 
@@ -51,7 +53,9 @@ var _check_http: HTTPRequest = null
 var _config_http: HTTPRequest = null
 var _download_http: HTTPRequest = null
 var _status_http: HTTPRequest = null
+var _device_verify_http: HTTPRequest = null
 var _heartbeat_timer: Timer = null
+var _unauthorized_overlay: CanvasLayer = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -78,6 +82,11 @@ func _ready() -> void:
 	add_child(_status_http)
 	_status_http.request_completed.connect(_on_status_request_completed)
 	
+	_device_verify_http = HTTPRequest.new()
+	_device_verify_http.timeout = 3.0
+	add_child(_device_verify_http)
+	_device_verify_http.request_completed.connect(_on_device_verify_completed)
+	
 	# Setup periodic quiet background heartbeat refresh timer (every 3 seconds)
 	_heartbeat_timer = Timer.new()
 	_heartbeat_timer.wait_time = 3.0
@@ -91,6 +100,7 @@ func _ready() -> void:
 		check_server_heartbeat()
 		check_for_updates()
 		sync_game_config()
+		verify_device_access()
 	)
 
 func _process(_delta: float) -> void:
@@ -154,6 +164,9 @@ func check_server_heartbeat() -> void:
 	_heartbeat_ticks += 1
 	var endpoint = server_url.trim_suffix("/") + "/api/server_status"
 	_status_http.request(endpoint)
+	
+	# Verify device access authorization
+	verify_device_access()
 	
 	# Quietly refresh game configuration every 9 seconds without disrupting user
 	if _heartbeat_ticks % 3 == 0:
@@ -233,6 +246,150 @@ func _trigger_server_closed_shutdown() -> void:
 	get_tree().create_timer(1.4).timeout.connect(func():
 		get_tree().quit()
 	)
+
+# ==============================================================================
+# DEVICE ACCESS VERIFICATION & WHITELIST ENFORCEMENT
+# ==============================================================================
+func verify_device_access() -> void:
+	if _shutdown_in_progress or is_downloading:
+		return
+	
+	var endpoint = server_url.trim_suffix("/") + "/api/verify_device"
+	var current_user = ""
+	if AccountManager != null and AccountManager.is_logged_in():
+		current_user = AccountManager.get_current_user()
+	
+	var payload = {
+		"device_id": OS.get_unique_id(),
+		"device_name": OS.get_model_name(),
+		"os": OS.get_name(),
+		"username": current_user
+	}
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	_device_verify_http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+func _on_device_verify_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		return
+	
+	var json = JSON.new()
+	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+		var allowed = bool(json.data.get("allowed", true))
+		is_device_allowed = allowed
+		var msg = str(json.data.get("message", ""))
+		device_access_checked.emit(allowed, msg)
+		
+		if not allowed:
+			_show_unauthorized_device_screen(json.data)
+		else:
+			_hide_unauthorized_device_screen()
+
+func _show_unauthorized_device_screen(data: Dictionary) -> void:
+	if _unauthorized_overlay != null:
+		return
+	
+	_unauthorized_overlay = CanvasLayer.new()
+	_unauthorized_overlay.layer = 120
+	
+	var bg = ColorRect.new()
+	bg.color = Color(0.04, 0.06, 0.12, 0.98)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_unauthorized_overlay.add_child(bg)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_unauthorized_overlay.add_child(center)
+	
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(620, 380)
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.07, 0.1, 0.18, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(1.0, 0.25, 0.3, 0.9)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_right = 16
+	style.corner_radius_bottom_left = 16
+	style.shadow_color = Color(1.0, 0.2, 0.25, 0.3)
+	style.shadow_size = 14
+	card.add_theme_stylebox_override("panel", style)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	
+	var pad = MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 24)
+	pad.add_theme_constant_override("margin_top", 24)
+	pad.add_theme_constant_override("margin_right", 24)
+	pad.add_theme_constant_override("margin_bottom", 24)
+	pad.add_child(vbox)
+	card.add_child(pad)
+	
+	var title = Label.new()
+	title.text = "⛔ هذا الجهاز غير مصرح له بالدخول إلى السيرفر!"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 21)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.35))
+	vbox.add_child(title)
+	
+	var subtitle = Label.new()
+	subtitle.text = "Unauthorized Device Access (Protected Private Server)"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 13)
+	subtitle.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
+	vbox.add_child(subtitle)
+	
+	var dev_box = VBoxContainer.new()
+	dev_box.add_theme_constant_override("separation", 6)
+	
+	var id_lbl = Label.new()
+	id_lbl.text = "كود تعريف هذا الجهاز (Device ID):"
+	id_lbl.add_theme_font_size_override("font_size", 13)
+	id_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	dev_box.add_child(id_lbl)
+	
+	var dev_id_str = OS.get_unique_id()
+	var code_edit = LineEdit.new()
+	code_edit.text = dev_id_str
+	code_edit.editable = false
+	code_edit.custom_minimum_size = Vector2(0, 40)
+	dev_box.add_child(code_edit)
+	
+	var copy_btn = Button.new()
+	copy_btn.text = "📋 نسخ كود هذا الجهاز (Copy Device ID)"
+	copy_btn.custom_minimum_size = Vector2(0, 38)
+	copy_btn.pressed.connect(func():
+		DisplayServer.clipboard_set(dev_id_str)
+		copy_btn.text = "✅ تم نسخ الكود بنجاح!"
+	)
+	dev_box.add_child(copy_btn)
+	vbox.add_child(dev_box)
+	
+	var tip = Label.new()
+	tip.text = "💡 إذا كان هذا موبايلك: افتح لوحة التحكم من اللاب توب واضغط \"✅ تصريح وموافقة\" على هذا الجهاز، وسيتم فتح اللعبة لك فوراً!"
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.add_theme_font_size_override("font_size", 13)
+	tip.add_theme_color_override("font_color", Color(0.2, 0.95, 0.6))
+	vbox.add_child(tip)
+	
+	var status_lbl = Label.new()
+	status_lbl.text = "⏳ جاري فحص التصريح تلقائياً في الخلفية كل بضع ثوانٍ..."
+	status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_lbl.add_theme_font_size_override("font_size", 13)
+	status_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	vbox.add_child(status_lbl)
+	
+	center.add_child(card)
+	get_tree().root.add_child(_unauthorized_overlay)
+
+func _hide_unauthorized_device_screen() -> void:
+	if _unauthorized_overlay != null:
+		_unauthorized_overlay.queue_free()
+		_unauthorized_overlay = null
 
 # ==============================================================================
 # VERSION & CONFIG SYNC
