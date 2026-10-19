@@ -56,6 +56,10 @@ var _status_http: HTTPRequest = null
 var _device_verify_http: HTTPRequest = null
 var _heartbeat_timer: Timer = null
 var _unauthorized_overlay: CanvasLayer = null
+var _server_closed_overlay: CanvasLayer = null
+var _is_checking_heartbeat: bool = false
+var _heartbeat_candidate_idx: int = 0
+var _heartbeat_candidates: Array[String] = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -155,15 +159,74 @@ func _save_installed_state(v_info: Dictionary) -> void:
 		file.close()
 
 # ==============================================================================
-# HEARTBEAT & SERVER STATUS MONITORING (Periodic Refresh)
+# HEARTBEAT & SERVER STATUS MONITORING (Continuous 24/7 Live Monitoring)
 # ==============================================================================
 func check_server_heartbeat() -> void:
-	if _shutdown_in_progress or is_downloading:
+	if is_downloading or _is_checking_heartbeat:
 		return
 	
+	_is_checking_heartbeat = true
 	_heartbeat_ticks += 1
-	var endpoint = server_url.trim_suffix("/") + "/api/server_status"
-	_status_http.request(endpoint)
+	
+	# Prepare candidate list starting with the currently configured server_url
+	_heartbeat_candidates.clear()
+	_heartbeat_candidates.append(server_url)
+	for ep in DEFAULT_FALLBACK_ENDPOINTS:
+		if ep != server_url and not _heartbeat_candidates.has(ep):
+			_heartbeat_candidates.append(ep)
+	
+	_heartbeat_candidate_idx = 0
+	_try_heartbeat_candidate()
+
+func _try_heartbeat_candidate() -> void:
+	if _heartbeat_candidate_idx >= _heartbeat_candidates.size():
+		_is_checking_heartbeat = false
+		is_server_open = false
+		server_status_updated.emit(false, "close")
+		return
+	
+	var candidate_url = _heartbeat_candidates[_heartbeat_candidate_idx]
+	var endpoint = candidate_url.trim_suffix("/") + "/api/server_status"
+	var err = _status_http.request(endpoint)
+	if err != OK:
+		_heartbeat_candidate_idx += 1
+		_try_heartbeat_candidate()
+
+func _on_status_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_heartbeat_candidate_idx += 1
+		if _heartbeat_candidate_idx < _heartbeat_candidates.size():
+			_try_heartbeat_candidate()
+			return
+		
+		_is_checking_heartbeat = false
+		is_server_open = false
+		server_status_updated.emit(false, "close")
+		return
+	
+	_is_checking_heartbeat = false
+	
+	# Save working candidate URL if it changed
+	if _heartbeat_candidate_idx < _heartbeat_candidates.size():
+		var working_url = _heartbeat_candidates[_heartbeat_candidate_idx]
+		if working_url != server_url:
+			save_server_url(working_url)
+	
+	var json = JSON.new()
+	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+		var st = str(json.data.get("status", "OPEN")).to_upper()
+		var open_flag = (st == "OPEN" or st == "ONLINE")
+		is_server_open = open_flag
+		
+		if open_flag:
+			server_status_updated.emit(true, "Open")
+			_hide_server_closed_overlay()
+		else:
+			server_status_updated.emit(false, "close")
+			_show_server_closed_overlay()
+	else:
+		is_server_open = false
+		server_status_updated.emit(false, "close")
 	
 	# Verify device access authorization
 	verify_device_access()
@@ -172,80 +235,77 @@ func check_server_heartbeat() -> void:
 	if _heartbeat_ticks % 3 == 0:
 		sync_game_config()
 
-func _on_status_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-	if _shutdown_in_progress:
-		return
-		
-	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		is_server_open = false
-		server_status_updated.emit(false, "close")
+func _show_server_closed_overlay() -> void:
+	if _server_closed_overlay != null:
 		return
 	
-	var json = JSON.new()
-	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
-		var st = str(json.data.get("status", "OPEN")).to_upper()
-		if st == "CLOSED" or st == "CLOSE":
-			is_server_open = false
-			server_status_updated.emit(false, "close")
-			_trigger_server_closed_shutdown()
-		else:
-			is_server_open = true
-			server_status_updated.emit(true, "Open")
-	else:
-		is_server_open = false
-		server_status_updated.emit(false, "close")
-
-func _trigger_server_closed_shutdown() -> void:
-	if _shutdown_in_progress:
-		return
-	_shutdown_in_progress = true
-	
-	# Stop heartbeat
-	if _heartbeat_timer:
-		_heartbeat_timer.stop()
-		
-	# Create high-priority fullscreen shutdown notice overlay
-	var canvas = CanvasLayer.new()
-	canvas.layer = 128
+	_server_closed_overlay = CanvasLayer.new()
+	_server_closed_overlay.layer = 125
 	
 	var bg = ColorRect.new()
-	bg.color = Color(0.04, 0.06, 0.1, 0.96)
+	bg.color = Color(0.04, 0.06, 0.12, 0.94)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	canvas.add_child(bg)
+	_server_closed_overlay.add_child(bg)
 	
-	var alert_box = VBoxContainer.new()
-	alert_box.set_anchors_preset(Control.PRESET_CENTER)
-	alert_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	alert_box.custom_minimum_size = Vector2(700, 300)
-	alert_box.position = Vector2(-350, -150)
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_server_closed_overlay.add_child(center)
+	
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(650, 320)
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.1, 0.18, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(1.0, 0.25, 0.25, 0.8)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	card.add_theme_stylebox_override("panel", style)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	card.add_child(vbox)
 	
 	var icon = Label.new()
 	icon.text = "🚨"
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon.add_theme_font_size_override("font_size", 44)
-	alert_box.add_child(icon)
+	icon.add_theme_font_size_override("font_size", 42)
+	vbox.add_child(icon)
 	
 	var title = Label.new()
-	title.text = "تم إيقاف وإغلاق السيرفر من قِبل المدير!"
+	title.text = "السيرفر متوقف ومغلق حالياً من قِبل المدير"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
-	alert_box.add_child(title)
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	vbox.add_child(title)
 	
-	var sub = Label.new()
-	sub.text = "\nServer has been CLOSED by admin.\nClosing game for all players..."
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 17)
-	sub.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
-	alert_box.add_child(sub)
+	var desc = Label.new()
+	desc.text = "Server is temporarily CLOSED by the administrator.\n📡 اللعبة في وضع المراقبة المستمرة الآن وستفتح تلقائياً فور إعادة تشغيل السيرفر!"
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.add_theme_font_size_override("font_size", 14)
+	desc.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
+	vbox.add_child(desc)
 	
-	canvas.add_child(alert_box)
-	get_tree().root.add_child(canvas)
+	var pulse_lbl = Label.new()
+	pulse_lbl.text = "🟢 مراقبة حية نشطة 24/7 (Live Monitoring Active)..."
+	pulse_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pulse_lbl.add_theme_font_size_override("font_size", 13)
+	pulse_lbl.add_theme_color_override("font_color", Color(0.3, 0.85, 1.0))
+	vbox.add_child(pulse_lbl)
 	
-	# Wait 1.4s so players see the alert, then quit cleanly
-	get_tree().create_timer(1.4).timeout.connect(func():
-		get_tree().quit()
-	)
+	center.add_child(card)
+	get_tree().root.add_child(_server_closed_overlay)
+
+func _hide_server_closed_overlay() -> void:
+	if _server_closed_overlay != null:
+		_server_closed_overlay.queue_free()
+		_server_closed_overlay = null
 
 # ==============================================================================
 # DEVICE ACCESS VERIFICATION & WHITELIST ENFORCEMENT
