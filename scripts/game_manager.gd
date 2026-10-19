@@ -77,42 +77,50 @@ const MAPS: Dictionary = {
 	6: { "name": "🏰 Neon Castle Citadel (قلعة النيون المظلمة)", "theme_color": Color(0.85, 0.15, 0.55) }
 }
 
+signal classes_updated()
+signal server_announcement_received(message: String)
+
 # Hero Classes (including unlockable 500 HP Admin)
-const CLASSES: Dictionary = {
+var CLASSES: Dictionary = {
 	0: {
 		"name": "🍉 Melon Knight (فارس البطيخ الجديد)",
 		"hp": 130,
 		"speed": 7.5,
 		"role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls.",
-		"color": Color(0.25, 0.8, 0.2) # Melon Green
+		"color": Color(0.25, 0.8, 0.2), # Melon Green
+		"enabled": true
 	},
 	1: {
 		"name": "🍓 Berry Striker (بطلة الفراولة)",
 		"hp": 100,
 		"speed": 8.5,
 		"role": "Super fast berry ranger with high critical seed shots and tactical speed ramps.",
-		"color": Color(0.9, 0.15, 0.25) # Strawberry Red
+		"color": Color(0.9, 0.15, 0.25), # Strawberry Red
+		"enabled": true
 	},
 	2: {
 		"name": "🍊 Citrus Tank (البرتقال المدرّع)",
 		"hp": 240,
 		"speed": 5.6,
 		"role": "Heavy armored citrus juggernaut with explosive melon cannons and auto-turrets.",
-		"color": Color(1.0, 0.5, 0.05) # Citrus Orange
+		"color": Color(1.0, 0.5, 0.05), # Citrus Orange
+		"enabled": true
 	},
 	3: {
 		"name": "👑 Admin (الأدمن الخارق)",
 		"hp": 500,
 		"speed": 15,
 		"role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor.",
-		"color": Color(1.0, 0.85, 0.1) # Golden Cyber Admin
+		"color": Color(1.0, 0.85, 0.1), # Golden Cyber Admin
+		"enabled": true
 	},
 	4: {
 		"name": "🕷️ Spider Hero (سبايدر هودي الخارق)",
 		"hp": 220,
 		"speed": 9.2,
 		"role": "The newly added 3D Chibi Spider-Hero! Wearing an oversized hoodie, denim cutoffs, and retro high-top sneakers. Highly agile with web attacks!",
-		"color": Color(0.95, 0.2, 0.25) # Spider Red
+		"color": Color(0.95, 0.2, 0.25), # Spider Red
+		"enabled": true
 	}
 }
 
@@ -131,6 +139,27 @@ func load_save_data() -> void:
 		berry_unlocked = false
 		citrus_unlocked = false
 		admin_unlocked = false
+
+func is_hero_enabled(hero_id: int) -> bool:
+	if not CLASSES.has(hero_id):
+		return false
+	return CLASSES[hero_id].get("enabled", true)
+
+func apply_server_config(cfg: Dictionary) -> void:
+	if cfg.has("heroes") and typeof(cfg["heroes"]) == TYPE_DICTIONARY:
+		for id_str in cfg["heroes"]:
+			var id = int(id_str)
+			if CLASSES.has(id):
+				var h = cfg["heroes"][id_str]
+				if h.has("name"): CLASSES[id]["name"] = h["name"]
+				if h.has("hp"): CLASSES[id]["hp"] = int(h["hp"])
+				if h.has("speed"): CLASSES[id]["speed"] = float(h["speed"])
+				if h.has("role"): CLASSES[id]["role"] = h["role"]
+				if h.has("enabled"): CLASSES[id]["enabled"] = bool(h["enabled"])
+		classes_updated.emit()
+	
+	if cfg.has("server_announcement") and not str(cfg["server_announcement"]).is_empty():
+		server_announcement_received.emit(str(cfg["server_announcement"]))
 
 func is_hero_unlocked(hero_id: int) -> bool:
 	match hero_id:

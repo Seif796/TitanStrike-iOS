@@ -150,6 +150,24 @@ func _ready() -> void:
 	
 	_refresh_top_pills()
 	
+	GameManager.classes_updated.connect(func():
+		_refresh_hero_options()
+		if not GameManager.is_hero_enabled(selected_class):
+			var fallback_id = 0
+			for id in GameManager.CLASSES:
+				if GameManager.is_hero_enabled(id):
+					fallback_id = id
+					break
+			_on_class_selected(fallback_id)
+		else:
+			_update_class_info(selected_class)
+	)
+	
+	GameManager.server_announcement_received.connect(func(msg: String):
+		if voice_banner:
+			voice_banner.text = "📢 [السيرفر]: " + msg
+	)
+	
 	# Mandatory Sign In / Sign Up at startup if not logged in
 	if not AccountManager.is_logged_in():
 		_switch_view(view_account)
@@ -559,7 +577,9 @@ func _refresh_hero_options() -> void:
 	class_option.clear()
 	for id in GameManager.CLASSES:
 		var c = GameManager.CLASSES[id]
-		if not GameManager.is_hero_unlocked(id):
+		if not GameManager.is_hero_enabled(id):
+			class_option.add_item("⛔ %s (معطل من السيرفر)" % c["name"], id)
+		elif not GameManager.is_hero_unlocked(id):
 			var unlock_hint = ""
 			match id:
 				1: unlock_hint = "Win Wave 1"
@@ -569,17 +589,26 @@ func _refresh_hero_options() -> void:
 		else:
 			class_option.add_item(c["name"], id)
 	
-	if prev_idx >= 0 and prev_idx < class_option.item_count:
+	if prev_idx >= 0 and prev_idx < class_option.item_count and GameManager.is_hero_enabled(prev_idx):
 		class_option.select(prev_idx)
 	else:
-		class_option.select(0)
+		# Auto-select first enabled hero
+		var first_enabled = 0
+		for id in GameManager.CLASSES:
+			if GameManager.is_hero_enabled(id):
+				first_enabled = id
+				break
+		class_option.select(first_enabled)
+		selected_class = first_enabled
 	
 	if bot_option:
 		bot_option.clear()
 		bot_option.add_item("🚫 بدون بوت (Solo - No Bot)", -1)
 		for id in GameManager.CLASSES:
 			var c = GameManager.CLASSES[id]
-			if not GameManager.is_hero_unlocked(id):
+			if not GameManager.is_hero_enabled(id):
+				bot_option.add_item("⛔ %s (معطل)" % c["name"], id)
+			elif not GameManager.is_hero_unlocked(id):
 				bot_option.add_item("🔒 %s (مقفول)" % c["name"], id)
 			else:
 				bot_option.add_item("🤖 " + c["name"], id)
@@ -594,7 +623,12 @@ func _refresh_hero_options() -> void:
 				GameManager.bot_enabled = false
 			else:
 				var class_id = idx - 1
-				if not GameManager.is_hero_unlocked(class_id):
+				if not GameManager.is_hero_enabled(class_id):
+					status_label.text = "⛔ هذا البوت معطل من السيرفر حالياً!"
+					status_label.modulate = Color.RED
+					bot_option.select(0)
+					GameManager.bot_enabled = false
+				elif not GameManager.is_hero_unlocked(class_id):
 					status_label.text = "🔒 هذا البوت مقفول حالياً! تم اختيار ولد البطيخ."
 					status_label.modulate = Color.YELLOW
 					bot_option.select(1)
@@ -611,6 +645,21 @@ func _speak_prompt(text: String) -> void:
 
 func _on_class_selected(index: int) -> void:
 	AudioManager.play_sfx("click")
+	if not GameManager.is_hero_enabled(index):
+		status_label.text = "⛔ هذه الشخصية معطلة حالياً من لوحة تحكم السيرفر! اختر بطلاً آخر."
+		status_label.modulate = Color(1.0, 0.3, 0.3)
+		_speak_prompt("Hero disabled by server control center! Please select another hero.")
+		
+		var fallback_id = 0
+		for id in GameManager.CLASSES:
+			if GameManager.is_hero_enabled(id):
+				fallback_id = id
+				break
+		class_option.select(fallback_id)
+		selected_class = fallback_id
+		_update_class_info(fallback_id)
+		return
+
 	if not GameManager.is_hero_unlocked(index):
 		var req_msg = ""
 		match index:
@@ -630,7 +679,10 @@ func _on_class_selected(index: int) -> void:
 
 func _update_class_info(index: int) -> void:
 	var c = GameManager.CLASSES[index]
-	if not GameManager.is_hero_unlocked(index):
+	if not GameManager.is_hero_enabled(index):
+		class_desc.text = "⛔ هذه الشخصية معطلة مؤقتاً ومحجوبة بواسطة مدير السيرفر من الموقع."
+		class_stats.text = "HP: %d  |  Speed: %.1f m/s  |  Status: ⛔ معطل من السيرفر" % [c["hp"], c["speed"]]
+	elif not GameManager.is_hero_unlocked(index):
 		class_desc.text = "🔒 مقفول! يمكنك فتحه بالفوز بالجولات أو استرداد الكود من الإعدادات."
 		class_stats.text = "HP: %d  |  Speed: %.1f m/s  |  Status: 🔒 LOCKED" % [c["hp"], c["speed"]]
 	else:

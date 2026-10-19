@@ -14,6 +14,7 @@ class_name CharacterPreview
 @onready var arm_l: MeshInstance3D = $Model/LeftArm
 @onready var arm_r: MeshInstance3D = $Model/RightArm
 @onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
+@onready var rim_light: OmniLight3D = get_node_or_null("RimLight")
 
 var melon_tex = preload("res://assets/watermelon_pattern.svg")
 var berry_tex = preload("res://assets/strawberry_pattern.svg")
@@ -25,6 +26,15 @@ func _physics_process(delta: float) -> void:
 	$Model.rotation.y += rot_speed * delta
 
 func update_class_visual(class_id: int) -> void:
+	if rim_light:
+		match class_id:
+			0: rim_light.light_color = Color(0.2, 0.95, 0.3)
+			1: rim_light.light_color = Color(1.0, 0.2, 0.45)
+			2: rim_light.light_color = Color(1.0, 0.6, 0.1)
+			3: rim_light.light_color = Color(1.0, 0.85, 0.15)
+			4: rim_light.light_color = Color(1.0, 0.15, 0.25)
+			_: rim_light.light_color = Color(0.2, 0.9, 0.3)
+
 	if class_id == 4:
 		if spider_model: spider_model.visible = true
 		if admin_model: admin_model.visible = false

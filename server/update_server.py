@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-CyberFort Game Update Server (OTA Auto-Patcher)
-Serves game version metadata and downloadable patch packages (.zip / .pck)
-for mobile (iOS / Android) and PC clients.
+CyberFort Game Update & Remote Control Server (OTA Auto-Patcher & Live Game Manager)
+Serves game version metadata, live game configuration (characters, stats, maps),
+and downloadable patch packages (.zip / .pck) for mobile (iOS / Android) and PC clients
+across both Local Wi-Fi and WAN/Internet connections.
 """
 
 import http.server
@@ -12,6 +13,8 @@ import sys
 import json
 import socket
 import urllib.parse
+import urllib.request
+import threading
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -22,27 +25,71 @@ BASE_DIR = Path(__file__).resolve().parent
 PUBLIC_DIR = BASE_DIR / "public"
 DOWNLOADS_DIR = PUBLIC_DIR / "downloads"
 VERSION_FILE = PUBLIC_DIR / "version.json"
+GAME_CONFIG_FILE = PUBLIC_DIR / "game_config.json"
 
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
-# Default version data if none exists
 DEFAULT_VERSION_DATA = {
-    "version": "1.0.0",
-    "version_code": 1,
-    "release_date": "2026-10-18",
-    "title": "إصدار الإطلاق الرسمي (Official Launch)",
+    "version": "1.1.3",
+    "version_code": 5,
+    "release_date": "2026-10-19",
+    "title": "تحديث لوحة تحكم الشخصيات ودعم الاتصال عبر الإنترنت",
     "changelog": [
-        "إضافة نظام الحسابات (Sign In / Sign Up / Sign Out)",
-        "إضافة طور اللعب الفردي وطور الأونلاين",
-        "إضافة قائمة الأصدقاء ودعوة البارتي",
-        "نظام استرداد الأكواد (Redeem Code) لفتح الأبطال",
-        "موسيقى سايبر إلكترونية خالية من أي محرمات"
+        "إمكانية إزالة أو تفعيل/تعطيل أي شخصية مباشرة من الموقع",
+        "تعديل خصائص وسرعة وصحة الشخصيات فورياً من لوحة التحكم",
+        "دعم الاتصال بالأجهزة عبر الإنترنت وبيانات الهاتف (WAN & Mobile Data)",
+        "تحسين المظهر الجمالي للعبة والقوائم وواجهة المستخدم (Cyber Polish)"
     ],
     "download_url": "/downloads/update.zip",
     "file_size_bytes": 0,
     "sha256": "",
     "mandatory": False
 }
+
+DEFAULT_GAME_CONFIG = {
+    "heroes": {
+        "0": {
+            "name": "🍉 Melon Knight (فارس البطيخ)",
+            "enabled": True,
+            "hp": 130,
+            "speed": 7.5,
+            "role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls."
+        },
+        "1": {
+            "name": "🍓 Berry Striker (بطلة الفراولة)",
+            "enabled": True,
+            "hp": 100,
+            "speed": 8.5,
+            "role": "Super fast berry ranger with high critical seed shots and tactical speed ramps."
+        },
+        "2": {
+            "name": "🍊 Citrus Tank (البرتقال المدرّع)",
+            "enabled": True,
+            "hp": 240,
+            "speed": 5.6,
+            "role": "Heavy armored citrus juggernaut with explosive melon cannons and auto-turrets."
+        },
+        "3": {
+            "name": "👑 Admin (الأدمن الخارق)",
+            "enabled": True,
+            "hp": 500,
+            "speed": 15.0,
+            "role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor."
+        },
+        "4": {
+            "name": "🕷️ Spider Hero (سبايدر هودي)",
+            "enabled": True,
+            "hp": 220,
+            "speed": 9.2,
+            "role": "The newly added 3D Chibi Spider-Hero! Wearing an oversized hoodie, denim cutoffs, and retro high-top sneakers. Highly agile with web attacks!"
+        }
+    },
+    "active_maps": [0, 1, 2, 3, 4, 5, 6],
+    "server_announcement": "مرحباً بكم في سيرفر سايبر فورت! جميع الأبطال متاحون للقتال.",
+    "server_status": "ONLINE"
+}
+
+_cached_wan_ip = None
 
 def get_lan_ip():
     try:
@@ -53,6 +100,21 @@ def get_lan_ip():
         return ip
     except Exception:
         return "127.0.0.1"
+
+def get_wan_ip():
+    global _cached_wan_ip
+    if _cached_wan_ip:
+        return _cached_wan_ip
+    try:
+        req = urllib.request.Request(
+            "https://api.ipify.org",
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            _cached_wan_ip = response.read().decode("utf-8").strip()
+            return _cached_wan_ip
+    except Exception:
+        return "105.197.151.212"
 
 def load_version_info():
     if not VERSION_FILE.exists():
@@ -69,6 +131,21 @@ def save_version_info(data):
     with open(VERSION_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+def load_game_config():
+    if not GAME_CONFIG_FILE.exists():
+        save_game_config(DEFAULT_GAME_CONFIG)
+        return DEFAULT_GAME_CONFIG
+    try:
+        with open(GAME_CONFIG_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[Error] Failed to read game_config.json: {e}")
+        return DEFAULT_GAME_CONFIG
+
+def save_game_config(data):
+    with open(GAME_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
@@ -77,7 +154,6 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        # CORS Headers for all requests
         if path == "/api/version":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -86,6 +162,33 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             v_data = load_version_info()
             self.wfile.write(json.dumps(v_data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/game_config":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            cfg_data = load_game_config()
+            self.wfile.write(json.dumps(cfg_data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/network_info":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            net_data = {
+                "lan_ip": get_lan_ip(),
+                "wan_ip": get_wan_ip(),
+                "port": PORT,
+                "lan_url": f"http://{get_lan_ip()}:{PORT}",
+                "wan_url": f"http://{get_wan_ip()}:{PORT}",
+                "status": "ONLINE"
+            }
+            self.wfile.write(json.dumps(net_data, ensure_ascii=False).encode("utf-8"))
             return
 
         elif path.startswith("/downloads/"):
@@ -112,6 +215,7 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             if index_file.is_file():
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 with open(index_file, "rb") as f:
                     self.wfile.write(f.read())
@@ -123,7 +227,10 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
-        if self.path == "/api/publish":
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path == "/api/publish":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -143,6 +250,36 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_error(500, f"Publish error: {e}")
             return
+
+        elif path == "/api/game_config":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+                current_config = load_game_config()
+                if "heroes" in data:
+                    current_config["heroes"] = data["heroes"]
+                if "active_maps" in data:
+                    current_config["active_maps"] = data["active_maps"]
+                if "server_announcement" in data:
+                    current_config["server_announcement"] = data["server_announcement"]
+                if "server_status" in data:
+                    current_config["server_status"] = data["server_status"]
+                
+                save_game_config(current_config)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True, 
+                    "message": "Game configuration updated successfully!", 
+                    "config": current_config
+                }, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Game config error: {e}")
+            return
+
         self.send_error(404, "Endpoint not found")
 
     def end_headers(self):
@@ -157,16 +294,19 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 def run_server():
     lan_ip = get_lan_ip()
+    wan_ip = get_wan_ip()
     handler = UpdateRequestHandler
     with socketserver.ThreadingTCPServer(("0.0.0.0", PORT), handler) as httpd:
-        print("=" * 65)
-        print("⚡ CyberFort: Titan Strike 3D - Auto-Update Server")
-        print("=" * 65)
-        print(f"[*] Local URL:    http://localhost:{PORT}")
-        print(f"[*] Network URL:  http://{lan_ip}:{PORT}")
-        print(f"[*] API Endpoint: http://{lan_ip}:{PORT}/api/version")
-        print("=" * 65)
-        print("[*] Server is running... Press Ctrl+C to stop.")
+        print("=" * 70)
+        print("⚡ CyberFort: Titan Strike 3D - Live Control & OTA Server")
+        print("=" * 70)
+        print(f"[*] Localhost:      http://localhost:{PORT}")
+        print(f"[*] Wi-Fi (LAN):    http://{lan_ip}:{PORT}")
+        print(f"[*] Internet (WAN): http://{wan_ip}:{PORT}")
+        print(f"[*] Config API:     http://{lan_ip}:{PORT}/api/game_config")
+        print(f"[*] Network API:    http://{lan_ip}:{PORT}/api/network_info")
+        print("=" * 70)
+        print("[*] Server is running... Ready to serve mobile & PC clients!")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
