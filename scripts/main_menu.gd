@@ -287,6 +287,16 @@ func _setup_update_system() -> void:
 	if update_now_btn:
 		update_now_btn.pressed.connect(func():
 			AudioManager.play_sfx("click")
+			if UpdateManager.latest_server_info.get("has_new_ipa", false) or UpdateManager.latest_server_info.get("requires_ipa", false):
+				var ipa_url = str(UpdateManager.latest_server_info.get("ipa_download_url", ""))
+				if ipa_url.begins_with("/"):
+					ipa_url = UpdateManager.server_url.trim_suffix("/") + ipa_url
+				if ipa_url.is_empty():
+					ipa_url = UpdateManager.get_guest_portal_url()
+				OS.shell_open(ipa_url)
+				update_modal.visible = false
+				return
+				
 			update_now_btn.disabled = true
 			update_later_btn.disabled = true
 			update_now_btn.text = "⏳ جاري التحميل من السيرفر..."
@@ -314,6 +324,13 @@ func _on_update_checked(has_update: bool, info: Dictionary) -> void:
 				UpdateManager.current_build
 			]
 			version_status_label.modulate = Color.GREEN
+	else:
+		if info.get("has_new_ipa", false) or info.get("requires_ipa", false):
+			version_status_label.text = "🔥 يتوفر ملف IPA جديد للايفون (v%s)! اضغط لتنزيله." % info.get("version", "1.2.0")
+			version_status_label.modulate = Color(1.0, 0.65, 0.1)
+		else:
+			version_status_label.text = "🔥 يتوفر تحديث جديد للعبة (v%s)!" % info.get("version", "1.1.0")
+			version_status_label.modulate = Color(0.2, 0.95, 0.5)
 
 func _on_update_available(info: Dictionary) -> void:
 	AudioManager.play_sfx("redeem")
@@ -332,15 +349,20 @@ func _on_update_available(info: Dictionary) -> void:
 		notes_text = str(changelog_items)
 	changelog_label.text = notes_text
 	
-	var size_mb = round(float(info.get("file_size_bytes", 0)) / (1024.0 * 1024.0) * 100.0) / 100.0
-	progress_label.text = "حجم التحديث: %.2f MB | جاهز للتحميل والتثبيت التلقائي." % size_mb
-	progress_label.modulate = Color(0.3, 0.85, 1.0)
+	if info.get("has_new_ipa", false) or info.get("requires_ipa", false):
+		var size_mb = info.get("ipa_file_size_mb", 23.7)
+		progress_label.text = "حجم ملف الـ IPA الجديد: %.1f MB | اضغط بالأسفل للتحميل والتثبيت المباشر." % size_mb
+		progress_label.modulate = Color(1.0, 0.75, 0.2)
+		update_now_btn.text = "⬇️ تحميل ملف الـ IPA الجديد الآن (Download IPA)"
+	else:
+		var size_mb = round(float(info.get("file_size_bytes", 0)) / (1024.0 * 1024.0) * 100.0) / 100.0
+		progress_label.text = "حجم التحديث: %.2f MB | جاهز للتحميل والتثبيت التلقائي." % size_mb
+		progress_label.modulate = Color(0.3, 0.85, 1.0)
+		update_now_btn.text = "🔄 تحديث اللعبة الآن (Update Now)"
+		
 	progress_bar.value = 0.0
-	
 	update_now_btn.disabled = false
 	update_later_btn.disabled = false
-	update_now_btn.text = "🔄 تحديث اللعبة الآن (Update Now)"
-	
 	update_modal.visible = true
 
 func _on_update_download_progress(downloaded: int, total: int, pct: float) -> void:

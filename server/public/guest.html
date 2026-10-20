@@ -591,6 +591,24 @@
 
     <div class="container">
 
+        <!-- NEW IPA ALERT BANNER -->
+        <div id="new-ipa-alert" class="card" style="margin-bottom: 24px; border: 2px solid #00f0ff; background: rgba(0, 240, 255, 0.08); box-shadow: 0 0 25px rgba(0, 240, 255, 0.25); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 32px;">🔥</span>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: #00f0ff;" id="new-ipa-title">تحديث جديد متوفر: يرجى تحميل ملف الـ IPA الجديد للايفون</h3>
+                    <p style="color: #cbd5e1; font-size: 13px; margin-top: 3px;" id="new-ipa-desc">
+                        تم إصدار نسخة كاملة جديدة من اللعبة (TitanStrike.ipa). قم بتنزيلها الآن وتثبيتها عبر Sideloadly للاستمتاع بجميع الإضافات الجديدة!
+                    </p>
+                </div>
+            </div>
+            <div>
+                <a href="/downloads/TitanStrike-unsigned.ipa" download="TitanStrike-unsigned.ipa" class="btn btn-primary" style="font-size: 14px; padding: 12px 24px;">
+                    <span>⬇️ تحميل الـ IPA الجديد (TitanStrike.ipa)</span>
+                </a>
+            </div>
+        </div>
+
         <!-- LIVE ANNOUNCEMENT -->
         <div class="card" style="margin-bottom: 28px; border-color: rgba(0, 240, 255, 0.4); background: rgba(8, 20, 36, 0.95);">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -889,11 +907,39 @@
             }
         }
 
+        async function loadVersionData() {
+            try {
+                const res = await fetch('/api/version');
+                if (res.ok) {
+                    const v = await res.json();
+                    const alertEl = document.getElementById('new-ipa-alert');
+                    if (v.has_new_ipa || v.requires_ipa) {
+                        if (alertEl) alertEl.style.display = 'flex';
+                        const titleEl = document.getElementById('new-ipa-title');
+                        const descEl = document.getElementById('new-ipa-desc');
+                        if (titleEl) titleEl.innerText = `🔥 يتوفر تحديث جديد (v${v.version || '1.2.0'}): نزل الـ IPA الجديد للايفون`;
+                        if (descEl && v.changelog) {
+                            descEl.innerText = Array.isArray(v.changelog) ? v.changelog.join(' • ') : v.changelog;
+                        }
+                    } else {
+                        if (alertEl) alertEl.style.display = 'none';
+                    }
+                    const patchVerEl = document.getElementById('patch-version-text');
+                    if (patchVerEl) patchVerEl.innerText = `الإصدار: v${v.version || '1.2.0'} | أحدث باتش متاح`;
+                }
+            } catch (e) {
+                console.warn('Version load warning:', e);
+            }
+        }
+
         // Initialize and setup live polling every 3 seconds
         refreshServerStatus();
         loadConfigData();
+        loadVersionData();
         setInterval(refreshServerStatus, 3000);
         setInterval(loadConfigData, 10000);
+        setInterval(loadVersionData, 8000);
     </script>
 </body>
 </html>
+

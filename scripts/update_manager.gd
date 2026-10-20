@@ -23,11 +23,48 @@ const UPDATE_PACKAGE_PATH: String = "user://game_update.zip"
 
 # Fallback server candidate endpoints across Internet (WAN) and Wi-Fi (LAN)
 const DEFAULT_FALLBACK_ENDPOINTS: Array[String] = [
-	"http://192.168.1.17:8080",      # Home Wi-Fi LAN
-	"http://105.197.151.212:8080",   # Public Internet WAN (4G/5G mobile data)
-	"http://127.0.0.1:8080",          # Localhost (PC testing)
-	"http://192.168.43.1:8080"        # Mobile Hotspot Gateway
+	"http://127.0.0.1:8080",
+	"http://127.0.0.1:8081",
+	"http://192.168.1.17:8080",
+	"http://192.168.1.17:8081",
+	"http://196.131.243.244:8080",
+	"http://196.131.243.244:8081",
+	"http://192.168.43.1:8080",
+	"http://192.168.43.1:8081"
 ]
+
+func get_fallback_candidates() -> Array[String]:
+	var list: Array[String] = []
+	var is_pc = OS.get_name() in ["Windows", "macOS", "Linux", "FreeBSD"]
+	
+	if is_pc:
+		list.append("http://127.0.0.1:8080")
+		list.append("http://127.0.0.1:8081")
+	
+	list.append("http://192.168.1.17:8080")
+	list.append("http://192.168.1.17:8081")
+	list.append("http://196.131.243.244:8080")
+	list.append("http://196.131.243.244:8081")
+	
+	if not is_pc:
+		list.append("http://127.0.0.1:8080")
+		list.append("http://127.0.0.1:8081")
+		
+	list.append("http://192.168.43.1:8080")
+	list.append("http://192.168.43.1:8081")
+	
+	if not server_url.is_empty():
+		list.erase(server_url)
+		list.insert(0, server_url)
+		
+	return list
+
+func get_guest_portal_url() -> String:
+	if server_url.contains("127.0.0.1") or server_url.contains("localhost"):
+		return "http://localhost:8081"
+	elif server_url.contains("192.168.1.17"):
+		return "http://192.168.1.17:8081"
+	return "http://192.168.1.17:8081"
 
 # Default Baseline Version
 var base_version: String = "1.0.0"
@@ -67,12 +104,12 @@ func _ready() -> void:
 	_load_installed_state()
 	
 	_check_http = HTTPRequest.new()
-	_check_http.timeout = 4.0
+	_check_http.timeout = 2.5
 	add_child(_check_http)
 	_check_http.request_completed.connect(_on_check_request_completed)
 	
 	_config_http = HTTPRequest.new()
-	_config_http.timeout = 4.0
+	_config_http.timeout = 2.5
 	add_child(_config_http)
 	_config_http.request_completed.connect(_on_config_request_completed)
 	
@@ -82,7 +119,7 @@ func _ready() -> void:
 	_download_http.request_completed.connect(_on_download_request_completed)
 	
 	_status_http = HTTPRequest.new()
-	_status_http.timeout = 2.5
+	_status_http.timeout = 1.5
 	add_child(_status_http)
 	_status_http.request_completed.connect(_on_status_request_completed)
 	
@@ -168,13 +205,7 @@ func check_server_heartbeat() -> void:
 	_is_checking_heartbeat = true
 	_heartbeat_ticks += 1
 	
-	# Prepare candidate list starting with the currently configured server_url
-	_heartbeat_candidates.clear()
-	_heartbeat_candidates.append(server_url)
-	for ep in DEFAULT_FALLBACK_ENDPOINTS:
-		if ep != server_url and not _heartbeat_candidates.has(ep):
-			_heartbeat_candidates.append(ep)
-	
+	_heartbeat_candidates = get_fallback_candidates()
 	_heartbeat_candidate_idx = 0
 	_try_heartbeat_candidate()
 
@@ -215,15 +246,13 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 	var json = JSON.new()
 	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
 		var st = str(json.data.get("status", "OPEN")).to_upper()
-		var open_flag = (st == "OPEN" or st == "ONLINE")
-		is_server_open = open_flag
+		var is_open_flag = (st == "OPEN" or st == "ONLINE" or json.data.get("is_open") == true)
+		is_server_open = is_open_flag
 		
-		if open_flag:
+		if is_open_flag:
 			server_status_updated.emit(true, "Open")
-			_hide_server_closed_overlay()
 		else:
 			server_status_updated.emit(false, "close")
-			_show_server_closed_overlay()
 	else:
 		is_server_open = false
 		server_status_updated.emit(false, "close")
@@ -459,13 +488,7 @@ func check_for_updates() -> void:
 		return
 	is_checking = true
 	
-	# Prepare candidate list starting with the currently configured server_url
-	_candidates_to_try.clear()
-	_candidates_to_try.append(server_url)
-	for ep in DEFAULT_FALLBACK_ENDPOINTS:
-		if ep != server_url and not _candidates_to_try.has(ep):
-			_candidates_to_try.append(ep)
-	
+	_candidates_to_try = get_fallback_candidates()
 	_candidate_index = 0
 	_try_check_candidate()
 
@@ -509,7 +532,7 @@ func _on_check_request_completed(result: int, response_code: int, _headers: Pack
 	var info: Dictionary = json.data
 	latest_server_info = info
 	var server_build = int(info.get("version_code", 0))
-	var has_new = server_build > current_build
+	var has_new = (server_build > current_build) or (info.get("has_new_ipa", false) == true) or (info.get("requires_ipa", false) == true)
 	
 	update_checked.emit(has_new, info)
 	if has_new:

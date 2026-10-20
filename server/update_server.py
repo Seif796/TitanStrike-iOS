@@ -422,7 +422,22 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        if path == "/api/publish":
+        if path == "/api/sync_github_ipa":
+            if not self.check_router_access():
+                return
+            try:
+                from sync_github_ipa import sync_ipa_from_github_or_local
+                result = sync_ipa_from_github_or_local()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Sync error: {e}")
+            return
+
+        elif path == "/api/publish":
             if not self.check_router_access():
                 return
             content_length = int(self.headers.get("Content-Length", 0))

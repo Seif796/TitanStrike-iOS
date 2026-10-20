@@ -1095,6 +1095,17 @@
                         <span>نشر التحديث الآن ورفعه لجميع اللاعبين</span>
                     </button>
                 </form>
+
+                <!-- GITHUB IPA SYNC BUTTON -->
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <button type="button" id="btn-sync-github-ipa" onclick="triggerGitHubIpaSync()" class="btn btn-purple" style="width: 100%; font-size: 14px; padding: 12px;">
+                        <span>📦</span>
+                        <span>سحب ملف الـ IPA الجديد من GitHub ونشره فورياً في الموقع</span>
+                    </button>
+                    <p style="color: var(--text-muted); font-size: 12px; margin-top: 6px; text-align: center;">
+                        💡 يقوم بسحب ملف TitanStrike-unsigned.ipa الأحدث وتحديث رقم الإصدار وتنبيه اللاعبين في الموقع واللعبة لتنزيل النسخة الجديدة!
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -1342,6 +1353,32 @@
             t.innerText = text;
             t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 3500);
+        }
+
+        async function triggerGitHubIpaSync() {
+            const btn = document.getElementById('btn-sync-github-ipa');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "<span>⏳</span><span>جاري سحب وتحديث ملف الـ IPA من GitHub...</span>";
+            }
+            try {
+                const res = await fetch('/api/sync_github_ipa', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast(`🎉 ${data.message || 'تم سحب ونشر ملف IPA الجديد بنجاح!'}`);
+                    await fetchVersion();
+                    await fetchGameConfig();
+                } else {
+                    showToast("❌ تعذر سحب الملف من GitHub!");
+                }
+            } catch (err) {
+                showToast("❌ تعذر الاتصال بالسيرفر!");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>📦</span><span>سحب ملف الـ IPA الجديد من GitHub ونشره فورياً في الموقع</span>`;
+                }
+            }
         }
 
         async function handlePublish(e) {
