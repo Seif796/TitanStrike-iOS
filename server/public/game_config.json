@@ -49,16 +49,22 @@
   "server_status": "OPEN",
   "device_security": {
     "whitelist_enabled": true,
-    "allowed_devices": [],
-    "pending_devices": [
+    "allowed_devices": [
       {
         "id": "{88b5ac79-2a3a-11eb-b696-806e6f6e6963}",
-        "name": "HP 255 G8 Notebook PC",
-        "os": "Windows",
-        "username": "seif1",
-        "ip": "192.168.1.17",
-        "requested_at": "2026-10-20"
+        "name": "HP 255 G8 Notebook PC 🎁 (مكافأة 1000 عملة)",
+        "status": "APPROVED",
+        "role": "GIFT_COINS",
+        "approved_at": "2026-10-20 22:24"
+      },
+      {
+        "id": "سسيشيشيشي",
+        "name": "lapto[p 🎁 (مكافأة 1000 عملة)",
+        "status": "APPROVED",
+        "role": "GIFT_COINS",
+        "approved_at": "2026-10-20 22:25"
       }
-    ]
+    ],
+    "pending_devices": []
   }
 }

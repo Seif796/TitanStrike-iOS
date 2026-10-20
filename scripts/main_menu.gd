@@ -755,8 +755,6 @@ func _validate_player_name() -> String:
 	return p_name
 
 func _on_solo_wave_pressed() -> void:
-	if not _can_enter_game():
-		return
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	if p_name.is_empty():
@@ -770,8 +768,6 @@ func _on_solo_wave_pressed() -> void:
 	GameManager.start_game_scene()
 
 func _on_training_pressed() -> void:
-	if not _can_enter_game():
-		return
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	_speak_prompt("Entering Training Grounds...")

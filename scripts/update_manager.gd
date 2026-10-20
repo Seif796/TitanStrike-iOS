@@ -231,9 +231,14 @@ func check_server_heartbeat(force: bool = false) -> void:
 func _try_heartbeat_candidate() -> void:
 	if _heartbeat_candidate_idx >= _heartbeat_candidates.size():
 		_is_checking_heartbeat = false
-		is_server_open = false
-		server_status_updated.emit(false, "close")
 		return
+	
+	if _status_http == null:
+		_is_checking_heartbeat = false
+		return
+		
+	if _status_http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		_status_http.cancel_request()
 	
 	var candidate_url = _heartbeat_candidates[_heartbeat_candidate_idx]
 	var endpoint = candidate_url.trim_suffix("/") + "/api/server_status"
@@ -250,11 +255,7 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 			return
 		
 		_is_checking_heartbeat = false
-		var was_open_before = is_server_open
-		is_server_open = false
-		server_status_updated.emit(false, "close")
-		if was_open_before:
-			server_closed_notification.emit()
+		# Candidates could not connect momentarily; keep last state and retry quietly on next tick
 		return
 	
 	_is_checking_heartbeat = false
@@ -283,12 +284,6 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 			server_status_updated.emit(false, "close")
 			if was_open:
 				server_closed_notification.emit()
-	else:
-		var was_open = is_server_open
-		is_server_open = false
-		server_status_updated.emit(false, "close")
-		if was_open:
-			server_closed_notification.emit()
 	
 	# Verify device access authorization
 	verify_device_access()
@@ -391,7 +386,9 @@ func _hide_server_closed_overlay() -> void:
 # DEVICE ACCESS VERIFICATION & WHITELIST ENFORCEMENT
 # ==============================================================================
 func verify_device_access() -> void:
-	if _shutdown_in_progress or is_downloading:
+	if _shutdown_in_progress or is_downloading or _device_verify_http == null:
+		return
+	if _device_verify_http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
 		return
 	
 	var endpoint = server_url.trim_suffix("/") + "/api/verify_device"
@@ -593,7 +590,9 @@ func _on_check_request_completed(result: int, response_code: int, _headers: Pack
 	sync_game_config()
 
 func sync_game_config() -> void:
-	if _shutdown_in_progress:
+	if _shutdown_in_progress or _config_http == null:
+		return
+	if _config_http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
 		return
 	var endpoint = server_url.trim_suffix("/") + "/api/game_config"
 	_config_http.request(endpoint)

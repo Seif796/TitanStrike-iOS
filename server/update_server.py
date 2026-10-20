@@ -332,6 +332,18 @@ def handle_rooms_check(code: str) -> tuple[int, dict]:
         return 200, {"code": code, "active": False, "terminated": True}
     return 200, {"code": code, "active": (code in ROOMS), "terminated": False}
 
+def send_json_response(handler, data, status_code: int = 200):
+    body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    handler.send_response(status_code)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+    handler.end_headers()
+    handler.wfile.write(body)
+
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
@@ -378,62 +390,34 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         path = parsed.path
 
         if path == "/api/version":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            v_data = load_version_info()
-            self.wfile.write(json.dumps(v_data, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, load_version_info())
             return
 
         elif path == "/api/game_config":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            cfg_data = load_game_config()
-            self.wfile.write(json.dumps(cfg_data, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, load_game_config())
             return
 
         elif path == "/api/server_status":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
             cfg_data = load_game_config()
             st = cfg_data.get("server_status", "OPEN").upper()
-            is_open = (st == "OPEN")
-            self.wfile.write(json.dumps({"status": st, "is_open": is_open}, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, {"status": st, "is_open": (st == "OPEN")})
             return
 
         elif path == "/api/devices":
             if not self.check_router_access():
                 return
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
             cfg_data = load_game_config()
             dev_sec = cfg_data.get("device_security", {
                 "whitelist_enabled": True,
                 "allowed_devices": [],
                 "pending_devices": []
             })
-            self.wfile.write(json.dumps(dev_sec, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, dev_sec)
             return
 
         elif path == "/api/network_info":
             if not self.check_router_access():
                 return
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
             net_data = {
                 "lan_ip": get_lan_ip(),
                 "wan_ip": get_wan_ip(),
@@ -443,39 +427,25 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 "router_only_protection": True,
                 "status": "ONLINE"
             }
-            self.wfile.write(json.dumps(net_data, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, net_data)
             return
 
         elif path == "/api/rooms":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            self.wfile.write(json.dumps({
+            send_json_response(self, {
                 "total_created": TOTAL_ROOMS_CREATED,
                 "active_count": len(ROOMS),
                 "rooms": list(ROOMS.values())
-            }, ensure_ascii=False).encode("utf-8"))
+            })
             return
 
         elif path == "/api/rooms/check":
             code = urllib.parse.parse_qs(parsed.query).get("code", [""])[0]
             status_code, res = handle_rooms_check(code)
-            self.send_response(status_code)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, res, status_code)
             return
 
         elif path == "/api/console_logs":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            self.wfile.write(json.dumps({"logs": CONSOLE_LOGS}, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, {"logs": CONSOLE_LOGS})
             return
 
         elif path == "/api/rooms":
@@ -567,11 +537,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             try:
                 from sync_github_ipa import sync_ipa_from_github_or_local
                 result = sync_ipa_from_github_or_local()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, result)
             except Exception as e:
                 self.send_error(500, f"Sync error: {e}")
             return
@@ -590,11 +556,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 changelog = data.get("changelog", ["تحسينات عامة على النظام واللعبة"])
                 mandatory = data.get("mandatory", False)
                 updated_data = publish_update(version, version_code, title, changelog, mandatory)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": True, "message": "Version updated successfully!", "data": updated_data}).encode("utf-8"))
+                send_json_response(self, {"success": True, "message": "Version updated successfully!", "data": updated_data})
             except Exception as e:
                 self.send_error(500, f"Publish error: {e}")
             return
@@ -617,15 +579,11 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                     current_config["server_status"] = data["server_status"]
                 
                 save_game_config(current_config)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({
+                send_json_response(self, {
                     "success": True, 
                     "message": "Game configuration updated successfully!", 
                     "config": current_config
-                }, ensure_ascii=False).encode("utf-8"))
+                })
             except Exception as e:
                 self.send_error(500, f"Game config error: {e}")
             return
@@ -647,16 +605,12 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 current_config["server_status"] = new_st
                 save_game_config(current_config)
                 
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({
+                send_json_response(self, {
                     "success": True,
                     "status": new_st,
                     "is_open": (new_st == "OPEN"),
                     "message": f"Server status updated to {new_st}"
-                }, ensure_ascii=False).encode("utf-8"))
+                })
             except Exception as e:
                 self.send_error(500, f"Server toggle error: {e}")
             return
@@ -664,11 +618,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         elif path == "/api/shutdown":
             if not self.check_router_access():
                 return
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps({"success": True, "message": "Server process is stopping..."}).encode("utf-8"))
+            send_json_response(self, {"success": True, "message": "Server process is stopping..."})
             def kill_soon():
                 import time
                 time.sleep(0.5)
@@ -965,58 +915,31 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
         elif path == "/api/server_status":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
             cfg_data = load_game_config()
             st = cfg_data.get("server_status", "OPEN").upper()
-            is_open = (st == "OPEN")
-            self.wfile.write(json.dumps({"status": st, "is_open": is_open}, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, {"status": st, "is_open": (st == "OPEN")})
             return
 
         elif path == "/api/game_config":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            cfg_data = load_game_config()
-            self.wfile.write(json.dumps(cfg_data, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, load_game_config())
             return
 
         elif path == "/api/version":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            v_data = load_version_info()
-            self.wfile.write(json.dumps(v_data, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, load_version_info())
             return
 
         elif path == "/api/rooms":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            self.wfile.write(json.dumps({
+            send_json_response(self, {
                 "total_created": TOTAL_ROOMS_CREATED,
                 "active_count": len(ROOMS),
                 "rooms": list(ROOMS.values())
-            }, ensure_ascii=False).encode("utf-8"))
+            })
             return
 
         elif path == "/api/rooms/check":
             code = urllib.parse.parse_qs(parsed.query).get("code", [""])[0]
             status_code, res = handle_rooms_check(code)
-            self.send_response(status_code)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
+            send_json_response(self, res, status_code)
             return
 
         elif path.startswith("/downloads/"):
@@ -1053,11 +976,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, resp = handle_device_request_submission(data, self.client_address[0])
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, resp, code)
                 return
             except Exception as e:
                 self.send_error(500, f"Request device error: {e}")
@@ -1069,11 +988,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, resp = handle_verify_device_request(data, self.client_address[0])
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, resp, code)
                 return
             except Exception as e:
                 self.send_error(500, f"Verify device error: {e}")
@@ -1085,11 +1000,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, resp = handle_rooms_create(data)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, resp, code)
             except Exception as e:
                 self.send_error(500, f"Rooms create error: {e}")
             return
@@ -1100,11 +1011,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, resp = handle_rooms_close(data)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, resp, code)
             except Exception as e:
                 self.send_error(500, f"Rooms close error: {e}")
             return
@@ -1119,24 +1026,16 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 lvl = str(data.get("level", "INFO")).strip()
                 if msg:
                     add_console_log(source, msg, lvl)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+                send_json_response(self, {"success": True})
             except Exception as e:
                 self.send_error(500, f"Console log error: {e}")
             return
 
         # Block any admin modification attempts on the guest server
-        self.send_response(403)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(json.dumps({
+        send_json_response(self, {
             "error": "Forbidden",
             "message": "⛔ هذا السيرفر مخصص للزوار واللاعبين فقط (Guest Only). التحكم الكامل متاح لمدير السيرفر فقط على البورت 8080."
-        }, ensure_ascii=False).encode("utf-8"))
+        }, 403)
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
