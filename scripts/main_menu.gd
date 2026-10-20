@@ -239,6 +239,9 @@ func _setup_settings_view() -> void:
 				server_state_label.modulate = Color(0.2, 0.95, 0.5)
 			else:
 				server_state_label.modulate = Color(1.0, 0.25, 0.25)
+		if is_open and _maintenance_layer != null:
+			_close_maintenance_popup()
+			_on_server_opened_notification()
 	)
 	
 	redeem_btn.pressed.connect(_on_redeem_pressed)
@@ -882,6 +885,8 @@ func _can_enter_game() -> bool:
 	return true
 
 func _show_maintenance_popup() -> void:
+	if UpdateManager.is_server_open:
+		return
 	if _maintenance_layer != null:
 		return
 		
@@ -1011,9 +1016,13 @@ func _show_maintenance_popup() -> void:
 	check_btn.custom_minimum_size = Vector2(170, 42)
 	check_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
+		if UpdateManager.is_server_open:
+			_close_maintenance_popup()
+			_on_server_opened_notification()
+			return
 		_maintenance_status_lbl.text = "⏳ جاري فحص إشارة السيرفر مع القائد..."
 		_maintenance_status_lbl.add_theme_color_override("font_color", Color.YELLOW)
-		UpdateManager.check_server_heartbeat()
+		UpdateManager.check_server_heartbeat(true)
 	)
 	btn_row.add_child(check_btn)
 	

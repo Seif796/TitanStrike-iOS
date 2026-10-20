@@ -32,7 +32,7 @@
       "name": "🕷️ Spider Hero (سبايدر هودي)",
       "enabled": true,
       "hp": 220,
-      "speed": 9.2,
+      "speed": 20.2,
       "role": "The newly added 3D Chibi Spider-Hero! Wearing an oversized hoodie, denim cutoffs, and retro high-top sneakers. Highly agile with web attacks!"
     }
   },
@@ -49,15 +49,16 @@
   "server_status": "OPEN",
   "device_security": {
     "whitelist_enabled": true,
-    "allowed_devices": [
+    "allowed_devices": [],
+    "pending_devices": [
       {
         "id": "{88b5ac79-2a3a-11eb-b696-806e6f6e6963}",
-        "name": "💻 لاب توب الإدارة الأساسي (Admin Laptop - HP 255)",
-        "type": "Laptop",
-        "status": "APPROVED",
-        "approved_at": "2026-10-19"
+        "name": "HP 255 G8 Notebook PC",
+        "os": "Windows",
+        "username": "seif1",
+        "ip": "192.168.1.17",
+        "requested_at": "2026-10-20"
       }
-    ],
-    "pending_devices": []
+    ]
   }
 }

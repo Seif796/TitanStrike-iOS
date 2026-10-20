@@ -42,6 +42,8 @@ func get_fallback_candidates() -> Array[String]:
 	if is_pc:
 		list.append("http://127.0.0.1:8080")
 		list.append("http://127.0.0.1:8081")
+		list.append("http://localhost:8080")
+		list.append("http://localhost:8081")
 	
 	list.append("http://192.168.1.17:8080")
 	list.append("http://192.168.1.17:8081")
@@ -57,7 +59,13 @@ func get_fallback_candidates() -> Array[String]:
 	
 	if not server_url.is_empty():
 		list.erase(server_url)
-		list.insert(0, server_url)
+		if is_pc:
+			if server_url.contains("127.0.0.1") or server_url.contains("localhost"):
+				list.insert(0, server_url)
+			else:
+				list.insert(2, server_url)
+		else:
+			list.insert(0, server_url)
 		
 	return list
 
@@ -75,7 +83,7 @@ var base_build: int = 1
 var current_version: String = "1.0.0"
 var current_build: int = 1
 
-var server_url: String = "http://192.168.1.17:8080"
+var server_url: String = "http://127.0.0.1:8080" if OS.get_name() in ["Windows", "macOS", "Linux", "FreeBSD"] else "http://192.168.1.17:8080"
 var latest_server_info: Dictionary = {}
 
 var is_checking: bool = false
@@ -155,11 +163,13 @@ func _process(_delta: float) -> void:
 			download_progress.emit(downloaded, total, pct)
 
 func _load_config() -> void:
+	var is_pc = OS.get_name() in ["Windows", "macOS", "Linux", "FreeBSD"]
+	var default_url = "http://127.0.0.1:8080" if is_pc else "http://192.168.1.17:8080"
 	var cfg = ConfigFile.new()
 	if cfg.load(CONFIG_PATH) == OK:
-		server_url = cfg.get_value("server", "url", "http://192.168.1.17:8080")
+		server_url = cfg.get_value("server", "url", default_url)
 	else:
-		server_url = "http://192.168.1.17:8080"
+		server_url = default_url
 
 func save_server_url(new_url: String) -> void:
 	server_url = new_url.strip_edges()
@@ -200,8 +210,15 @@ func _save_installed_state(v_info: Dictionary) -> void:
 # ==============================================================================
 # HEARTBEAT & SERVER STATUS MONITORING (Continuous 24/7 Live Monitoring)
 # ==============================================================================
-func check_server_heartbeat() -> void:
-	if is_downloading or _is_checking_heartbeat:
+func check_server_heartbeat(force: bool = false) -> void:
+	if is_downloading:
+		return
+	
+	if force and _status_http != null:
+		_status_http.cancel_request()
+		_is_checking_heartbeat = false
+		
+	if _is_checking_heartbeat:
 		return
 	
 	_is_checking_heartbeat = true
@@ -233,10 +250,11 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 			return
 		
 		_is_checking_heartbeat = false
-		if is_server_open and _heartbeat_ticks > 1:
-			server_closed_notification.emit()
+		var was_open_before = is_server_open
 		is_server_open = false
 		server_status_updated.emit(false, "close")
+		if was_open_before:
+			server_closed_notification.emit()
 		return
 	
 	_is_checking_heartbeat = false
@@ -259,17 +277,18 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 		
 		if is_open_flag:
 			server_status_updated.emit(true, "Open")
-			if was_closed and _heartbeat_ticks > 1:
+			if was_closed:
 				server_opened_notification.emit()
 		else:
 			server_status_updated.emit(false, "close")
-			if was_open and _heartbeat_ticks > 1:
+			if was_open:
 				server_closed_notification.emit()
 	else:
-		if is_server_open and _heartbeat_ticks > 1:
-			server_closed_notification.emit()
+		var was_open = is_server_open
 		is_server_open = false
 		server_status_updated.emit(false, "close")
+		if was_open:
+			server_closed_notification.emit()
 	
 	# Verify device access authorization
 	verify_device_access()
@@ -359,8 +378,9 @@ func verify_device_access() -> void:
 	
 	var endpoint = server_url.trim_suffix("/") + "/api/verify_device"
 	var current_user = ""
-	if AccountManager != null and AccountManager.is_logged_in():
-		current_user = AccountManager.get_current_user()
+	var am = get_node_or_null("/root/AccountManager")
+	if am != null and am.is_logged_in():
+		current_user = am.get_current_user()
 	
 	var payload = {
 		"device_id": OS.get_unique_id(),
