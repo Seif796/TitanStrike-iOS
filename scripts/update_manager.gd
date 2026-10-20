@@ -16,6 +16,8 @@ signal update_installed()
 signal game_config_synced(config: Dictionary)
 signal server_status_updated(is_open: bool, status_str: String)
 signal device_access_checked(is_allowed: bool, message: String)
+signal server_opened_notification()
+signal server_closed_notification()
 
 const CONFIG_PATH: String = "user://update_config.cfg"
 const STATE_PATH: String = "user://version_state.json"
@@ -231,6 +233,8 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 			return
 		
 		_is_checking_heartbeat = false
+		if is_server_open and _heartbeat_ticks > 1:
+			server_closed_notification.emit()
 		is_server_open = false
 		server_status_updated.emit(false, "close")
 		return
@@ -247,13 +251,23 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
 		var st = str(json.data.get("status", "OPEN")).to_upper()
 		var is_open_flag = (st == "OPEN" or st == "ONLINE" or json.data.get("is_open") == true)
+		
+		var was_closed = not is_server_open
+		var was_open = is_server_open
+		
 		is_server_open = is_open_flag
 		
 		if is_open_flag:
 			server_status_updated.emit(true, "Open")
+			if was_closed and _heartbeat_ticks > 1:
+				server_opened_notification.emit()
 		else:
 			server_status_updated.emit(false, "close")
+			if was_open and _heartbeat_ticks > 1:
+				server_closed_notification.emit()
 	else:
+		if is_server_open and _heartbeat_ticks > 1:
+			server_closed_notification.emit()
 		is_server_open = false
 		server_status_updated.emit(false, "close")
 	

@@ -277,6 +277,8 @@ func _setup_update_system() -> void:
 	UpdateManager.download_progress.connect(_on_update_download_progress)
 	UpdateManager.download_failed.connect(_on_update_download_failed)
 	UpdateManager.update_installed.connect(_on_update_installed)
+	UpdateManager.server_opened_notification.connect(_on_server_opened_notification)
+	UpdateManager.server_closed_notification.connect(_on_server_closed_notification)
 	
 	if update_later_btn:
 		update_later_btn.pressed.connect(func():
@@ -597,6 +599,8 @@ func _setup_mode_select_view() -> void:
 	bt_btn.pressed.connect(_on_bluetooth_btn_pressed)
 	scan_btn.pressed.connect(_on_scan_btn_pressed)
 	party_play_btn.pressed.connect(func():
+		if not _can_enter_game():
+			return
 		_speak_prompt("Starting multiplayer room with Party members...")
 		_on_create_room_pressed()
 	)
@@ -747,6 +751,8 @@ func _validate_player_name() -> String:
 	return p_name
 
 func _on_solo_wave_pressed() -> void:
+	if not _can_enter_game():
+		return
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	if p_name.is_empty():
@@ -759,11 +765,15 @@ func _on_solo_wave_pressed() -> void:
 	GameManager.start_game_scene()
 
 func _on_training_pressed() -> void:
+	if not _can_enter_game():
+		return
 	AudioManager.play_sfx("click")
 	_speak_prompt("Entering Training Grounds...")
 	GameManager.start_training_mode(selected_class)
 
 func _on_create_room_pressed() -> void:
+	if not _can_enter_game():
+		return
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	if p_name.is_empty():
@@ -781,6 +791,8 @@ func _on_create_room_pressed() -> void:
 		status_label.text = "Error creating room: %s" % error_string(err)
 
 func _on_join_room_pressed() -> void:
+	if not _can_enter_game():
+		return
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	if p_name.is_empty():
@@ -852,3 +864,316 @@ func _on_room_discovered(room_code: String, _host_ip: String, _map_id: int) -> v
 	var p_name = _validate_player_name()
 	if not p_name.is_empty():
 		NetworkManager.join_room_with_code(room_code, p_name, selected_class)
+
+# ==============================================================================
+# 3. LIVE LEADER CONTROL NOTIFICATIONS (Server Pause / Server Reopened)
+# ==============================================================================
+var _maintenance_layer: CanvasLayer = null
+var _maintenance_timer: Timer = null
+var _maintenance_seconds_left: int = 600 # 10 minutes
+var _maintenance_time_label: Label = null
+var _maintenance_status_lbl: Label = null
+var _server_opened_banner: CanvasLayer = null
+
+func _can_enter_game() -> bool:
+	if not UpdateManager.is_server_open:
+		_show_maintenance_popup()
+		return false
+	return true
+
+func _show_maintenance_popup() -> void:
+	if _maintenance_layer != null:
+		return
+		
+	AudioManager.play_sfx("error")
+	_maintenance_seconds_left = 600
+	
+	_maintenance_layer = CanvasLayer.new()
+	_maintenance_layer.layer = 120
+	
+	var bg = ColorRect.new()
+	bg.color = Color(0.03, 0.05, 0.1, 0.88)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_maintenance_layer.add_child(bg)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_maintenance_layer.add_child(center)
+	
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(620, 390)
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.11, 0.19, 0.98)
+	style.border_color = Color(1.0, 0.45, 0.15, 0.9) # Neon Amber/Orange
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.shadow_color = Color(1.0, 0.35, 0.1, 0.35)
+	style.shadow_size = 20
+	card.add_theme_stylebox_override("panel", style)
+	
+	var pad = MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 26)
+	pad.add_theme_constant_override("margin_top", 22)
+	pad.add_theme_constant_override("margin_right", 26)
+	pad.add_theme_constant_override("margin_bottom", 22)
+	card.add_child(pad)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	pad.add_child(vbox)
+	
+	var icon = Label.new()
+	icon.text = "🛠️ ⏳"
+	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon.add_theme_font_size_override("font_size", 44)
+	vbox.add_child(icon)
+	
+	var title = Label.new()
+	title.text = "🛠️ معلش في تحديث بيحصل دلوقتي!"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.55, 0.15))
+	vbox.add_child(title)
+	
+	var subtitle = Label.new()
+	subtitle.text = "⛔ القائد أوقف السيرفر مؤقتاً للصيانة وبث التحديثات الجديدة"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 13)
+	subtitle.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
+	vbox.add_child(subtitle)
+	
+	var msg = Label.new()
+	msg.text = "معلش في ابديت بيحصل دلوقتي، القائد موقف اللعبة مؤقتاً..\nتعالَ بعدها بـ 10 دقائق وشوف هي خلصت ولا لأ!"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	msg.add_theme_font_size_override("font_size", 15)
+	msg.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
+	vbox.add_child(msg)
+	
+	# Countdown Panel
+	var timer_box = PanelContainer.new()
+	var t_style = StyleBoxFlat.new()
+	t_style.bg_color = Color(0.04, 0.07, 0.12, 0.9)
+	t_style.border_color = Color(0.0, 0.9, 1.0, 0.4)
+	t_style.border_width_left = 1
+	t_style.border_width_top = 1
+	t_style.border_width_right = 1
+	t_style.border_width_bottom = 1
+	t_style.corner_radius_top_left = 10
+	t_style.corner_radius_top_right = 10
+	t_style.corner_radius_bottom_left = 10
+	t_style.corner_radius_bottom_right = 10
+	timer_box.add_theme_stylebox_override("panel", t_style)
+	
+	var t_pad = MarginContainer.new()
+	t_pad.add_theme_constant_override("margin_left", 14)
+	t_pad.add_theme_constant_override("margin_top", 10)
+	t_pad.add_theme_constant_override("margin_right", 14)
+	t_pad.add_theme_constant_override("margin_bottom", 10)
+	timer_box.add_child(t_pad)
+	
+	var t_vbox = VBoxContainer.new()
+	t_vbox.add_theme_constant_override("separation", 4)
+	t_pad.add_child(t_vbox)
+	
+	_maintenance_time_label = Label.new()
+	_maintenance_time_label.text = "⏱️ موعد الانتهاء المقترح: 10:00 دقيقة"
+	_maintenance_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_maintenance_time_label.add_theme_font_size_override("font_size", 14)
+	_maintenance_time_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	t_vbox.add_child(_maintenance_time_label)
+	
+	_maintenance_status_lbl = Label.new()
+	_maintenance_status_lbl.text = "💡 إذا فتح القائد اللعبة قبل ذلك، ستفتح لك اللعبة فوراً وتلقائياً!"
+	_maintenance_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_maintenance_status_lbl.add_theme_font_size_override("font_size", 12)
+	_maintenance_status_lbl.add_theme_color_override("font_color", Color(0.3, 0.95, 0.5))
+	t_vbox.add_child(_maintenance_status_lbl)
+	
+	vbox.add_child(timer_box)
+	
+	# Action Buttons
+	var btn_row = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 10)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_row)
+	
+	var check_btn = Button.new()
+	check_btn.text = "🔄 فحص السيرفر الآن"
+	check_btn.custom_minimum_size = Vector2(170, 42)
+	check_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		_maintenance_status_lbl.text = "⏳ جاري فحص إشارة السيرفر مع القائد..."
+		_maintenance_status_lbl.add_theme_color_override("font_color", Color.YELLOW)
+		UpdateManager.check_server_heartbeat()
+	)
+	btn_row.add_child(check_btn)
+	
+	var web_btn = Button.new()
+	web_btn.text = "🌐 موقع السيرفر"
+	web_btn.custom_minimum_size = Vector2(140, 42)
+	web_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		OS.shell_open(UpdateManager.get_guest_portal_url())
+	)
+	btn_row.add_child(web_btn)
+	
+	var close_btn = Button.new()
+	close_btn.text = "✖️ حسناً، سأنتظر"
+	close_btn.custom_minimum_size = Vector2(140, 42)
+	close_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		_close_maintenance_popup()
+	)
+	btn_row.add_child(close_btn)
+	
+	center.add_child(card)
+	get_tree().root.add_child(_maintenance_layer)
+	
+	# Start 1-second countdown timer
+	if _maintenance_timer == null:
+		_maintenance_timer = Timer.new()
+		_maintenance_timer.wait_time = 1.0
+		_maintenance_timer.autostart = true
+		_maintenance_timer.one_shot = false
+		add_child(_maintenance_timer)
+		_maintenance_timer.timeout.connect(_on_maintenance_tick)
+
+func _on_maintenance_tick() -> void:
+	if _maintenance_seconds_left > 0:
+		_maintenance_seconds_left -= 1
+		var mins = _maintenance_seconds_left / 60
+		var secs = _maintenance_seconds_left % 60
+		if _maintenance_time_label:
+			_maintenance_time_label.text = "⏱️ موعد الانتهاء المقترح: %02d:%02d دقيقة" % [mins, secs]
+	else:
+		if _maintenance_time_label:
+			_maintenance_time_label.text = "⏱️ مرت 10 دقائق! يمكنك الضغط على 'فحص السيرفر الآن' للتأكد."
+
+func _close_maintenance_popup() -> void:
+	if _maintenance_layer != null:
+		_maintenance_layer.queue_free()
+		_maintenance_layer = null
+	if _maintenance_timer != null:
+		_maintenance_timer.stop()
+		_maintenance_timer.queue_free()
+		_maintenance_timer = null
+
+func _on_server_opened_notification() -> void:
+	_close_maintenance_popup()
+	AudioManager.play_sfx("redeem")
+	_speak_prompt("Server is now Open! The Leader resumed the game. Ready to play!")
+	if status_label:
+		status_label.text = "🎉 السيرفر فتح الآن! القائد أعاد تشغيل اللعبة."
+		status_label.modulate = Color(0.2, 0.95, 0.6)
+	_show_server_opened_banner()
+
+func _on_server_closed_notification() -> void:
+	if status_label:
+		status_label.text = "⛔ القائد أوقف السيرفر مؤقتاً للصيانة والتحديث."
+		status_label.modulate = Color(1.0, 0.4, 0.4)
+
+func _show_server_opened_banner() -> void:
+	if _server_opened_banner != null:
+		_server_opened_banner.queue_free()
+		_server_opened_banner = null
+		
+	_server_opened_banner = CanvasLayer.new()
+	_server_opened_banner.layer = 125
+	
+	var container = MarginContainer.new()
+	container.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	container.add_theme_constant_override("margin_left", 30)
+	container.add_theme_constant_override("margin_top", 18)
+	container.add_theme_constant_override("margin_right", 30)
+	_server_opened_banner.add_child(container)
+	
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.14, 0.12, 0.98) # Glowing Emerald
+	style.border_color = Color(0.15, 0.95, 0.55, 0.9)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	style.shadow_color = Color(0.1, 0.9, 0.5, 0.4)
+	style.shadow_size = 18
+	card.add_theme_stylebox_override("panel", style)
+	container.add_child(card)
+	
+	var pad = MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 20)
+	pad.add_theme_constant_override("margin_top", 14)
+	pad.add_theme_constant_override("margin_right", 20)
+	pad.add_theme_constant_override("margin_bottom", 14)
+	card.add_child(pad)
+	
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	pad.add_child(hbox)
+	
+	var icon = Label.new()
+	icon.text = "🎉 🟢"
+	icon.add_theme_font_size_override("font_size", 30)
+	hbox.add_child(icon)
+	
+	var text_vbox = VBoxContainer.new()
+	text_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_vbox.add_theme_constant_override("separation", 2)
+	hbox.add_child(text_vbox)
+	
+	var title = Label.new()
+	title.text = "🎉 السيرفر فتح الآن! القائد أعاد تشغيل اللعبة!"
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(0.3, 0.98, 0.6))
+	text_vbox.add_child(title)
+	
+	var desc = Label.new()
+	desc.text = "السيرفر متاح لجميع اللاعبين حالياً.. لو حابب تدخل وتبدأ جيم، السيرفر مفتوح وجاهز!"
+	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
+	text_vbox.add_child(desc)
+	
+	var play_btn = Button.new()
+	play_btn.text = "🎮 ادخل الجيم الآن"
+	play_btn.custom_minimum_size = Vector2(150, 38)
+	play_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		_dismiss_server_opened_banner()
+		_show_view(view_mode_select)
+	)
+	hbox.add_child(play_btn)
+	
+	var dismiss_btn = Button.new()
+	dismiss_btn.text = "✖️"
+	dismiss_btn.custom_minimum_size = Vector2(36, 38)
+	dismiss_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		_dismiss_server_opened_banner()
+	)
+	hbox.add_child(dismiss_btn)
+	
+	get_tree().root.add_child(_server_opened_banner)
+	
+	# Auto dismiss after 15 seconds
+	get_tree().create_timer(15.0).timeout.connect(func():
+		_dismiss_server_opened_banner()
+	)
+
+func _dismiss_server_opened_banner() -> void:
+	if _server_opened_banner != null:
+		_server_opened_banner.queue_free()
+		_server_opened_banner = null
