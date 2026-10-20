@@ -669,6 +669,7 @@
             <a href="#network" class="nav-link">🌐 شبكات الاتصال والإنترنت</a>
             <a href="#version-info" class="nav-link">📦 حالة التحديثات</a>
             <a href="#publisher" class="nav-link">🚀 نشر باتش</a>
+            <a href="/guest" target="_blank" class="nav-link" style="color: #c084fc; font-weight: 800;">👥 بوابة الزوار ↗</a>
         </div>
 
         <div class="status-pill" id="nav-server-pill">
@@ -703,6 +704,34 @@
     </header>
 
     <div class="container">
+
+        <!-- GUEST SERVER PORTAL CARD -->
+        <div class="card" style="margin-bottom: 24px; border: 2px solid rgba(139, 92, 246, 0.45); background: rgba(18, 14, 38, 0.95); box-shadow: 0 0 25px rgba(139, 92, 246, 0.15);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="font-size: 32px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: rgba(139, 92, 246, 0.15); border-radius: 14px; border: 1.5px solid #8b5cf6;">
+                        👥
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3 style="font-size: 18px; font-weight: 800; color: white;">سيرفر وبوابة الزوار المخصصة (Guest Server)</h3>
+                            <span class="hero-badge" style="background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.5);">Port 8081 (للمشاهدة والتنزيل فقط)</span>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 13px; margin-top: 3px;">
+                            💡 هذا الرابط مخصص للاعبين والزوار: تم حجب أزرار التحكم وحذف الشخصيات وإيقاف السيرفر عنهم. يمكنهم فقط متابعة حالة السيرفر، استعراض طاقات الأبطال، وتنزيل اللعبة (IPA) والتحديثات!
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <a href="/guest" target="_blank" class="btn btn-purple" style="font-size: 13px; padding: 10px 18px; text-decoration: none;">
+                        <span>👁️ فتح بوابة الزوار</span>
+                    </a>
+                    <button type="button" onclick="copyGuestUrl()" class="btn btn-outline" style="font-size: 13px; padding: 10px 18px; border-color: #8b5cf6; color: #c084fc;">
+                        <span>📋 نسخ رابط الزوار (Port 8081)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- MASTER SERVER POWER CONTROL (NEW USER REQUEST) -->
         <div class="card" id="server-power-card" style="margin-bottom: 28px; border: 2px solid rgba(16, 185, 129, 0.4); background: rgba(8, 18, 30, 0.95); box-shadow: 0 0 25px rgba(0, 240, 255, 0.12);">
@@ -1619,6 +1648,20 @@
                 }
             } catch (e) {
                 showToast("❌ تعذر إضافة الجهاز!");
+            }
+        }
+
+        function copyGuestUrl() {
+            const host = window.location.hostname || '192.168.1.17';
+            const guestUrl = `http://${host}:8081/`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(guestUrl).then(() => {
+                    showToast(`📋 تم نسخ رابط الزوار: ${guestUrl}`);
+                }).catch(() => {
+                    prompt("انسخ رابط سيرفر الزوار:", guestUrl);
+                });
+            } else {
+                prompt("انسخ رابط سيرفر الزوار:", guestUrl);
             }
         }
 

@@ -22,6 +22,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 PORT = 8080
+GUEST_PORT = 8081
 BASE_DIR = Path(__file__).resolve().parent
 PUBLIC_DIR = BASE_DIR / "public"
 DOWNLOADS_DIR = PUBLIC_DIR / "downloads"
@@ -158,6 +159,95 @@ def save_game_config(data):
     with open(GAME_CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+def handle_verify_device_request(data: dict, client_ip: str) -> tuple[int, dict]:
+    device_id = str(data.get("device_id", "")).strip()
+    device_name = str(data.get("device_name", "Unknown Device")).strip()
+    os_name = str(data.get("os", "Unknown OS")).strip()
+    username = str(data.get("username", "")).strip()
+
+    current_config = load_game_config()
+    dev_sec = current_config.get("device_security", {
+        "whitelist_enabled": True,
+        "allowed_devices": [],
+        "pending_devices": []
+    })
+
+    if not dev_sec.get("whitelist_enabled", True):
+        return 200, {"allowed": True, "message": "Whitelist disabled - access granted"}
+
+    clean_id = device_id.strip("{} ").lower()
+    matched = None
+    for dev in dev_sec.get("allowed_devices", []):
+        if dev.get("id", "").strip("{} ").lower() == clean_id:
+            matched = dev
+            break
+
+    if matched and matched.get("status", "APPROVED") == "APPROVED":
+        return 200, {
+            "allowed": True, 
+            "device_id": device_id,
+            "device_name": matched.get("name", device_name),
+            "message": "Authorized device recognized"
+        }
+    else:
+        pending = dev_sec.get("pending_devices", [])
+        exists_pending = any(p.get("id", "").strip("{} ").lower() == clean_id for p in pending)
+        if not exists_pending and clean_id:
+            pending.append({
+                "id": device_id,
+                "name": device_name,
+                "os": os_name,
+                "username": username,
+                "ip": client_ip,
+                "requested_at": "2026-10-20"
+            })
+            dev_sec["pending_devices"] = pending
+            current_config["device_security"] = dev_sec
+            save_game_config(current_config)
+
+        return 200, {
+            "allowed": False,
+            "device_id": device_id,
+            "reason": "UNAUTHORIZED_DEVICE",
+            "message": "⛔ هذا الجهاز غير مصرح له بالدخول. يرجى طلب التصريح من مدير السيرفر."
+        }
+
+def handle_device_request_submission(data: dict, client_ip: str) -> tuple[int, dict]:
+    dev_name = str(data.get("device_name", "📱 جهاز زائر")).strip()
+    dev_id = str(data.get("device_id", "")).strip()
+    notes = str(data.get("notes", "")).strip()
+    clean_id = dev_id.strip("{} ").lower()
+
+    current_config = load_game_config()
+    dev_sec = current_config.get("device_security", {
+        "whitelist_enabled": True,
+        "allowed_devices": [],
+        "pending_devices": []
+    })
+
+    pending = dev_sec.get("pending_devices", [])
+    exists = any(p.get("id", "").strip("{} ").lower() == clean_id for p in pending) if clean_id else False
+    if not exists:
+        if not clean_id:
+            import uuid
+            dev_id = f"guest-{uuid.uuid4().hex[:8]}"
+        pending.append({
+            "id": dev_id,
+            "name": dev_name,
+            "notes": notes,
+            "ip": client_ip,
+            "requested_at": "2026-10-20"
+        })
+        dev_sec["pending_devices"] = pending
+        current_config["device_security"] = dev_sec
+        save_game_config(current_config)
+
+    return 200, {
+        "success": True,
+        "device_id": dev_id,
+        "message": "Device request registered for admin approval!"
+    }
+
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
@@ -278,7 +368,10 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             if file_path.is_file():
                 file_size = file_path.stat().st_size
                 self.send_response(200)
-                self.send_header("Content-Type", "application/zip")
+                if filename.lower().endswith(".ipa"):
+                    self.send_header("Content-Type", "application/octet-stream")
+                else:
+                    self.send_header("Content-Type", "application/zip")
                 self.send_header("Content-Length", str(file_size))
                 self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
                 self.send_header("Access-Control-Allow-Origin", "*")
@@ -289,6 +382,20 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 return
             else:
                 self.send_error(404, f"File {filename} not found")
+                return
+
+        elif path in ("/guest", "/guest.html"):
+            guest_file = PUBLIC_DIR / "guest.html"
+            if guest_file.is_file():
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                with open(guest_file, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+            else:
+                self.send_error(404, "guest.html not found")
                 return
 
         elif path == "/" or path == "/index.html":
@@ -420,75 +527,31 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
-                device_id = str(data.get("device_id", "")).strip()
-                device_name = str(data.get("device_name", "Unknown Device")).strip()
-                os_name = str(data.get("os", "Unknown OS")).strip()
-                username = str(data.get("username", "")).strip()
-
-                current_config = load_game_config()
-                dev_sec = current_config.get("device_security", {
-                    "whitelist_enabled": True,
-                    "allowed_devices": [],
-                    "pending_devices": []
-                })
-
-                if not dev_sec.get("whitelist_enabled", True):
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json; charset=utf-8")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"allowed": True, "message": "Whitelist disabled - access granted"}, ensure_ascii=False).encode("utf-8"))
-                    return
-
-                clean_id = device_id.strip("{} ").lower()
-                matched = None
-                for dev in dev_sec.get("allowed_devices", []):
-                    if dev.get("id", "").strip("{} ").lower() == clean_id:
-                        matched = dev
-                        break
-
-                if matched and matched.get("status", "APPROVED") == "APPROVED":
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json; charset=utf-8")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({
-                        "allowed": True, 
-                        "device_id": device_id,
-                        "device_name": matched.get("name", device_name),
-                        "message": "Authorized device recognized"
-                    }, ensure_ascii=False).encode("utf-8"))
-                    return
-                else:
-                    # Record into pending_devices if not already there
-                    pending = dev_sec.get("pending_devices", [])
-                    exists_pending = any(p.get("id", "").strip("{} ").lower() == clean_id for p in pending)
-                    if not exists_pending and clean_id:
-                        pending.append({
-                            "id": device_id,
-                            "name": device_name,
-                            "os": os_name,
-                            "username": username,
-                            "ip": self.client_address[0],
-                            "requested_at": "2026-10-19"
-                        })
-                        dev_sec["pending_devices"] = pending
-                        current_config["device_security"] = dev_sec
-                        save_game_config(current_config)
-
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json; charset=utf-8")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({
-                        "allowed": False,
-                        "device_id": device_id,
-                        "reason": "UNAUTHORIZED_DEVICE",
-                        "message": "⛔ هذا الجهاز غير مصرح له بالدخول. يرجى طلب التصريح من مدير السيرفر."
-                    }, ensure_ascii=False).encode("utf-8"))
-                    return
+                code, resp = handle_verify_device_request(data, self.client_address[0])
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                return
             except Exception as e:
                 self.send_error(500, f"Verify device error: {e}")
+            return
+
+        elif path == "/api/request_device":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_device_request_submission(data, self.client_address[0])
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_error(500, f"Request device error: {e}")
             return
 
         elif path == "/api/device_action":
@@ -587,27 +650,200 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         self.send_response(200)
         self.end_headers()
 
+class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
+    """
+    Dedicated Guest & Player handler (Port 8081):
+    - Default page '/' serves guest.html
+    - All admin POST endpoints (/api/publish, /api/game_config, /api/toggle_server, /api/shutdown, /api/device_action) are blocked (403 Forbidden)
+    - Allows read-only APIs (/api/server_status, /api/game_config, /api/version) and downloads
+    - Allows /api/request_device and /api/verify_device
+    - Accessible from any client without router restriction
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path in ("/", "/index.html", "/guest", "/guest.html"):
+            guest_file = PUBLIC_DIR / "guest.html"
+            if guest_file.is_file():
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                with open(guest_file, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+            else:
+                self.send_error(404, "guest.html not found")
+                return
+
+        elif path == "/api/server_status":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            cfg_data = load_game_config()
+            st = cfg_data.get("server_status", "OPEN").upper()
+            is_open = (st == "OPEN")
+            self.wfile.write(json.dumps({"status": st, "is_open": is_open}, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/game_config":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            cfg_data = load_game_config()
+            self.wfile.write(json.dumps(cfg_data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/version":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            v_data = load_version_info()
+            self.wfile.write(json.dumps(v_data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path.startswith("/downloads/"):
+            filename = path.replace("/downloads/", "").strip("/")
+            file_path = DOWNLOADS_DIR / filename
+            if file_path.is_file():
+                file_size = file_path.stat().st_size
+                self.send_response(200)
+                if filename.lower().endswith(".ipa"):
+                    self.send_header("Content-Type", "application/octet-stream")
+                else:
+                    self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Length", str(file_size))
+                self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                with open(file_path, "rb") as f:
+                    while chunk := f.read(65536):
+                        self.wfile.write(chunk)
+                return
+            else:
+                self.send_error(404, f"File {filename} not found")
+                return
+
+        super().do_GET()
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path == "/api/request_device":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_device_request_submission(data, self.client_address[0])
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_error(500, f"Request device error: {e}")
+                return
+
+        elif path == "/api/verify_device":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_verify_device_request(data, self.client_address[0])
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_error(500, f"Verify device error: {e}")
+                return
+
+        # Block any admin modification attempts on the guest server
+        self.send_response(403)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(json.dumps({
+            "error": "Forbidden",
+            "message": "⛔ هذا السيرفر مخصص للزوار واللاعبين فقط (Guest Only). التحكم الكامل متاح لمدير السيرفر فقط على البورت 8080."
+        }, ensure_ascii=False).encode("utf-8"))
+
+    def end_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
+
 def run_server():
     lan_ip = get_lan_ip()
     wan_ip = get_wan_ip()
-    handler = UpdateRequestHandler
+
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.ThreadingTCPServer(("0.0.0.0", PORT), handler) as httpd:
-        print("=" * 70)
-        print("⚡ CyberFort: Titan Strike 3D - Live Control & OTA Server")
-        print("=" * 70)
-        print(f"[*] Localhost:      http://localhost:{PORT}")
-        print(f"[*] Wi-Fi (LAN):    http://{lan_ip}:{PORT}")
-        print(f"[*] Internet (WAN): http://{wan_ip}:{PORT}")
-        print(f"[*] Config API:     http://{lan_ip}:{PORT}/api/game_config")
-        print(f"[*] Network API:    http://{lan_ip}:{PORT}/api/network_info")
-        print("=" * 70)
-        print("[*] Server is running... Ready to serve mobile & PC clients!")
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\n[*] Stopping server...")
-            httpd.server_close()
+
+    try:
+        admin_httpd = socketserver.ThreadingTCPServer(("0.0.0.0", PORT), UpdateRequestHandler)
+    except Exception as e:
+        print(f"[!] Warning: Could not bind Admin server on port {PORT}: {e}")
+        admin_httpd = None
+
+    try:
+        guest_httpd = socketserver.ThreadingTCPServer(("0.0.0.0", GUEST_PORT), GuestRequestHandler)
+    except Exception as e:
+        print(f"[!] Warning: Could not bind Guest server on port {GUEST_PORT}: {e}")
+        guest_httpd = None
+
+    if not admin_httpd and not guest_httpd:
+        print("[Error] Failed to start servers! Ports might be busy.")
+        sys.exit(1)
+
+    print("=" * 75)
+    print("⚡ CyberFort: Titan Strike 3D - Live Control & Guest Server System")
+    print("=" * 75)
+    if admin_httpd:
+        admin_thread = threading.Thread(target=admin_httpd.serve_forever, daemon=True)
+        admin_thread.start()
+        print(f"👑 [Admin Server] (Port {PORT}) - لوحة التحكم الكاملة والمحمية للمدير:")
+        print(f"    - الرابط المحلي (Localhost):   http://localhost:{PORT}")
+        print(f"    - رابط شبكة الواي فاي (Wi-Fi):  http://{lan_ip}:{PORT}")
+    print()
+    if guest_httpd:
+        guest_thread = threading.Thread(target=guest_httpd.serve_forever, daemon=True)
+        guest_thread.start()
+        print(f"👥 [Guest Server] (Port {GUEST_PORT}) - سيرفر وبوابة الزوار واللاعبين:")
+        print(f"    - رابط الزوار (Wi-Fi):          http://{lan_ip}:{GUEST_PORT}")
+        print(f"    - رابط الإنترنت (WAN):          http://{wan_ip}:{GUEST_PORT}")
+    print("=" * 75)
+    print("[*] All servers are running actively! Ready to serve clients.")
+    print("[*] Press Ctrl+C anytime to stop.")
+    print("=" * 75)
+
+    try:
+        while True:
+            threading.Event().wait(3600)
+    except KeyboardInterrupt:
+        print("\n[*] Stopping all servers...")
+        if admin_httpd:
+            admin_httpd.server_close()
+        if guest_httpd:
+            guest_httpd.server_close()
 
 if __name__ == "__main__":
     run_server()
