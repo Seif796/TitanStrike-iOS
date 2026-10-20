@@ -664,11 +664,12 @@
         </a>
 
         <div class="nav-links">
+            <a href="#rooms-section" class="nav-link" style="color: #38bdf8; font-weight: 800;">🎮 الغرف النشطة</a>
+            <a href="#console-section" class="nav-link" style="color: #34d399; font-weight: 800;">📟 كونسول اللعبة</a>
             <a href="#control-center" class="nav-link">🎮 التحكم بالشخصيات</a>
-            <a href="#art-gallery" class="nav-link">🖼️ صور الأبطال والأيقونة</a>
-            <a href="#network" class="nav-link">🌐 شبكات الاتصال والإنترنت</a>
-            <a href="#version-info" class="nav-link">📦 حالة التحديثات</a>
-            <a href="#publisher" class="nav-link">🚀 نشر باتش</a>
+            <a href="#device-security" class="nav-link">🛡️ تصريح الأجهزة</a>
+            <a href="#art-gallery" class="nav-link">🖼️ صور الأبطال</a>
+            <a href="#network" class="nav-link">🌐 شبكات الاتصال</a>
             <a href="/guest" target="_blank" class="nav-link" style="color: #c084fc; font-weight: 800;">👥 بوابة الزوار ↗</a>
         </div>
 
@@ -763,6 +764,59 @@
                         <span>إطفاء البرنامج نهائياً (Shutdown)</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- HOW MANY ROOMS CREATED & ACTIVE ROOMS MANAGEMENT (NEW USER REQUEST) -->
+        <div class="card" id="rooms-section" style="margin-bottom: 28px; border: 2px solid rgba(0, 240, 255, 0.45); background: rgba(8, 20, 36, 0.95); box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="font-size: 32px; width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; background: rgba(0, 240, 255, 0.15); border-radius: 16px; border: 2px solid var(--neon-cyan);">
+                        🎮
+                    </div>
+                    <div>
+                        <h2 style="font-size: 20px; font-weight: 900; color: white;">إدارة ومراقبة غرف اللعبة (Live Game Rooms Management)</h2>
+                        <p style="color: var(--text-muted); font-size: 13px;">متابعة لحظية لجميع الغرف مع إمكانية إنهاء وقفل أي غرفة فوراً بأمر من القائد وفصل لاعبيها!</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                    <div style="background: rgba(3, 7, 18, 0.85); border: 1.5px solid rgba(0, 240, 255, 0.4); border-radius: 12px; padding: 10px 22px; text-align: center; min-width: 170px;">
+                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">إجمالي الغرف المنشأة (Total Rooms Created)</div>
+                        <div id="stat-total-rooms" style="font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 900; color: var(--neon-cyan);">0</div>
+                    </div>
+                    <div style="background: rgba(3, 7, 18, 0.85); border: 1.5px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 10px 22px; text-align: center; min-width: 170px;">
+                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">الغرف النشطة حالياً (Active Rooms Now)</div>
+                        <div id="stat-active-rooms" style="font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 900; color: #10b981;">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Rooms Table Container -->
+            <div id="active-rooms-container">
+                <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
+                    ⏳ جاري فحص الغرف النشطة في اللعبة...
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE GAME CONSOLE (NEW USER REQUEST) -->
+        <div class="card" id="console-section" style="margin-bottom: 28px; border: 2px solid rgba(16, 185, 129, 0.45); background: rgba(5, 14, 20, 0.96); box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="status-pulse"></div>
+                    <h3 style="font-size: 18px; font-weight: 900; color: #34d399;">📟 كونسول أحداث اللعبة المباشر (Live Game Console)</h3>
+                    <span class="hero-badge badge-enabled" style="font-size: 11px;">مباشر 24/7 (Real-time Logs)</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" onclick="clearGameConsole()" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px; border-color: rgba(255,255,255,0.2);">
+                        <span>🧹 مسح الكونسول</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="console-output" style="background: #030712; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 14px; height: 260px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.6; display: flex; flex-direction: column; gap: 4px;">
+                <div style="color: #64748b;">⏳ جاري الاتصال وتلقي أحداث اللعبة من السيرفر...</div>
             </div>
         </div>
 
@@ -1598,11 +1652,14 @@
                                     ID: ${dev.id} | IP: ${dev.ip || ''}
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button type="button" onclick="approveDevice('${dev.id}', '${dev.name || '📱 موبايلي المصرح له'}')" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">
-                                    ✅ تصريح وموافقة على هذا الجهاز
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" onclick="openGuestActionModal('${dev.id}', '${dev.name || '📱 هاتف زائر'}')" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none;">
+                                    ⚡ قبول وتحديد الصلاحيات
                                 </button>
-                                <button type="button" onclick="removeDevice('${dev.id}')" class="btn btn-outline" style="padding: 8px 14px; font-size: 13px; color: #f87171;">
+                                <button type="button" onclick="approveDevice('${dev.id}', '${dev.name || '📱 موبايلي المصرح له'}')" class="btn btn-success" style="padding: 8px 14px; font-size: 13px;">
+                                    ✅ قبول فوري
+                                </button>
+                                <button type="button" onclick="removeDevice('${dev.id}')" class="btn btn-outline" style="padding: 8px 12px; font-size: 13px; color: #f87171;">
                                     ❌ رفض
                                 </button>
                             </div>
@@ -1707,10 +1764,252 @@
         fetchNetworkInfo();
         fetchGameConfig();
         fetchVersion();
+        fetchRooms();
+        fetchGameConsole();
 
-        // Keep status synchronized every 3 seconds
+        // Keep status synchronized every 2-3 seconds
         setInterval(fetchServerStatus, 3000);
-        setInterval(fetchDevices, 4000);
+        setInterval(fetchDevices, 3500);
+        setInterval(fetchRooms, 2000);
+        setInterval(fetchGameConsole, 2000);
+
+        // =====================================================================
+        // ROOMS TRACKING & MANAGEMENT
+        // =====================================================================
+        async function fetchRooms() {
+            try {
+                const res = await fetch('/api/rooms');
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                const statTotal = document.getElementById('stat-total-rooms');
+                const statActive = document.getElementById('stat-active-rooms');
+                if (statTotal) statTotal.innerText = data.total_created || 0;
+                if (statActive) statActive.innerText = data.active_count || 0;
+
+                const container = document.getElementById('active-rooms-container');
+                if (!container) return;
+
+                const rooms = data.rooms || [];
+                if (rooms.length === 0) {
+                    container.innerHTML = `
+                        <div style="background: rgba(3, 7, 18, 0.6); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); font-size: 14px;">
+                            💤 لا توجد غرف نشطة حالياً باللعبة. عند إنشاء أي لاعب غرفة Multiplayer ستظهر هنا فوراً!
+                        </div>
+                    `;
+                } else {
+                    let html = `<div style="display: flex; flex-direction: column; gap: 10px;">`;
+                    rooms.forEach(r => {
+                        html += `
+                            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: rgba(3, 7, 18, 0.75); border: 1.5px solid rgba(0, 240, 255, 0.35); border-radius: 12px; padding: 14px 18px; gap: 12px;">
+                                <div style="display: flex; align-items: center; gap: 14px;">
+                                    <div style="font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; color: var(--neon-cyan); background: rgba(0, 240, 255, 0.12); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.4);">
+                                        #${r.code}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 800; font-size: 15px; color: white;">المضيف: <span style="color: #38bdf8;">${r.host || 'لاعب'}</span></div>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                                            طور: ${r.mode || 'Multiplayer'} | اللاعبين: ${r.players || 1} | وقت الإنشاء: ${r.created_at || ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button type="button" onclick="terminateRoom('${r.code}')" class="btn btn-danger" style="padding: 8px 18px; font-size: 13px; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);">
+                                        🛑 قفل الروم فوراً (Terminate)
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                    container.innerHTML = html;
+                }
+            } catch (e) {
+                console.error("Failed to fetch rooms", e);
+            }
+        }
+
+        async function terminateRoom(code) {
+            if (!confirm(`⚠️ هل أنت متأكد من قفل الغرفة #${code} فوراً؟\nسيتم طرد وفصل جميع اللاعبين المتصلين بالروم وإعادتهم للقائمة الرئيسية فوراً.`)) return;
+            try {
+                const res = await fetch('/api/rooms/terminate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_code: code })
+                });
+                if (res.ok) {
+                    showToast(`🛑 تم قفل الغرفة #${code} فوراً وفصل جميع اللاعبين!`);
+                    await fetchRooms();
+                    await fetchGameConsole();
+                } else {
+                    showToast("❌ حدث خطأ أثناء إرسال أمر القفل!");
+                }
+            } catch (e) {
+                showToast("❌ تعذر الاتصال بالسيرفر!");
+            }
+        }
+
+        // =====================================================================
+        // LIVE GAME CONSOLE
+        // =====================================================================
+        let lastLogsCount = 0;
+        async function fetchGameConsole() {
+            try {
+                const res = await fetch('/api/console_logs');
+                if (!res.ok) return;
+                const data = await res.json();
+                const logs = data.logs || [];
+                
+                const box = document.getElementById('console-output');
+                if (!box) return;
+
+                if (logs.length === 0) {
+                    box.innerHTML = '<div style="color: #64748b;">(الكونسول فارغ حالياً - بانتظار أحداث من اللعبة)</div>';
+                    return;
+                }
+
+                let html = '';
+                logs.forEach(l => {
+                    let color = '#94a3b8';
+                    let tagBg = 'rgba(255,255,255,0.08)';
+                    const src = (l.source || 'GAME').toUpperCase();
+                    if (src === 'ROOM') { color = '#38bdf8'; tagBg = 'rgba(56,189,248,0.15)'; }
+                    else if (src === 'ADMIN') { color = '#f87171'; tagBg = 'rgba(239,68,68,0.2)'; }
+                    else if (src === 'SECURITY') { color = '#facc15'; tagBg = 'rgba(250,204,21,0.15)'; }
+                    else if (src === 'SYSTEM') { color = '#c084fc'; tagBg = 'rgba(192,132,252,0.15)'; }
+                    else if (src === 'REDEEM' || src === 'SOLO' || src === 'TRAINING') { color = '#34d399'; tagBg = 'rgba(52,211,153,0.15)'; }
+
+                    html += `
+                        <div style="display: flex; gap: 8px; align-items: baseline; word-break: break-all;">
+                            <span style="color: #64748b; font-size: 11px;">[${l.time}]</span>
+                            <span style="background: ${tagBg}; color: ${color}; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: bold;">[${src}]</span>
+                            <span style="color: #e2e8f0;">${l.message}</span>
+                        </div>
+                    `;
+                });
+                box.innerHTML = html;
+
+                if (logs.length !== lastLogsCount) {
+                    lastLogsCount = logs.length;
+                    box.scrollTop = box.scrollHeight;
+                }
+            } catch (e) {
+                console.error("Failed to fetch console logs", e);
+            }
+        }
+
+        async function clearGameConsole() {
+            try {
+                await fetch('/api/console_clear', { method: 'POST' });
+                showToast("🧹 تم مسح سجلات الكونسول بنجاح!");
+                await fetchGameConsole();
+            } catch (e) {
+                showToast("❌ تعذر مسح الكونسول!");
+            }
+        }
+
+        // =====================================================================
+        // GUEST ACTION MODAL LOGIC
+        // =====================================================================
+        let selectedGuestDeviceId = "";
+        let selectedGuestDeviceName = "";
+
+        function openGuestActionModal(devId, devName) {
+            selectedGuestDeviceId = devId;
+            selectedGuestDeviceName = devName;
+            const targetDiv = document.getElementById('modal-target-device');
+            if (targetDiv) {
+                targetDiv.innerHTML = `<b>الجهاز:</b> ${devName} <br><span style="font-family:monospace; color:#94a3b8;">ID: ${devId}</span>`;
+            }
+            const modal = document.getElementById('guest-action-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeGuestActionModal() {
+            const modal = document.getElementById('guest-action-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function confirmGuestAction() {
+            const radios = document.getElementsByName('guest-action-choice');
+            let chosen = "FULL_ACCESS";
+            for (const r of radios) {
+                if (r.checked) {
+                    chosen = r.value;
+                    break;
+                }
+            }
+
+            try {
+                const res = await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'approve_with_action',
+                        device_id: selectedGuestDeviceId,
+                        device_name: selectedGuestDeviceName,
+                        selected_action: chosen
+                    })
+                });
+
+                if (res.ok) {
+                    showToast("🎉 تم تنفيذ الإجراء على الجهاز بنجاح!");
+                    closeGuestActionModal();
+                    fetchDevices();
+                    fetchGameConsole();
+                } else {
+                    showToast("❌ حدث خطأ أثناء تنفيذ الإجراء!");
+                }
+            } catch (e) {
+                showToast("❌ تعذر الاتصال بالسيرفر!");
+            }
+        }
+    </script>
+
+    <!-- GUEST ACTION MODAL -->
+    <div id="guest-action-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center;">
+        <div style="background:#0f172a; border:2px solid #8b5cf6; border-radius:18px; max-width:520px; width:90%; padding:26px; box-shadow:0 0 40px rgba(139,92,246,0.4); text-align:right;">
+            <h3 style="font-size:19px; font-weight:900; color:#c084fc; margin-bottom:8px;">⚡ اتخاذ إجراء وتحديد صلاحية الجهاز</h3>
+            <p style="color:#94a3b8; font-size:13px; margin-bottom:16px;">اختر الإجراء الذي ترغب بتطبيقه على هذا الجهاز:</p>
+            <div id="modal-target-device" style="background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:16px; color:#f8fafc;"></div>
+            
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+                <label style="display:flex; align-items:center; gap:10px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); padding:12px; border-radius:10px; cursor:pointer;">
+                    <input type="radio" name="guest-action-choice" value="FULL_ACCESS" checked>
+                    <div>
+                        <div style="font-weight:800; color:#34d399;">👑 تصريح كامل للعبة (Full Game Access)</div>
+                        <div style="font-size:11px; color:#94a3b8;">السماح بالدخول لجميع أطوار اللعب والشخصيات</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); padding:12px; border-radius:10px; cursor:pointer;">
+                    <input type="radio" name="guest-action-choice" value="NORMAL_PLAYER">
+                    <div>
+                        <div style="font-weight:800; color:#38bdf8;">🎮 لاعب عادي فقط (Normal Player)</div>
+                        <div style="font-size:11px; color:#94a3b8;">دخول كلاعب عادي بالشخصيات الأساسية فقط</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; background:rgba(250,204,21,0.1); border:1px solid rgba(250,204,21,0.3); padding:12px; border-radius:10px; cursor:pointer;">
+                    <input type="radio" name="guest-action-choice" value="GIFT_COINS">
+                    <div>
+                        <div style="font-weight:800; color:#facc15;">🎁 قبول + إهداء 1000 عملة ترحيبية</div>
+                        <div style="font-size:11px; color:#94a3b8;">إضافة مكافأة ترحيبية لحساب اللاعب</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); padding:12px; border-radius:10px; cursor:pointer;">
+                    <input type="radio" name="guest-action-choice" value="BLOCK">
+                    <div>
+                        <div style="font-weight:800; color:#f87171;">⛔ رفض وحظر الجهاز (Reject & Block)</div>
+                        <div style="font-size:11px; color:#94a3b8;">حجب الجهاز ومنعه من الدخول تماماً</div>
+                    </div>
+                </label>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="closeGuestActionModal()" class="btn btn-outline" style="padding:10px 18px;">إلغاء</button>
+                <button type="button" onclick="confirmGuestAction()" class="btn btn-primary" style="padding:10px 22px;">تنفيذ الإجراء فوراً</button>
+            </div>
+        </div>
+    </div>
     </script>
 </body>
 </html>

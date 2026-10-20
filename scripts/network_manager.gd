@@ -27,12 +27,27 @@ var udp_broadcaster: PacketPeerUDP = null
 var udp_listener: PacketPeerUDP = null
 var broadcast_timer: float = 0.0
 
+var _room_api_http: HTTPRequest = null
+var _room_watchdog_timer: Timer = null
+
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
+	
+	_room_api_http = HTTPRequest.new()
+	_room_api_http.timeout = 2.0
+	add_child(_room_api_http)
+	_room_api_http.request_completed.connect(_on_room_api_completed)
+	
+	_room_watchdog_timer = Timer.new()
+	_room_watchdog_timer.wait_time = 2.0
+	_room_watchdog_timer.autostart = false
+	_room_watchdog_timer.one_shot = false
+	add_child(_room_watchdog_timer)
+	_room_watchdog_timer.timeout.connect(_check_room_status_with_server)
 
 func _process(delta: float) -> void:
 	# Broadcast Room Code and Host IP on local network / Bluetooth if hosting
@@ -160,6 +175,9 @@ func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -
 	udp_broadcaster.set_dest_address("255.255.255.255", DISCOVERY_PORT)
 	
 	print("Room created with Code: ", current_room_code, " | Host IP: ", get_local_ip())
+	_report_room_created(current_room_code, local_player_name)
+	if _room_watchdog_timer:
+		_room_watchdog_timer.start()
 	return OK
 
 # --- JOIN ROOM WITH ROOM CODE ---
@@ -180,6 +198,8 @@ func join_room_with_code(code: String, player_name: String, class_id: int, port:
 		return error
 	
 	multiplayer.multiplayer_peer = peer
+	if _room_watchdog_timer:
+		_room_watchdog_timer.start()
 	
 	# Connection watchdog: 6 seconds timeout
 	get_tree().create_timer(6.0).timeout.connect(func():
@@ -204,6 +224,10 @@ func stop_discovery_listener() -> void:
 		udp_listener = null
 
 func leave_game() -> void:
+	if _room_watchdog_timer:
+		_room_watchdog_timer.stop()
+	if multiplayer and multiplayer.is_server() and not current_room_code.is_empty():
+		_report_room_closed(current_room_code)
 	stop_discovery_listener()
 	if udp_broadcaster:
 		udp_broadcaster.close()
@@ -213,6 +237,75 @@ func leave_game() -> void:
 		multiplayer.multiplayer_peer = null
 	players.clear()
 	peer = null
+	current_room_code = ""
+
+func _report_room_created(code: String, host_name: String) -> void:
+	var um = get_node_or_null("/root/UpdateManager")
+	if um == null or um.server_url.is_empty():
+		return
+	var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/create"
+	var payload = {
+		"room_code": code,
+		"host_name": host_name,
+		"mode": "Multiplayer",
+		"players": players.size()
+	}
+	var http = HTTPRequest.new()
+	http.timeout = 2.5
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+func _report_room_closed(code: String) -> void:
+	var um = get_node_or_null("/root/UpdateManager")
+	if um == null or um.server_url.is_empty():
+		return
+	var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/close"
+	var payload = {
+		"room_code": code
+	}
+	var http = HTTPRequest.new()
+	http.timeout = 2.5
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+func _check_room_status_with_server() -> void:
+	if current_room_code.is_empty() or peer == null:
+		if _room_watchdog_timer:
+			_room_watchdog_timer.stop()
+		return
+	
+	var um = get_node_or_null("/root/UpdateManager")
+	if um and not um.server_url.is_empty():
+		var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/check?code=" + current_room_code
+		if _room_api_http and _room_api_http.get_http_client_status() == HTTPClient.STATUS_DISCONNECTED:
+			_room_api_http.request(endpoint)
+
+func _on_room_api_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		return
+	var json = JSON.new()
+	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+		if json.data.get("terminated", false) == true:
+			_handle_room_force_closed_by_leader()
+
+func _handle_room_force_closed_by_leader() -> void:
+	if current_room_code.is_empty() and peer == null:
+		return
+	var old_code = current_room_code
+	print("🛑 Room #%s was terminated forcefully by Leader!" % old_code)
+	leave_game()
+	
+	var tree = get_tree()
+	if tree:
+		var scene = tree.current_scene
+		if scene and scene.has_method("_show_room_terminated_notification"):
+			scene._show_room_terminated_notification(old_code)
+		else:
+			tree.change_scene_to_file("res://scenes/main_menu.tscn")
 
 # --- MULTIPLAYER CALLBACKS ---
 

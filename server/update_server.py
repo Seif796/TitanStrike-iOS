@@ -248,6 +248,90 @@ def handle_device_request_submission(data: dict, client_ip: str) -> tuple[int, d
         "message": "Device request registered for admin approval!"
     }
 
+# ==============================================================================
+# LIVE GAME CONSOLE & ROOM TRACKING (Leader Real-time Operations)
+# ==============================================================================
+CONSOLE_LOGS = []
+MAX_CONSOLE_LOGS = 250
+ROOMS = {} # room_code: { "code": code, "host": host, "mode": mode, "players": count, "created_at": time, "status": "ACTIVE" }
+TOTAL_ROOMS_CREATED = 0
+TERMINATED_ROOMS = set()
+
+def add_console_log(source: str, message: str, level: str = "INFO"):
+    global CONSOLE_LOGS
+    import datetime
+    now_str = datetime.datetime.now().strftime("%H:%M:%S")
+    entry = {
+        "time": now_str,
+        "source": source,
+        "message": message,
+        "level": level
+    }
+    CONSOLE_LOGS.append(entry)
+    if len(CONSOLE_LOGS) > MAX_CONSOLE_LOGS:
+        CONSOLE_LOGS.pop(0)
+
+def handle_rooms_create(data: dict) -> tuple[int, dict]:
+    global TOTAL_ROOMS_CREATED, ROOMS, TERMINATED_ROOMS
+    code = str(data.get("room_code", "")).strip().upper()
+    host = str(data.get("host_name", "لاعب")).strip()
+    mode = str(data.get("mode", "Co-op")).strip()
+    players = int(data.get("players", 1))
+    
+    if not code:
+        return 400, {"success": False, "error": "Missing room code"}
+    
+    import datetime
+    now_str = datetime.datetime.now().strftime("%H:%M:%S")
+    
+    TERMINATED_ROOMS.discard(code)
+    ROOMS[code] = {
+        "code": code,
+        "host": host,
+        "mode": mode,
+        "players": players,
+        "created_at": now_str,
+        "status": "ACTIVE"
+    }
+    TOTAL_ROOMS_CREATED += 1
+    add_console_log("ROOM", f"🎮 تم إنشاء الغرفة #{code} بواسطة المضيف '{host}' (الطور: {mode})", "SUCCESS")
+    return 200, {
+        "success": True, 
+        "room": ROOMS[code], 
+        "total_rooms_created": TOTAL_ROOMS_CREATED,
+        "active_rooms_count": len(ROOMS)
+    }
+
+def handle_rooms_close(data: dict) -> tuple[int, dict]:
+    global ROOMS
+    code = str(data.get("room_code", "")).strip().upper()
+    if code in ROOMS:
+        room = ROOMS.pop(code)
+        add_console_log("ROOM", f"🚪 تم إغلاق الغرفة #{code} بواسطة المضيف '{room.get('host', '')}'", "INFO")
+    return 200, {"success": True, "active_rooms_count": len(ROOMS)}
+
+def handle_rooms_terminate(data: dict) -> tuple[int, dict]:
+    global ROOMS, TERMINATED_ROOMS
+    code = str(data.get("room_code", "")).strip().upper()
+    if not code:
+        return 400, {"success": False, "error": "Missing room code"}
+    
+    TERMINATED_ROOMS.add(code)
+    room = ROOMS.pop(code, None)
+    host_name = room.get("host", "غير معروف") if room else "غير معروف"
+    add_console_log("ADMIN", f"🛑 قام القائد بإغلاق وإنهاء الغرفة #{code} فوراً (المضيف: {host_name})!", "ERROR")
+    return 200, {
+        "success": True, 
+        "message": f"تم إغلاق الغرفة #{code} بنجاح وفصل اللاعبين فوراً!",
+        "active_rooms_count": len(ROOMS)
+    }
+
+def handle_rooms_check(code: str) -> tuple[int, dict]:
+    code = code.strip().upper()
+    if code in TERMINATED_ROOMS:
+        return 200, {"code": code, "active": False, "terminated": True}
+    return 200, {"code": code, "active": (code in ROOMS), "terminated": False}
+
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
@@ -360,6 +444,61 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 "status": "ONLINE"
             }
             self.wfile.write(json.dumps(net_data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/rooms":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "total_created": TOTAL_ROOMS_CREATED,
+                "active_count": len(ROOMS),
+                "rooms": list(ROOMS.values())
+            }, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/rooms/check":
+            code = urllib.parse.parse_qs(parsed.query).get("code", [""])[0]
+            status_code, res = handle_rooms_check(code)
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/console_logs":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps({"logs": CONSOLE_LOGS}, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/rooms":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "total_created": TOTAL_ROOMS_CREATED,
+                "active_count": len(ROOMS),
+                "rooms": list(ROOMS.values())
+            }, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/rooms/check":
+            code = urllib.parse.parse_qs(parsed.query).get("code", [""])[0]
+            status_code, res = handle_rooms_check(code)
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
             return
 
         elif path.startswith("/downloads/"):
@@ -635,6 +774,58 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                     })
                     dev_sec["allowed_devices"] = allowed
 
+                elif action == "approve_with_action":
+                    clean_id = target_id.strip("{} ").lower()
+                    selected_act = str(data.get("selected_action", "FULL_ACCESS")).upper()
+                    
+                    found_item = None
+                    new_pending = []
+                    for p in dev_sec.get("pending_devices", []):
+                        if p.get("id", "").strip("{} ").lower() == clean_id:
+                            found_item = p
+                        else:
+                            new_pending.append(p)
+                    dev_sec["pending_devices"] = new_pending
+                    
+                    base_name = custom_name or (found_item.get("name") if found_item else "📱 جهاز مصرح")
+                    allowed = dev_sec.get("allowed_devices", [])
+                    allowed = [a for a in allowed if a.get("id", "").strip("{} ").lower() != clean_id]
+                    
+                    import datetime
+                    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                    
+                    if selected_act == "FULL_ACCESS":
+                        allowed.append({
+                            "id": target_id,
+                            "name": f"{base_name} 👑 (كامل الصلاحيات)",
+                            "status": "APPROVED",
+                            "role": "FULL_ACCESS",
+                            "approved_at": now_str
+                        })
+                        add_console_log("ADMIN", f"👑 وافق القائد على جهاز '{base_name}' ومنحه صلاحيات كاملة!", "SUCCESS")
+                    elif selected_act == "NORMAL_PLAYER":
+                        allowed.append({
+                            "id": target_id,
+                            "name": f"{base_name} 🎮 (لاعب عادي)",
+                            "status": "APPROVED",
+                            "role": "NORMAL_PLAYER",
+                            "approved_at": now_str
+                        })
+                        add_console_log("ADMIN", f"🎮 وافق القائد على جهاز '{base_name}' كلاعب عادي", "INFO")
+                    elif selected_act == "GIFT_COINS":
+                        allowed.append({
+                            "id": target_id,
+                            "name": f"{base_name} 🎁 (مكافأة 1000 عملة)",
+                            "status": "APPROVED",
+                            "role": "GIFT_COINS",
+                            "approved_at": now_str
+                        })
+                        add_console_log("ADMIN", f"🎁 وافق القائد على جهاز '{base_name}' وأهداه 1000 عملة ذهبية!", "SUCCESS")
+                    elif selected_act == "BLOCK":
+                        add_console_log("ADMIN", f"⛔ رفض وحظر القائد طلب الجهاز '{base_name}'", "ERROR")
+                    
+                    dev_sec["allowed_devices"] = allowed
+
                 current_config["device_security"] = dev_sec
                 save_game_config(current_config)
 
@@ -651,6 +842,84 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 return
             except Exception as e:
                 self.send_error(500, f"Device action error: {e}")
+            return
+
+        elif path == "/api/rooms/create":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_create(data)
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Rooms create error: {e}")
+            return
+
+        elif path == "/api/rooms/close":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_close(data)
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Rooms close error: {e}")
+            return
+
+        elif path == "/api/rooms/terminate":
+            if not self.check_router_access():
+                return
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_terminate(data)
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Rooms terminate error: {e}")
+            return
+
+        elif path == "/api/console_log":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                msg = str(data.get("message", "")).strip()
+                source = str(data.get("source", "GAME")).strip()
+                lvl = str(data.get("level", "INFO")).strip()
+                if msg:
+                    add_console_log(source, msg, lvl)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Console log error: {e}")
+            return
+
+        elif path == "/api/console_clear":
+            if not self.check_router_access():
+                return
+            CONSOLE_LOGS.clear()
+            add_console_log("SYSTEM", "تم مسح سجلات الكونسول بواسطة القائد 🧹", "INFO")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "message": "Console cleared"}).encode("utf-8"))
             return
 
         self.send_error(404, "Endpoint not found")
@@ -727,6 +996,29 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(v_data, ensure_ascii=False).encode("utf-8"))
             return
 
+        elif path == "/api/rooms":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "total_created": TOTAL_ROOMS_CREATED,
+                "active_count": len(ROOMS),
+                "rooms": list(ROOMS.values())
+            }, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/rooms/check":
+            code = urllib.parse.parse_qs(parsed.query).get("code", [""])[0]
+            status_code, res = handle_rooms_check(code)
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
+            return
+
         elif path.startswith("/downloads/"):
             filename = path.replace("/downloads/", "").strip("/")
             file_path = DOWNLOADS_DIR / filename
@@ -786,6 +1078,55 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_error(500, f"Verify device error: {e}")
                 return
+
+        elif path == "/api/rooms/create":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_create(data)
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Rooms create error: {e}")
+            return
+
+        elif path == "/api/rooms/close":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_close(data)
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Rooms close error: {e}")
+            return
+
+        elif path == "/api/console_log":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                msg = str(data.get("message", "")).strip()
+                source = str(data.get("source", "GAME")).strip()
+                lvl = str(data.get("level", "INFO")).strip()
+                if msg:
+                    add_console_log(source, msg, lvl)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Console log error: {e}")
+            return
 
         # Block any admin modification attempts on the guest server
         self.send_response(403)
@@ -849,6 +1190,10 @@ def run_server():
     print("[*] All servers are running actively! Ready to serve clients.")
     print("[*] Press Ctrl+C anytime to stop.")
     print("=" * 75)
+
+    add_console_log("SYSTEM", "🚀 تم تشغيل سيرفر Titan Strike 3D بنجاح!", "SUCCESS")
+    add_console_log("SYSTEM", f"👑 لوحة تحكم القائد نشطة على البورت {PORT}", "INFO")
+    add_console_log("SYSTEM", f"👥 بوابة الزوار نشطة على البورت {GUEST_PORT}", "INFO")
 
     try:
         while True:

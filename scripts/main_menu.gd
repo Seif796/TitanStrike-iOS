@@ -256,6 +256,7 @@ func _on_redeem_pressed() -> void:
 		redeem_status.modulate = Color(0.2, 0.95, 0.6)
 		redeem_input.text = ""
 		_refresh_hero_options()
+		UpdateManager.log_game_event("🎁 تم استرداد كود الهدية بنجاح: '%s'" % code, "SUCCESS", "REDEEM")
 	else:
 		AudioManager.play_sfx("error")
 		redeem_status.text = result["message"]
@@ -761,6 +762,7 @@ func _on_solo_wave_pressed() -> void:
 	if p_name.is_empty():
 		return
 	_speak_prompt("Starting Solo Wave Defense...")
+	UpdateManager.log_game_event("🎮 بدأ اللاعب '%s' طور موجات الزومبي (Solo Wave Defense)" % p_name, "INFO", "SOLO")
 	GameManager.selected_game_mode = GameManager.GameMode.COOP_WAVES
 	NetworkManager.leave_game()
 	NetworkManager.local_player_name = p_name
@@ -771,7 +773,9 @@ func _on_training_pressed() -> void:
 	if not _can_enter_game():
 		return
 	AudioManager.play_sfx("click")
+	var p_name = _validate_player_name()
 	_speak_prompt("Entering Training Grounds...")
+	UpdateManager.log_game_event("🎯 دخل اللاعب '%s' ساحة التدريب الفردي (Training Grounds)" % (p_name if not p_name.is_empty() else "لاعب"), "INFO", "TRAINING")
 	GameManager.start_training_mode(selected_class)
 
 func _on_create_room_pressed() -> void:
@@ -963,8 +967,8 @@ func _show_maintenance_popup() -> void:
 	msg.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
 	vbox.add_child(msg)
 	
-	# Countdown Panel
-	var timer_box = PanelContainer.new()
+	# Live Status Card (Direct server monitor, no countdown)
+	var status_box = PanelContainer.new()
 	var t_style = StyleBoxFlat.new()
 	t_style.bg_color = Color(0.04, 0.07, 0.12, 0.9)
 	t_style.border_color = Color(0.0, 0.9, 1.0, 0.4)
@@ -976,44 +980,37 @@ func _show_maintenance_popup() -> void:
 	t_style.corner_radius_top_right = 10
 	t_style.corner_radius_bottom_left = 10
 	t_style.corner_radius_bottom_right = 10
-	timer_box.add_theme_stylebox_override("panel", t_style)
+	status_box.add_theme_stylebox_override("panel", t_style)
 	
 	var t_pad = MarginContainer.new()
 	t_pad.add_theme_constant_override("margin_left", 14)
 	t_pad.add_theme_constant_override("margin_top", 10)
 	t_pad.add_theme_constant_override("margin_right", 14)
 	t_pad.add_theme_constant_override("margin_bottom", 10)
-	timer_box.add_child(t_pad)
+	status_box.add_child(t_pad)
 	
 	var t_vbox = VBoxContainer.new()
 	t_vbox.add_theme_constant_override("separation", 4)
 	t_pad.add_child(t_vbox)
 	
-	_maintenance_time_label = Label.new()
-	_maintenance_time_label.text = "⏱️ موعد الانتهاء المقترح: 10:00 دقيقة"
-	_maintenance_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_maintenance_time_label.add_theme_font_size_override("font_size", 14)
-	_maintenance_time_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
-	t_vbox.add_child(_maintenance_time_label)
-	
 	_maintenance_status_lbl = Label.new()
-	_maintenance_status_lbl.text = "💡 إذا فتح القائد اللعبة قبل ذلك، ستفتح لك اللعبة فوراً وتلقائياً!"
+	_maintenance_status_lbl.text = "💡 اللعبة تراقب السيرفر تلقائياً، وفور تشغيل القائد للسيرفر ستفتح لك اللعبة فوراً!"
 	_maintenance_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_maintenance_status_lbl.add_theme_font_size_override("font_size", 12)
+	_maintenance_status_lbl.add_theme_font_size_override("font_size", 13)
 	_maintenance_status_lbl.add_theme_color_override("font_color", Color(0.3, 0.95, 0.5))
 	t_vbox.add_child(_maintenance_status_lbl)
 	
-	vbox.add_child(timer_box)
+	vbox.add_child(status_box)
 	
-	# Action Buttons
+	# Action Buttons (No web server link)
 	var btn_row = HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 10)
+	btn_row.add_theme_constant_override("separation", 14)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(btn_row)
 	
 	var check_btn = Button.new()
 	check_btn.text = "🔄 فحص السيرفر الآن"
-	check_btn.custom_minimum_size = Vector2(170, 42)
+	check_btn.custom_minimum_size = Vector2(180, 44)
 	check_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
 		if UpdateManager.is_server_open:
@@ -1026,18 +1023,9 @@ func _show_maintenance_popup() -> void:
 	)
 	btn_row.add_child(check_btn)
 	
-	var web_btn = Button.new()
-	web_btn.text = "🌐 موقع السيرفر"
-	web_btn.custom_minimum_size = Vector2(140, 42)
-	web_btn.pressed.connect(func():
-		AudioManager.play_sfx("click")
-		OS.shell_open(UpdateManager.get_guest_portal_url())
-	)
-	btn_row.add_child(web_btn)
-	
 	var close_btn = Button.new()
 	close_btn.text = "✖️ حسناً، سأنتظر"
-	close_btn.custom_minimum_size = Vector2(140, 42)
+	close_btn.custom_minimum_size = Vector2(150, 44)
 	close_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
 		_close_maintenance_popup()
@@ -1046,26 +1034,6 @@ func _show_maintenance_popup() -> void:
 	
 	center.add_child(card)
 	get_tree().root.add_child(_maintenance_layer)
-	
-	# Start 1-second countdown timer
-	if _maintenance_timer == null:
-		_maintenance_timer = Timer.new()
-		_maintenance_timer.wait_time = 1.0
-		_maintenance_timer.autostart = true
-		_maintenance_timer.one_shot = false
-		add_child(_maintenance_timer)
-		_maintenance_timer.timeout.connect(_on_maintenance_tick)
-
-func _on_maintenance_tick() -> void:
-	if _maintenance_seconds_left > 0:
-		_maintenance_seconds_left -= 1
-		var mins = _maintenance_seconds_left / 60
-		var secs = _maintenance_seconds_left % 60
-		if _maintenance_time_label:
-			_maintenance_time_label.text = "⏱️ موعد الانتهاء المقترح: %02d:%02d دقيقة" % [mins, secs]
-	else:
-		if _maintenance_time_label:
-			_maintenance_time_label.text = "⏱️ مرت 10 دقائق! يمكنك الضغط على 'فحص السيرفر الآن' للتأكد."
 
 func _close_maintenance_popup() -> void:
 	if _maintenance_layer != null:
@@ -1089,6 +1057,13 @@ func _on_server_closed_notification() -> void:
 	if status_label:
 		status_label.text = "⛔ القائد أوقف السيرفر مؤقتاً للصيانة والتحديث."
 		status_label.modulate = Color(1.0, 0.4, 0.4)
+
+func _show_room_terminated_notification(code: String) -> void:
+	AudioManager.play_sfx("error")
+	if status_label:
+		status_label.text = "🛑 قام قائد اللعبة بإغلاق الغرفة #%s فوراً من لوحة التحكم!" % code
+		status_label.modulate = Color(1.0, 0.25, 0.25)
+	_speak_prompt("Room has been forcefully closed by the Leader!")
 
 func _show_server_opened_banner() -> void:
 	if _server_opened_banner != null:

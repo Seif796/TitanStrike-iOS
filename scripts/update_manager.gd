@@ -297,6 +297,24 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 	if _heartbeat_ticks % 3 == 0:
 		sync_game_config()
 
+func log_game_event(event_message: String, level: String = "INFO", source: String = "GAME") -> void:
+	if server_url.is_empty():
+		return
+	var endpoint = server_url.trim_suffix("/") + "/api/console_log"
+	var payload = {
+		"message": event_message,
+		"level": level,
+		"source": source
+	}
+	var http = HTTPRequest.new()
+	http.timeout = 2.0
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b):
+		http.queue_free()
+	)
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
 func _show_server_closed_overlay() -> void:
 	if _server_closed_overlay != null:
 		return
