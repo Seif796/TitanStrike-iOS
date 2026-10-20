@@ -1153,7 +1153,7 @@ func _show_server_opened_banner() -> void:
 	play_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
 		_dismiss_server_opened_banner()
-		_show_view(view_mode_select)
+		_switch_view(view_mode_select)
 	)
 	hbox.add_child(play_btn)
 	
