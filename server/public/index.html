@@ -792,6 +792,17 @@
                 </div>
             </div>
 
+            <!-- Global Broadcast Bar for Rooms -->
+            <div style="background: rgba(3, 7, 18, 0.75); border: 1.5px solid rgba(139, 92, 246, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px;">
+                    <span style="font-size: 20px;">📢</span>
+                    <input type="text" id="global-room-msg-input" placeholder="اكتب كلمة أو رسالة تظهر على شاشات جميع اللاعبين داخل الغرف فوراً..." style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 8px; color: white; padding: 9px 14px; font-size: 13px; width: 100%;">
+                </div>
+                <button type="button" onclick="sendRoomMessage('ALL')" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); border: none; padding: 9px 20px; font-size: 13px; font-weight: 800;">
+                    📢 إرسال لجميع اللاعبين فوراً (Broadcast)
+                </button>
+            </div>
+
             <!-- Active Rooms Table Container -->
             <div id="active-rooms-container">
                 <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
@@ -1801,21 +1812,29 @@
                     let html = `<div style="display: flex; flex-direction: column; gap: 10px;">`;
                     rooms.forEach(r => {
                         html += `
-                            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: rgba(3, 7, 18, 0.75); border: 1.5px solid rgba(0, 240, 255, 0.35); border-radius: 12px; padding: 14px 18px; gap: 12px;">
-                                <div style="display: flex; align-items: center; gap: 14px;">
-                                    <div style="font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; color: var(--neon-cyan); background: rgba(0, 240, 255, 0.12); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.4);">
-                                        #${r.code}
-                                    </div>
-                                    <div>
-                                        <div style="font-weight: 800; font-size: 15px; color: white;">المضيف: <span style="color: #38bdf8;">${r.host || 'لاعب'}</span></div>
-                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                                            طور: ${r.mode || 'Multiplayer'} | اللاعبين: ${r.players || 1} | وقت الإنشاء: ${r.created_at || ''}
+                            <div style="display: flex; flex-direction: column; background: rgba(3, 7, 18, 0.75); border: 1.5px solid rgba(0, 240, 255, 0.35); border-radius: 12px; padding: 14px 18px; gap: 12px;">
+                                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 14px;">
+                                        <div style="font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; color: var(--neon-cyan); background: rgba(0, 240, 255, 0.12); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.4);">
+                                            #${r.code}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 800; font-size: 15px; color: white;">المضيف: <span style="color: #38bdf8;">${r.host || 'لاعب'}</span> <span style="font-size: 11px; color: #a78bfa; margin-right: 6px;">(IP: ${r.host_ip || 'LAN'})</span></div>
+                                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                                                طور: ${r.mode || 'Multiplayer'} | اللاعبين: ${r.players || 1} | وقت الإنشاء: ${r.created_at || ''}
+                                            </div>
                                         </div>
                                     </div>
+                                    <div>
+                                        <button type="button" onclick="terminateRoom('${r.code}')" class="btn btn-danger" style="padding: 8px 18px; font-size: 13px; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);">
+                                            🛑 طرد وإخراج اللاعبين وقفل الروم (Kick & Close)
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <button type="button" onclick="terminateRoom('${r.code}')" class="btn btn-danger" style="padding: 8px 18px; font-size: 13px; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);">
-                                        🛑 قفل الروم فوراً (Terminate)
+                                <div style="display: flex; gap: 8px; align-items: center; background: rgba(0, 0, 0, 0.3); padding: 8px 12px; border-radius: 8px;">
+                                    <input type="text" id="msg-input-${r.code}" placeholder="اكتب كلمة أو رسالة للاعبين في هذه الغرفة..." style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; color: white; padding: 7px 12px; font-size: 12px; flex: 1;">
+                                    <button type="button" onclick="sendRoomMessage('${r.code}')" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px; border-color: #38bdf8; color: #38bdf8; white-space: nowrap;">
+                                        💬 إرسال للاعبي الغرفة
                                     </button>
                                 </div>
                             </div>
@@ -1829,8 +1848,49 @@
             }
         }
 
+        async function sendRoomMessage(code) {
+            let msg = "";
+            if (code === "ALL") {
+                const el = document.getElementById("global-room-msg-input");
+                msg = el ? el.value.trim() : "";
+            } else {
+                const el = document.getElementById(`msg-input-${code}`);
+                msg = el ? el.value.trim() : "";
+            }
+
+            if (!msg) {
+                showToast("⚠️ يرجى كتابة الرسالة أولاً قبل الإرسال!");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/rooms/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_code: code, message: msg })
+                });
+
+                if (res.ok) {
+                    showToast(code === "ALL" ? "📢 تم إرسال الرسالة لجميع اللاعبين فوراً!" : `💬 تم إرسال الرسالة للاعبي الغرفة #${code}!`);
+                    if (code === "ALL") {
+                        const el = document.getElementById("global-room-msg-input");
+                        if (el) el.value = "";
+                    } else {
+                        const el = document.getElementById(`msg-input-${code}`);
+                        if (el) el.value = "";
+                    }
+                    await fetchGameConsole();
+                } else {
+                    const err = await res.json();
+                    showToast(`❌ ${err.error || 'فشل إرسال الرسالة'}`);
+                }
+            } catch (e) {
+                showToast("❌ تعذر الاتصال بالسيرفر!");
+            }
+        }
+
         async function terminateRoom(code) {
-            if (!confirm(`⚠️ هل أنت متأكد من قفل الغرفة #${code} فوراً؟\nسيتم طرد وفصل جميع اللاعبين المتصلين بالروم وإعادتهم للقائمة الرئيسية فوراً.`)) return;
+            if (!confirm(`⚠️ هل أنت متأكد من طرد اللاعبين وقفل الغرفة #${code} فوراً؟\nسيتم إخراج وفصل جميع اللاعبين وإعادتهم للقائمة الرئيسية باللعبة فوراً.`)) return;
             try {
                 const res = await fetch('/api/rooms/terminate', {
                     method: 'POST',
@@ -1838,7 +1898,7 @@
                     body: JSON.stringify({ room_code: code })
                 });
                 if (res.ok) {
-                    showToast(`🛑 تم قفل الغرفة #${code} فوراً وفصل جميع اللاعبين!`);
+                    showToast(`🛑 تم طرد وإخراج اللاعبين وقفل الغرفة #${code} بنجاح!`);
                     await fetchRooms();
                     await fetchGameConsole();
                 } else {

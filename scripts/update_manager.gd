@@ -354,17 +354,17 @@ func _show_server_closed_overlay() -> void:
 	vbox.add_child(icon)
 	
 	var title = Label.new()
-	title.text = "السيرفر متوقف ومغلق حالياً من قِبل المدير"
+	title.text = "معلش اللعبة دلوقتي مش متاحة"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
 	vbox.add_child(title)
 	
 	var desc = Label.new()
-	desc.text = "Server is temporarily CLOSED by the administrator.\n📡 اللعبة في وضع المراقبة المستمرة الآن وستفتح تلقائياً فور إعادة تشغيل السيرفر!"
+	desc.text = "يقوم القائد بصيانة وتجهيز السيرفر حالياً...\n📡 السيرفر واللعبة شغالين في الخلفية وستفتح اللعبة تلقائياً فور إعادة فتح السيرفر!"
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.add_theme_font_size_override("font_size", 14)
-	desc.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
+	desc.add_theme_color_override("font_color", Color(0.88, 0.92, 0.98))
 	vbox.add_child(desc)
 	
 	var pulse_lbl = Label.new()

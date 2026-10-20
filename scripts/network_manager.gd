@@ -15,12 +15,16 @@ signal connection_succeeded()
 signal lobby_updated()
 signal room_launch_countdown(seconds_left: int)
 signal room_discovered(room_code: String, host_ip: String, map_id: int)
+signal leader_broadcast_received(message: String)
 
 var peer: ENetMultiplayerPeer = null
 var players: Dictionary = {}
 var local_player_name: String = ""
 var local_class_id: int = 0
 var current_room_code: String = ""
+var last_received_msg_id: int = 0
+var _broadcast_overlay: CanvasLayer = null
+var _ejected_overlay: CanvasLayer = null
 
 # UDP Room Broadcaster & Listener
 var udp_broadcaster: PacketPeerUDP = null
@@ -291,6 +295,15 @@ func _on_room_api_completed(result: int, response_code: int, _headers: PackedStr
 	if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
 		if json.data.get("terminated", false) == true:
 			_handle_room_force_closed_by_leader()
+			return
+		
+		# Check for leader broadcast message to room players
+		var msg = str(json.data.get("message", "")).strip_edges()
+		var msg_id = int(json.data.get("message_id", 0))
+		if not msg.is_empty() and msg_id > last_received_msg_id:
+			last_received_msg_id = msg_id
+			leader_broadcast_received.emit(msg)
+			show_leader_broadcast(msg)
 
 func _handle_room_force_closed_by_leader() -> void:
 	if current_room_code.is_empty() and peer == null:
@@ -299,6 +312,8 @@ func _handle_room_force_closed_by_leader() -> void:
 	print("🛑 Room #%s was terminated forcefully by Leader!" % old_code)
 	leave_game()
 	
+	show_ejected_by_leader_notification(old_code)
+	
 	var tree = get_tree()
 	if tree:
 		var scene = tree.current_scene
@@ -306,6 +321,153 @@ func _handle_room_force_closed_by_leader() -> void:
 			scene._show_room_terminated_notification(old_code)
 		else:
 			tree.change_scene_to_file("res://scenes/main_menu.tscn")
+
+func show_ejected_by_leader_notification(old_code: String) -> void:
+	if _ejected_overlay != null:
+		_ejected_overlay.queue_free()
+		_ejected_overlay = null
+	
+	AudioManager.play_sfx("error")
+	_ejected_overlay = CanvasLayer.new()
+	_ejected_overlay.layer = 130
+	
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_right", 24)
+	_ejected_overlay.add_child(margin)
+	
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.04, 0.06, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(1.0, 0.2, 0.25, 0.95)
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	card.add_theme_stylebox_override("panel", style)
+	margin.add_child(card)
+	
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 14)
+	card.add_child(hbox)
+	
+	var icon = Label.new()
+	icon.text = "🛑"
+	icon.add_theme_font_size_override("font_size", 28)
+	hbox.add_child(icon)
+	
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "تم إخراجك وإنهاء الغرفة بأمر من القائد!"
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.35))
+	vbox.add_child(title)
+	
+	var desc = Label.new()
+	desc.text = "قام مدير السيرفر بطرد جميع اللاعبين من الغرفة #%s وإعادتكم للقائمة الرئيسية." % old_code
+	desc.add_theme_font_size_override("font_size", 12)
+	desc.add_theme_color_override("font_color", Color(0.9, 0.92, 0.96))
+	vbox.add_child(desc)
+	
+	var close_btn = Button.new()
+	close_btn.text = " ✕ "
+	close_btn.pressed.connect(func():
+		if _ejected_overlay:
+			_ejected_overlay.queue_free()
+			_ejected_overlay = null
+	)
+	hbox.add_child(close_btn)
+	
+	get_tree().root.add_child(_ejected_overlay)
+	
+	get_tree().create_timer(6.0).timeout.connect(func():
+		if _ejected_overlay:
+			_ejected_overlay.queue_free()
+			_ejected_overlay = null
+	)
+
+func show_leader_broadcast(msg: String) -> void:
+	if _broadcast_overlay != null:
+		_broadcast_overlay.queue_free()
+		_broadcast_overlay = null
+	
+	AudioManager.play_sfx("redeem")
+	_broadcast_overlay = CanvasLayer.new()
+	_broadcast_overlay.layer = 128
+	
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_right", 24)
+	_broadcast_overlay.add_child(margin)
+	
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.09, 0.18, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.65, 0.35, 1.0, 0.95)
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	card.add_theme_stylebox_override("panel", style)
+	margin.add_child(card)
+	
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 14)
+	card.add_child(hbox)
+	
+	var icon = Label.new()
+	icon.text = "📢"
+	icon.add_theme_font_size_override("font_size", 28)
+	hbox.add_child(icon)
+	
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "كلمة ورسالة عاجلة من القائد (Message from Leader)"
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(0.75, 0.5, 1.0))
+	vbox.add_child(title)
+	
+	var content = Label.new()
+	content.text = msg
+	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_theme_font_size_override("font_size", 14)
+	content.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	vbox.add_child(content)
+	
+	var close_btn = Button.new()
+	close_btn.text = " ✕ "
+	close_btn.pressed.connect(func():
+		if _broadcast_overlay:
+			_broadcast_overlay.queue_free()
+			_broadcast_overlay = null
+	)
+	hbox.add_child(close_btn)
+	
+	get_tree().root.add_child(_broadcast_overlay)
+	
+	get_tree().create_timer(7.5).timeout.connect(func():
+		if _broadcast_overlay:
+			_broadcast_overlay.queue_free()
+			_broadcast_overlay = null
+	)
 
 # --- MULTIPLAYER CALLBACKS ---
 
@@ -362,9 +524,9 @@ func _register_player(id: int, info: Dictionary) -> void:
 	lobby_updated.emit()
 
 func get_local_ip() -> String:
-	var candidates: Array[String] = []
+	var all_ips: Array[String] = []
 	for ip in IP.get_local_addresses():
-		if ip.begins_with("127.") or ip.find(":") != -1:
+		if ip.begins_with("127.") or ip.find(":") != -1 or ip.begins_with("169.254."):
 			continue
 		# Prioritize Bluetooth PAN (192.168.44.x)
 		if ip.begins_with("192.168.44."):
@@ -375,14 +537,38 @@ func get_local_ip() -> String:
 		# Prioritize iOS Personal Hotspot / Bluetooth (172.20.10.x)
 		if ip.begins_with("172.20.10."):
 			return ip
-		# Standard Wi-Fi LAN subnets
-		if ip.begins_with("192.168."):
-			candidates.push_front(ip)
-		elif ip.begins_with("172.") and int(ip.split(".")[1]) >= 16 and int(ip.split(".")[1]) <= 31:
-			candidates.push_back(ip)
-		elif ip.begins_with("10."):
-			candidates.push_back(ip)
-	
-	if not candidates.is_empty():
-		return candidates[0]
+		all_ips.append(ip)
+
+	# If UpdateManager has an active server URL, pick the matching subnet!
+	var um = get_node_or_null("/root/UpdateManager")
+	if um and not um.server_url.is_empty():
+		for ip in all_ips:
+			var parts = ip.split(".")
+			if parts.size() == 4:
+				var prefix = parts[0] + "." + parts[1] + "." + parts[2] + "."
+				if um.server_url.find(prefix) != -1:
+					return ip
+
+	# Priority 1: Real Wi-Fi subnets (192.168.x) not ending with .1 and not Hyper-V virtual switch
+	for ip in all_ips:
+		if ip.begins_with("192.168.") and not ip.ends_with(".1") and not ip.begins_with("192.168.128.") and not ip.begins_with("192.168.176."):
+			return ip
+
+	# Priority 2: Any 192.168.x not ending with .1
+	for ip in all_ips:
+		if ip.begins_with("192.168.") and not ip.ends_with(".1"):
+			return ip
+
+	# Priority 3: 172.x private subnets not ending with .1
+	for ip in all_ips:
+		if ip.begins_with("172.") and not ip.ends_with(".1"):
+			return ip
+
+	# Priority 4: 10.x private subnets not ending with .1
+	for ip in all_ips:
+		if ip.begins_with("10.") and not ip.ends_with(".1"):
+			return ip
+
+	if not all_ips.is_empty():
+		return all_ips[0]
 	return "127.0.0.1"

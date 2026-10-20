@@ -340,36 +340,68 @@ func _on_update_checked(has_update: bool, info: Dictionary) -> void:
 
 func _on_update_available(info: Dictionary) -> void:
 	AudioManager.play_sfx("redeem")
-	modal_version_tag.text = "الإصدار الجديد: v%s (Build %d) — %s" % [
-		info.get("version", "1.1.0"),
-		int(info.get("version_code", 2)),
-		info.get("title", "تحديث جديد")
-	]
+	var new_ver = str(info.get("version", "1.2.0"))
+	var new_code = int(info.get("version_code", 2))
 	
-	var changelog_items = info.get("changelog", [])
-	var notes_text = ""
-	if changelog_items is Array:
-		for item in changelog_items:
-			notes_text += "• " + str(item) + "\n"
-	else:
-		notes_text = str(changelog_items)
-	changelog_label.text = notes_text
+	# Update version badge on the fly without blocking player with file downloads
+	if version_status_label:
+		version_status_label.text = "⚡ تم تطبيق التحديث v%s (Build %d) فوراً!" % [new_ver, new_code]
+		version_status_label.modulate = Color(0.2, 1.0, 0.5)
 	
-	if info.get("has_new_ipa", false) or info.get("requires_ipa", false):
-		var size_mb = info.get("ipa_file_size_mb", 23.7)
-		progress_label.text = "حجم ملف الـ IPA الجديد: %.1f MB | اضغط بالأسفل للتحميل والتثبيت المباشر." % size_mb
-		progress_label.modulate = Color(1.0, 0.75, 0.2)
-		update_now_btn.text = "⬇️ تحميل ملف الـ IPA الجديد الآن (Download IPA)"
-	else:
-		var size_mb = round(float(info.get("file_size_bytes", 0)) / (1024.0 * 1024.0) * 100.0) / 100.0
-		progress_label.text = "حجم التحديث: %.2f MB | جاهز للتحميل والتثبيت التلقائي." % size_mb
-		progress_label.modulate = Color(0.3, 0.85, 1.0)
-		update_now_btn.text = "🔄 تحديث اللعبة الآن (Update Now)"
-		
-	progress_bar.value = 0.0
-	update_now_btn.disabled = false
-	update_later_btn.disabled = false
-	update_modal.visible = true
+	# Apply update silently in background if package available
+	if not UpdateManager.is_downloading and not info.get("has_new_ipa", false):
+		UpdateManager.start_download_update()
+	
+	_show_update_toast("⚡ تم تحديث اللعبة تلقائياً إلى الإصدار v%s بنجاح!" % new_ver)
+
+func _show_update_toast(msg: String) -> void:
+	var toast = CanvasLayer.new()
+	toast.layer = 126
+	
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	margin.add_theme_constant_override("margin_left", 36)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_right", 36)
+	toast.add_child(margin)
+	
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.12, 0.22, 0.95)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.0, 0.94, 1.0, 0.9)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	card.add_theme_stylebox_override("panel", style)
+	margin.add_child(card)
+	
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 12)
+	card.add_child(hbox)
+	
+	var icon = Label.new()
+	icon.text = "⚡"
+	icon.add_theme_font_size_override("font_size", 22)
+	hbox.add_child(icon)
+	
+	var label = Label.new()
+	label.text = msg
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.2, 0.95, 0.6))
+	hbox.add_child(label)
+	
+	get_tree().root.add_child(toast)
+	
+	get_tree().create_timer(5.0).timeout.connect(func():
+		if toast and is_instance_valid(toast):
+			toast.queue_free()
+	)
 
 func _on_update_download_progress(downloaded: int, total: int, pct: float) -> void:
 	progress_bar.value = pct * 100.0
@@ -1051,15 +1083,15 @@ func _on_server_opened_notification() -> void:
 
 func _on_server_closed_notification() -> void:
 	if status_label:
-		status_label.text = "⛔ القائد أوقف السيرفر مؤقتاً للصيانة والتحديث."
+		status_label.text = "معلش اللعبة دلوقتي مش متاحة (السيرفر تحت الصيانة والتجهيز)"
 		status_label.modulate = Color(1.0, 0.4, 0.4)
 
 func _show_room_terminated_notification(code: String) -> void:
 	AudioManager.play_sfx("error")
 	if status_label:
-		status_label.text = "🛑 قام قائد اللعبة بإغلاق الغرفة #%s فوراً من لوحة التحكم!" % code
+		status_label.text = "🛑 قام القائد بإخراجك وإنهاء الغرفة #%s فوراً من لوحة التحكم!" % code
 		status_label.modulate = Color(1.0, 0.25, 0.25)
-	_speak_prompt("Room has been forcefully closed by the Leader!")
+	_speak_prompt("You have been ejected from the room by the Leader!")
 
 func _show_server_opened_banner() -> void:
 	if _server_opened_banner != null:

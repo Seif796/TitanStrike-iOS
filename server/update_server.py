@@ -271,7 +271,7 @@ def add_console_log(source: str, message: str, level: str = "INFO"):
     if len(CONSOLE_LOGS) > MAX_CONSOLE_LOGS:
         CONSOLE_LOGS.pop(0)
 
-def handle_rooms_create(data: dict) -> tuple[int, dict]:
+def handle_rooms_create(data: dict, client_ip: str = "") -> tuple[int, dict]:
     global TOTAL_ROOMS_CREATED, ROOMS, TERMINATED_ROOMS
     code = str(data.get("room_code", "")).strip().upper()
     host = str(data.get("host_name", "لاعب")).strip()
@@ -284,6 +284,10 @@ def handle_rooms_create(data: dict) -> tuple[int, dict]:
     import datetime
     now_str = datetime.datetime.now().strftime("%H:%M:%S")
     
+    clean_ip = str(client_ip).replace("::ffff:", "").strip()
+    if not clean_ip or clean_ip in ("127.0.0.1", "localhost", "::1"):
+        clean_ip = get_lan_ip()
+    
     TERMINATED_ROOMS.discard(code)
     ROOMS[code] = {
         "code": code,
@@ -291,10 +295,14 @@ def handle_rooms_create(data: dict) -> tuple[int, dict]:
         "mode": mode,
         "players": players,
         "created_at": now_str,
-        "status": "ACTIVE"
+        "host_ip": clean_ip,
+        "port": 7777,
+        "status": "ACTIVE",
+        "broadcast_message": "",
+        "message_id": 0
     }
     TOTAL_ROOMS_CREATED += 1
-    add_console_log("ROOM", f"🎮 تم إنشاء الغرفة #{code} بواسطة المضيف '{host}' (الطور: {mode})", "SUCCESS")
+    add_console_log("ROOM", f"🎮 تم إنشاء الغرفة #{code} بواسطة المضيف '{host}' (IP: {clean_ip} | الطور: {mode})", "SUCCESS")
     return 200, {
         "success": True, 
         "room": ROOMS[code], 
@@ -319,18 +327,55 @@ def handle_rooms_terminate(data: dict) -> tuple[int, dict]:
     TERMINATED_ROOMS.add(code)
     room = ROOMS.pop(code, None)
     host_name = room.get("host", "غير معروف") if room else "غير معروف"
-    add_console_log("ADMIN", f"🛑 قام القائد بإغلاق وإنهاء الغرفة #{code} فوراً (المضيف: {host_name})!", "ERROR")
+    add_console_log("ADMIN", f"🛑 قام القائد بطرد وإخراج اللاعبين وإنهاء الغرفة #{code} فوراً (المضيف: {host_name})!", "ERROR")
     return 200, {
         "success": True, 
-        "message": f"تم إغلاق الغرفة #{code} بنجاح وفصل اللاعبين فوراً!",
+        "message": f"تم إغلاق الغرفة #{code} وطرد اللاعبين بنجاح وفصلهم!",
         "active_rooms_count": len(ROOMS)
     }
+
+def handle_rooms_message(data: dict) -> tuple[int, dict]:
+    global ROOMS
+    code = str(data.get("room_code", "")).strip().upper()
+    msg = str(data.get("message", "")).strip()
+    if not msg:
+        return 400, {"success": False, "error": "رسالة فارغة"}
+    
+    import time
+    msg_id = int(time.time() * 1000)
+    
+    if not code or code == "ALL":
+        for r_code in ROOMS:
+            ROOMS[r_code]["broadcast_message"] = msg
+            ROOMS[r_code]["message_id"] = msg_id
+        add_console_log("ADMIN", f"📢 أرسل القائد رسالة عامة لجميع اللاعبين والغرف: '{msg}'", "WARNING")
+        return 200, {"success": True, "message": "تم إرسال الرسالة لجميع اللاعبين والغرف بنجاح!"}
+    
+    if code in ROOMS:
+        ROOMS[code]["broadcast_message"] = msg
+        ROOMS[code]["message_id"] = msg_id
+        add_console_log("ADMIN", f"💬 أرسل القائد رسالة لغرفة #{code}: '{msg}'", "INFO")
+        return 200, {"success": True, "message": f"تم إرسال الرسالة لغرفة #{code} بنجاح!"}
+    else:
+        add_console_log("ADMIN", f"💬 تعذر إرسال الرسالة: الغرفة #{code} غير نشطة", "WARNING")
+        return 404, {"success": False, "error": f"الغرفة #{code} غير نشطة"}
 
 def handle_rooms_check(code: str) -> tuple[int, dict]:
     code = code.strip().upper()
     if code in TERMINATED_ROOMS:
         return 200, {"code": code, "active": False, "terminated": True}
-    return 200, {"code": code, "active": (code in ROOMS), "terminated": False}
+    if code in ROOMS:
+        room = ROOMS[code]
+        return 200, {
+            "code": code, 
+            "active": True, 
+            "terminated": False,
+            "host_ip": room.get("host_ip", ""),
+            "port": room.get("port", 7777),
+            "message": room.get("broadcast_message", ""),
+            "message_id": room.get("message_id", 0)
+        }
+    return 200, {"code": code, "active": False, "terminated": False}
 
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -448,28 +493,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             send_json_response(self, {"logs": CONSOLE_LOGS})
             return
 
-        elif path == "/api/rooms":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                "total_created": TOTAL_ROOMS_CREATED,
-                "active_count": len(ROOMS),
-                "rooms": list(ROOMS.values())
-            }, ensure_ascii=False).encode("utf-8"))
-            return
 
-        elif path == "/api/rooms/check":
-            code = urllib.parse.parse_qs(parsed.query).get("code", [""])[0]
-            status_code, res = handle_rooms_check(code)
-            self.send_response(status_code)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
-            return
 
         elif path.startswith("/downloads/"):
             filename = path.replace("/downloads/", "").strip("/")
@@ -799,12 +823,8 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
-                code, resp = handle_rooms_create(data)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                code, resp = handle_rooms_create(data, self.client_address[0])
+                send_json_response(self, resp, code)
             except Exception as e:
                 self.send_error(500, f"Rooms create error: {e}")
             return
@@ -815,11 +835,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, resp = handle_rooms_close(data)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, resp, code)
             except Exception as e:
                 self.send_error(500, f"Rooms close error: {e}")
             return
@@ -832,13 +848,22 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, resp = handle_rooms_terminate(data)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+                send_json_response(self, resp, code)
             except Exception as e:
                 self.send_error(500, f"Rooms terminate error: {e}")
+            return
+
+        elif path == "/api/rooms/message":
+            if not self.check_router_access():
+                return
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_message(data)
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"Rooms message error: {e}")
             return
 
         elif path == "/api/console_log":

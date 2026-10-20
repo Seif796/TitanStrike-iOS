@@ -4,7 +4,7 @@
       "name": "🍉 Melon Knight (فارس البطيخ)",
       "enabled": true,
       "hp": 130,
-      "speed": 7.5,
+      "speed": 1,
       "role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls."
     },
     "1": {
@@ -32,7 +32,7 @@
       "name": "🕷️ Spider Hero (سبايدر هودي)",
       "enabled": true,
       "hp": 220,
-      "speed": 20.2,
+      "speed": 9.2,
       "role": "The newly added 3D Chibi Spider-Hero! Wearing an oversized hoodie, denim cutoffs, and retro high-top sneakers. Highly agile with web attacks!"
     }
   },
@@ -49,22 +49,16 @@
   "server_status": "OPEN",
   "device_security": {
     "whitelist_enabled": true,
-    "allowed_devices": [
+    "allowed_devices": [],
+    "pending_devices": [
       {
         "id": "{88b5ac79-2a3a-11eb-b696-806e6f6e6963}",
-        "name": "HP 255 G8 Notebook PC 🎁 (مكافأة 1000 عملة)",
-        "status": "APPROVED",
-        "role": "GIFT_COINS",
-        "approved_at": "2026-10-20 22:24"
-      },
-      {
-        "id": "سسيشيشيشي",
-        "name": "lapto[p 🎁 (مكافأة 1000 عملة)",
-        "status": "APPROVED",
-        "role": "GIFT_COINS",
-        "approved_at": "2026-10-20 22:25"
+        "name": "HP 255 G8 Notebook PC",
+        "os": "Windows",
+        "username": "seif1",
+        "ip": "127.0.0.1",
+        "requested_at": "2026-10-20"
       }
-    ],
-    "pending_devices": []
+    ]
   }
 }
