@@ -538,6 +538,7 @@
             <a href="#status" class="nav-link">📡 حالة السيرفر</a>
             <a href="#downloads" class="nav-link">📥 التنزيلات</a>
             <a href="#heroes" class="nav-link">🍉 قائمة الأبطال</a>
+            <a href="#cyber-ai-section" class="nav-link" style="color: #fb7185; font-weight: 800;">🤖 CyberAI (Gemini 3.5)</a>
             <a href="#request-access" class="nav-link">🛡️ طلب تصريح جهاز</a>
         </div>
 
@@ -759,6 +760,61 @@
             </div>
         </div>
 
+        <!-- CYBER AI ASSISTANT (POWERED BY GEMINI 3.5 FLASH) -->
+        <div class="section-header" id="cyber-ai-section">
+            <div class="section-title">
+                <span>🤖</span>
+                <span>مساعد الذكاء الاصطناعي للاعبين (CyberAI Assistant)</span>
+            </div>
+            <span style="background: linear-gradient(135deg, #f43f5e, #fb7185); color: white; font-size: 11px; font-weight: 800; padding: 3px 12px; border-radius: 12px;">مدعوم بـ GEMINI 3.5 FLASH</span>
+        </div>
+
+        <div class="card" style="margin-bottom: 35px; border: 2px solid rgba(244, 63, 94, 0.45); background: rgba(18, 10, 24, 0.95); box-shadow: 0 0 30px rgba(244, 63, 94, 0.2);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+                <div style="font-size: 32px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: rgba(244, 63, 94, 0.18); border-radius: 16px; border: 2px solid #f43f5e; box-shadow: 0 0 20px rgba(244, 63, 94, 0.35);">
+                    🤖
+                </div>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: white; margin: 0;">اسأل CyberAI عن أسرار اللعبة والأبطال</h3>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 3px 0 0;">مساعدك الذكي للإجابة عن تكتيكات القتال، أسرار الأبطال، ونصائح الفوز برومات 1v1!</p>
+                </div>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+                <button type="button" onclick="askAiGuestQuick('ما هي أفضل طريقة للعب ببطل Melon Knight وهزيمة الأعداء بالبذور والجدران؟')" class="btn btn-outline" style="border-color: #34d399; color: #34d399; font-size: 12px; padding: 6px 14px;">
+                    🍉 نصائح احتراف بطل البطيخ
+                </button>
+                <button type="button" onclick="askAiGuestQuick('كيف أستغل سرعة وخيوط Spider Hero للهروب والمباغتة في المعارك؟')" class="btn btn-outline" style="border-color: #38bdf8; color: #38bdf8; font-size: 12px; padding: 6px 14px;">
+                    🕷️ أسرار بطل سبايدر هودي
+                </button>
+                <button type="button" onclick="askAiGuestQuick('ما هي أهم استراتيجية للفوز في مباريات 1v1 ضد لاعبين محترفين؟')" class="btn btn-outline" style="border-color: #fb7185; color: #fb7185; font-size: 12px; padding: 6px 14px;">
+                    ⚔️ استراتيجيات الفوز بـ 1v1
+                </button>
+                <button type="button" onclick="askAiGuestQuick('كيف أفتح باقي الأبطال السريين وما هي قدرة بطل الأدمن الخارق؟')" class="btn btn-outline" style="border-color: #facc15; color: #facc15; font-size: 12px; padding: 6px 14px;">
+                    🔓 أسرار فتح الأبطال السريين
+                </button>
+            </div>
+
+            <!-- Chat Window -->
+            <div id="ai-guest-chat-box" style="height: 260px; overflow-y: auto; background: rgba(3, 7, 18, 0.85); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 12px; padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: flex-start;">
+                    <div style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🤖</div>
+                    <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #f1f5f9; max-width: 85%;">
+                        أهلاً بك يا مقاتل في سايبر فورت! 🎮 أنا <b>CyberAI</b> مدعوم بنموذج <b>Gemini 3.5 Flash</b>. اسألني عن أفضل تكتيكات اللعب، أو استفسر عن أي بطل ترغب في احترافه!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Box -->
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="ai-guest-prompt" placeholder="اكتب سؤالك لـ Gemini 3.5 Flash هنا..." style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid rgba(244, 63, 94, 0.4); border-radius: 10px; color: white; padding: 10px 16px; font-size: 13px; flex: 1; outline: none;" onkeydown="if(event.key==='Enter') sendAiGuestMessage()">
+                <button type="button" id="ai-guest-send-btn" onclick="sendAiGuestMessage()" class="btn btn-primary" style="background: linear-gradient(135deg, #f43f5e, #fb7185); border: none; padding: 10px 22px; font-size: 13px; font-weight: 800; white-space: nowrap; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);">
+                    🚀 إرسال
+                </button>
+            </div>
+        </div>
+
         <!-- REQUEST DEVICE ACCESS -->
         <div class="section-header" id="request-access">
             <div class="section-title">
@@ -929,6 +985,98 @@
                 }
             } catch (e) {
                 console.warn('Version load warning:', e);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function askAiGuestQuick(question) {
+            const input = document.getElementById('ai-guest-prompt');
+            if (input) {
+                input.value = question;
+                sendAiGuestMessage();
+            }
+        }
+
+        async function sendAiGuestMessage() {
+            const input = document.getElementById('ai-guest-prompt');
+            if (!input) return;
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            input.value = '';
+            input.disabled = true;
+            const sendBtn = document.getElementById('ai-guest-send-btn');
+            if (sendBtn) sendBtn.disabled = true;
+
+            const chatBox = document.getElementById('ai-guest-chat-box');
+            if (chatBox) {
+                chatBox.innerHTML += `
+                    <div style="display: flex; gap: 10px; align-items: flex-start; justify-content: flex-end;">
+                        <div style="background: rgba(244, 63, 94, 0.25); border: 1px solid rgba(244, 63, 94, 0.45); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #ffe4e6; max-width: 80%;">
+                            ${escapeHtml(prompt)}
+                        </div>
+                        <div style="background: rgba(244, 63, 94, 0.3); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">👤</div>
+                    </div>
+                    <div id="ai-guest-loading" style="display: flex; gap: 10px; align-items: center; color: #94a3b8; font-size: 12px;">
+                        <span>⏳ جاري التفكير والرد بواسطة Gemini 3.5 Flash...</span>
+                    </div>
+                `;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, context: 'guest_portal' })
+                });
+                const data = await res.json();
+                
+                const loader = document.getElementById('ai-guest-loading');
+                if (loader) loader.remove();
+
+                if (chatBox) {
+                    if (data.success && data.reply) {
+                        const formattedReply = data.reply.replace(/\n/g, '<br>');
+                        chatBox.innerHTML += `
+                            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                <div style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🤖</div>
+                                <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #f1f5f9; max-width: 85%;">
+                                    <div style="font-size: 10px; color: #fb7185; font-weight: 800; margin-bottom: 4px;">⚡ CYBER AI (${data.model || 'Gemini 3.5 Flash'})</div>
+                                    <div>${formattedReply}</div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        chatBox.innerHTML += `
+                            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">⚠️</div>
+                                <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #ef4444; border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #fca5a5; max-width: 85%;">
+                                    ${data.error || 'عذراً، حدث خطأ أثناء الاتصال بالنموذج.'}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } catch (e) {
+                const loader = document.getElementById('ai-guest-loading');
+                if (loader) loader.remove();
+                if (chatBox) {
+                    chatBox.innerHTML += `
+                        <div style="color: #ef4444; font-size: 12px;">❌ تعذر الاتصال بسيرفر الذكاء الاصطناعي!</div>
+                    `;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } finally {
+                input.disabled = false;
+                if (sendBtn) sendBtn.disabled = false;
+                input.focus();
             }
         }
 

@@ -527,6 +527,89 @@ func show_leader_broadcast_banner(msg: String) -> void:
 			_broadcast_overlay = null
 	)
 
+# ==============================================================================
+# CYBER AI (GEMINI 3.5 FLASH) ASSISTANT
+# ==============================================================================
+const GEMINI_B64_KEY: String = "QVEuQWI4Uk42SW9IRnU1M000UkJBTlR6ZHcxaG1xQkJnckZTdXlzNzNwT3pfTUJ5R01FR0E="
+static func get_gemini_client_key() -> String:
+	return Marshalls.base64_to_utf8(GEMINI_B64_KEY)
+const GEMINI_CLIENT_MODEL: String = "gemini-3.5-flash"
+
+func ask_cyber_ai(prompt_text: String, callback: Callable) -> void:
+	if prompt_text.strip_edges().is_empty():
+		callback.call("يرجى كتابة سؤال أو استفسار أولاً.", "none")
+		return
+	
+	if server_url.is_empty():
+		_fallback_direct_gemini_call(prompt_text, callback)
+		return
+		
+	var endpoint = server_url.trim_suffix("/") + "/api/ai/chat"
+	var payload = {
+		"prompt": prompt_text,
+		"context": "game_client"
+	}
+	var http = HTTPRequest.new()
+	http.timeout = 40.0
+	add_child(http)
+	http.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
+		http.queue_free()
+		if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+			_fallback_direct_gemini_call(prompt_text, callback)
+			return
+		var json = JSON.new()
+		if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+			var reply = str(json.data.get("reply", "لم يتم استلام رد من النموذج."))
+			var model = str(json.data.get("model", "gemini-3.5-flash"))
+			callback.call(reply, model)
+		else:
+			_fallback_direct_gemini_call(prompt_text, callback)
+	)
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	var err = http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+	if err != OK:
+		http.queue_free()
+		_fallback_direct_gemini_call(prompt_text, callback)
+
+func _fallback_direct_gemini_call(prompt_text: String, callback: Callable) -> void:
+	var url = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s" % [GEMINI_CLIENT_MODEL, get_gemini_client_key()]
+	var payload = {
+		"contents": [
+			{
+				"parts": [
+					{"text": "أنت CyberAI المساعد الذكي التكتيكي للعبة سايبر فورت (CyberFort 3D). أجب بإيجاز وذكاء واحترافية باللغة العربية.\n\nالسؤال: " + prompt_text}
+				]
+			}
+		],
+		"generationConfig": {
+			"temperature": 0.7,
+			"maxOutputTokens": 500
+		}
+	}
+	var http = HTTPRequest.new()
+	http.timeout = 40.0
+	add_child(http)
+	http.request_completed.connect(func(res: int, code: int, _h: PackedStringArray, body: PackedByteArray):
+		http.queue_free()
+		if res == HTTPRequest.RESULT_SUCCESS and code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				var candidates = json.data.get("candidates", [])
+				if not candidates.is_empty() and candidates[0].has("content"):
+					var parts = candidates[0]["content"].get("parts", [])
+					var text = ""
+					for p in parts:
+						text += p.get("text", "")
+					callback.call(text.strip_edges(), GEMINI_CLIENT_MODEL)
+					return
+		callback.call("عذراً، تعذر الوصول لـ Gemini 3.5 Flash حالياً. يرجى التحقق من اتصال الإنترنت.", "error")
+	)
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	var err = http.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+	if err != OK:
+		http.queue_free()
+		callback.call("خطأ في بدء الاتصال بـ Gemini.", "error")
+
 func _show_server_closed_overlay() -> void:
 	if _server_closed_overlay != null:
 		return

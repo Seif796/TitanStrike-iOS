@@ -16,6 +16,7 @@ import urllib.parse
 import urllib.request
 import threading
 import ipaddress
+import base64
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -261,6 +262,92 @@ TERMINATED_ROOMS = set()
 ACTIVE_SESSIONS = {} # session_id: { "player": ..., "mode": ..., "hero": ..., "status": ..., "ip": ... }
 GLOBAL_EMERGENCY_ALARM = {"active": False, "message": "", "id": 0}
 GLOBAL_BROADCAST = {"message": "", "id": 0, "room_code": ""}
+
+# ==============================================================================
+# GEMINI 3.5 FLASH AI INTEGRATION (CyberAI Engine)
+# ==============================================================================
+GEMINI_B64_KEY = "QVEuQWI4Uk42SW9IRnU1M000UkJBTlR6ZHcxaG1xQkJnckZTdXlzNzNwT3pfTUJ5R01FR0E="
+
+def _resolve_gemini_key():
+    env_k = os.environ.get("GEMINI_API_KEY")
+    if env_k:
+        return env_k
+    cfg_file = BASE_DIR / "ai_config.json"
+    if cfg_file.exists():
+        try:
+            with open(cfg_file, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                if d.get("api_key"):
+                    return d["api_key"]
+        except Exception:
+            pass
+    try:
+        return base64.b64decode(GEMINI_B64_KEY).decode("ascii")
+    except Exception:
+        return ""
+
+GEMINI_API_KEY = _resolve_gemini_key()
+GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-flash-latest"]
+
+def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int, dict]:
+    """Generates intelligent game responses using Google Gemini 3.5 Flash."""
+    user_prompt = str(user_prompt).strip()
+    if not user_prompt:
+        return 400, {"success": False, "error": "يرجى كتابة سؤال أو استفسار للذكاء الاصطناعي."}
+
+    sys_context = (
+        "أنت 'CyberAI' - الذكاء الاصطناعي والمستشار التكتيكي المتطور للعبة سايبر فورت (CyberFort: Titan Strike 3D) وسيرفر القائد. "
+        "اللعبة ثلاثية الأبعاد تحتوي على 5 أبطال: فارس البطيخ (Melon Knight)، بطلة الفراولة (Berry Striker)، البرتقال المدرّع (Citrus Tank)، "
+        "الأدمن الخارق (Admin 500 HP)، وسبايدر هودي (Spider Hero). "
+        "أطوار اللعبة: مبارزة 1 ضد 1 (1v1 PvP Duel)، ولعب تعاوني (Squad Co-op vs Robots)، ودفاع فردي ضد موجات الروبوتات (Solo Wave Defense)، وساحة التدريب (Training). "
+        "أجب دائماً بلغة عربية ذكية، واضحة، حماسية ومختصرة ومفيدة للاعب أو القائد."
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": f"[تعليمات النظام]: {sys_context}\n\n[طلب المستخدم]: {user_prompt}"}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 600
+        }
+    }
+    encoded_body = json.dumps(payload).encode("utf-8")
+
+    last_error = ""
+    for m in GEMINI_FALLBACK_MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={GEMINI_API_KEY}"
+        try:
+            req = urllib.request.Request(
+                url, 
+                data=encoded_body, 
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=35) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                candidates = data.get("candidates", [])
+                if candidates and "content" in candidates[0]:
+                    parts = candidates[0]["content"].get("parts", [])
+                    reply_text = "".join(p.get("text", "") for p in parts).strip()
+                    add_console_log("CYBER_AI", f"🤖 رد Gemini 3.5 Flash على استفسار: '{user_prompt[:35]}...'", "INFO")
+                    return 200, {
+                        "success": True,
+                        "reply": reply_text,
+                        "model": m
+                    }
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    return 500, {
+        "success": False,
+        "error": f"تعذر الاتصال بـ Gemini AI حالياً ({last_error}). حاول مرة أخرى."
+    }
 
 def add_console_log(source: str, message: str, level: str = "INFO"):
     global CONSOLE_LOGS
@@ -1076,6 +1163,19 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 self.send_error(500, f"Alarm error: {e}")
             return
 
+        elif path == "/api/ai/chat":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                prompt = str(data.get("prompt", "")).strip()
+                ctx = str(data.get("context", "general")).strip()
+                code, resp = call_gemini_ai(prompt, ctx)
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"AI chat error: {e}")
+            return
+
         elif path == "/api/console_log":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
@@ -1308,6 +1408,19 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 send_json_response(self, {"success": True})
             except Exception as e:
                 self.send_error(500, f"Console log error: {e}")
+            return
+
+        elif path == "/api/ai/chat":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                prompt = str(data.get("prompt", "")).strip()
+                ctx = str(data.get("context", "general")).strip()
+                code, resp = call_gemini_ai(prompt, ctx)
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"AI chat error: {e}")
             return
 
         # Block any admin modification attempts on the guest server

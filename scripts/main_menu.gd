@@ -148,6 +148,7 @@ func _ready() -> void:
 	_setup_account_view()
 	_setup_friends_view()
 	_setup_mode_select_view()
+	_setup_cyber_ai_view()
 	
 	_refresh_top_pills()
 	UpdateManager.clear_active_player_session()
@@ -1217,3 +1218,269 @@ func _dismiss_server_opened_banner() -> void:
 	if _server_opened_banner != null:
 		_server_opened_banner.queue_free()
 		_server_opened_banner = null
+
+# ==============================================================================
+# CYBER AI ASSISTANT (GEMINI 3.5 FLASH) IN-GAME UI
+# ==============================================================================
+var _ai_dialog_layer: CanvasLayer = null
+
+func _setup_cyber_ai_view() -> void:
+	# Add Top Header Pill Button
+	var header_hbox = get_node_or_null("TopHeader/HeaderHBox")
+	if header_hbox:
+		var ai_pill = Button.new()
+		ai_pill.name = "CyberAiPillBtn"
+		ai_pill.text = "🤖 CyberAI (Gemini 3.5)"
+		ai_pill.custom_minimum_size = Vector2(175, 42)
+		ai_pill.add_theme_font_size_override("font_size", 13)
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.14, 0.04, 0.12, 0.9)
+		style.border_width_left = 2
+		style.border_width_top = 2
+		style.border_width_right = 2
+		style.border_width_bottom = 2
+		style.border_color = Color(0.95, 0.25, 0.5)
+		style.corner_radius_top_left = 21
+		style.corner_radius_top_right = 21
+		style.corner_radius_bottom_left = 21
+		style.corner_radius_bottom_right = 21
+		ai_pill.add_theme_stylebox_override("normal", style)
+		ai_pill.add_theme_color_override("font_color", Color(1.0, 0.6, 0.8))
+		ai_pill.pressed.connect(func():
+			AudioManager.play_sfx("click")
+			_show_cyber_ai_dialog()
+		)
+		header_hbox.add_child(ai_pill)
+	
+	# Add Home View Button in HomeCenterBox
+	var home_box = get_node_or_null("ViewHome/HomeCenterBox")
+	if home_box:
+		var ai_home_btn = Button.new()
+		ai_home_btn.name = "CyberAiHomeBtn"
+		ai_home_btn.text = "🤖 CYBER AI (مساعد الذكاء الاصطناعي - Gemini 3.5)"
+		ai_home_btn.custom_minimum_size = Vector2(0, 56)
+		ai_home_btn.add_theme_font_size_override("font_size", 18)
+		var btn_style = StyleBoxFlat.new()
+		btn_style.bg_color = Color(0.18, 0.05, 0.16, 0.95)
+		btn_style.border_width_left = 2
+		btn_style.border_width_top = 2
+		btn_style.border_width_right = 2
+		btn_style.border_width_bottom = 2
+		btn_style.border_color = Color(0.95, 0.25, 0.5)
+		btn_style.corner_radius_top_left = 12
+		btn_style.corner_radius_top_right = 12
+		btn_style.corner_radius_bottom_left = 12
+		btn_style.corner_radius_bottom_right = 12
+		btn_style.shadow_color = Color(0.95, 0.25, 0.5, 0.35)
+		btn_style.shadow_size = 12
+		ai_home_btn.add_theme_stylebox_override("normal", btn_style)
+		ai_home_btn.add_theme_color_override("font_color", Color(1.0, 0.75, 0.9))
+		ai_home_btn.pressed.connect(func():
+			AudioManager.play_sfx("click")
+			_show_cyber_ai_dialog()
+		)
+		var exit_node = get_node_or_null("ViewHome/HomeCenterBox/ExitBtn")
+		if exit_node:
+			var exit_idx = exit_node.get_index()
+			home_box.add_child(ai_home_btn)
+			home_box.move_child(ai_home_btn, exit_idx)
+		else:
+			home_box.add_child(ai_home_btn)
+
+func _show_cyber_ai_dialog() -> void:
+	if _ai_dialog_layer != null:
+		_ai_dialog_layer.queue_free()
+		_ai_dialog_layer = null
+	
+	_ai_dialog_layer = CanvasLayer.new()
+	_ai_dialog_layer.layer = 135
+	
+	var bg = ColorRect.new()
+	bg.color = Color(0.02, 0.04, 0.08, 0.82)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ai_dialog_layer.add_child(bg)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ai_dialog_layer.add_child(center)
+	
+	var card = PanelContainer.new()
+	var card_style = StyleBoxFlat.new()
+	card_style.bg_color = Color(0.06, 0.09, 0.18, 0.98)
+	card_style.border_width_left = 3
+	card_style.border_width_top = 3
+	card_style.border_width_right = 3
+	card_style.border_width_bottom = 3
+	card_style.border_color = Color(0.95, 0.25, 0.5) # Neon Rose
+	card_style.corner_radius_top_left = 18
+	card_style.corner_radius_top_right = 18
+	card_style.corner_radius_bottom_left = 18
+	card_style.corner_radius_bottom_right = 18
+	card_style.shadow_color = Color(0.95, 0.25, 0.5, 0.4)
+	card_style.shadow_size = 20
+	card.add_theme_stylebox_override("panel", card_style)
+	card.custom_minimum_size = Vector2(620, 520)
+	center.add_child(card)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	card.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+	
+	# Header
+	var header = HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	vbox.add_child(header)
+	
+	var icon = Label.new()
+	icon.text = "🤖"
+	icon.add_theme_font_size_override("font_size", 28)
+	header.add_child(icon)
+	
+	var title_box = VBoxContainer.new()
+	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title_box)
+	
+	var title = Label.new()
+	title.text = "CyberAI - مساعد الذكاء الاصطناعي (Gemini 3.5 Flash)"
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(1.0, 0.4, 0.65))
+	title_box.add_child(title)
+	
+	var subtitle = Label.new()
+	subtitle.text = "اسألني عن تكتيكات الفوز في 1v1، أسرار فتح الأبطال، أو استراتيجيات اللعب!"
+	subtitle.add_theme_font_size_override("font_size", 12)
+	subtitle.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	title_box.add_child(subtitle)
+	
+	var close_btn = Button.new()
+	close_btn.text = " ✕ "
+	close_btn.custom_minimum_size = Vector2(38, 38)
+	close_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		if _ai_dialog_layer:
+			_ai_dialog_layer.queue_free()
+			_ai_dialog_layer = null
+	)
+	header.add_child(close_btn)
+	
+	# Quick Suggestions
+	var chips_scroll = ScrollContainer.new()
+	chips_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	chips_scroll.custom_minimum_size = Vector2(0, 36)
+	vbox.add_child(chips_scroll)
+	
+	var chips_hbox = HBoxContainer.new()
+	chips_hbox.add_theme_constant_override("separation", 8)
+	chips_scroll.add_child(chips_hbox)
+	
+	# Chat Messages Scroll Area
+	var chat_scroll = ScrollContainer.new()
+	chat_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chat_scroll.custom_minimum_size = Vector2(0, 260)
+	var chat_panel = PanelContainer.new()
+	var chat_style = StyleBoxFlat.new()
+	chat_style.bg_color = Color(0.03, 0.05, 0.1, 0.85)
+	chat_style.corner_radius_top_left = 10
+	chat_style.corner_radius_top_right = 10
+	chat_style.corner_radius_bottom_left = 10
+	chat_style.corner_radius_bottom_right = 10
+	chat_panel.add_theme_stylebox_override("panel", chat_style)
+	chat_panel.add_child(chat_scroll)
+	vbox.add_child(chat_panel)
+	
+	var messages_vbox = VBoxContainer.new()
+	messages_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	messages_vbox.add_theme_constant_override("separation", 8)
+	chat_scroll.add_child(messages_vbox)
+	
+	# Initial welcome message
+	var welcome_lbl = Label.new()
+	welcome_lbl.text = "🤖 CyberAI: مرحباً بك يا بطل! أنا مساعدك الذكي التكتيكي المدعوم بـ Gemini 3.5 Flash. اختر سؤالاً من الأعلى أو اكتب ما يدور ببالك!"
+	welcome_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	welcome_lbl.add_theme_font_size_override("font_size", 13)
+	welcome_lbl.add_theme_color_override("font_color", Color(0.3, 0.95, 0.85))
+	messages_vbox.add_child(welcome_lbl)
+	
+	# Input Row
+	var input_hbox = HBoxContainer.new()
+	input_hbox.add_theme_constant_override("separation", 10)
+	vbox.add_child(input_hbox)
+	
+	var input_edit = LineEdit.new()
+	input_edit.placeholder_text = "اكتب سؤالك لـ Gemini 3.5 Flash هنا..."
+	input_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	input_edit.custom_minimum_size = Vector2(0, 44)
+	input_hbox.add_child(input_edit)
+	
+	var send_btn = Button.new()
+	send_btn.text = "🚀 إرسال"
+	send_btn.custom_minimum_size = Vector2(90, 44)
+	input_hbox.add_child(send_btn)
+	
+	var do_send = func(question: String):
+		if question.strip_edges().is_empty():
+			return
+		input_edit.text = ""
+		input_edit.editable = false
+		send_btn.disabled = true
+		
+		# Player bubble
+		var p_lbl = Label.new()
+		p_lbl.text = "👤 أنت: " + question
+		p_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		p_lbl.add_theme_font_size_override("font_size", 13)
+		p_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		messages_vbox.add_child(p_lbl)
+		
+		# Loading bubble
+		var loading_lbl = Label.new()
+		loading_lbl.text = "⏳ CyberAI يفكر بواسطة Gemini 3.5 Flash..."
+		loading_lbl.add_theme_font_size_override("font_size", 12)
+		loading_lbl.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
+		messages_vbox.add_child(loading_lbl)
+		
+		chat_scroll.scroll_vertical = 99999
+		
+		UpdateManager.ask_cyber_ai(question, func(reply: String, model: String):
+			input_edit.editable = true
+			send_btn.disabled = false
+			if is_instance_valid(loading_lbl):
+				loading_lbl.queue_free()
+			
+			var ai_lbl = Label.new()
+			ai_lbl.text = "🤖 CyberAI (%s):\n%s" % [model, reply]
+			ai_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			ai_lbl.add_theme_font_size_override("font_size", 13)
+			ai_lbl.add_theme_color_override("font_color", Color(0.3, 0.95, 0.85))
+			messages_vbox.add_child(ai_lbl)
+			AudioManager.play_sfx("redeem")
+			chat_scroll.scroll_vertical = 99999
+			input_edit.grab_focus()
+		)
+	
+	send_btn.pressed.connect(func(): do_send.call(input_edit.text))
+	input_edit.text_submitted.connect(func(t: String): do_send.call(t))
+	
+	# Add quick chips
+	var quick_questions = [
+		"💡 كيف أفوز في مود 1v1؟",
+		"🦸 ما هي قدرات سبايدر هودي؟",
+		"👑 كيف أفتح بطل الأدمن؟",
+		"🛡️ أفضل استراتيجية ضد البيج بوس؟"
+	]
+	for q in quick_questions:
+		var chip = Button.new()
+		chip.text = q
+		chip.add_theme_font_size_override("font_size", 12)
+		chip.pressed.connect(func(): do_send.call(q))
+		chips_hbox.add_child(chip)
+	
+	get_tree().root.add_child(_ai_dialog_layer)
+	input_edit.grab_focus()

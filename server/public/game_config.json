@@ -2,7 +2,7 @@
   "heroes": {
     "0": {
       "name": "🍉 Melon Knight (فارس البطيخ)",
-      "enabled": false,
+      "enabled": true,
       "hp": 130,
       "speed": 10,
       "role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls."
