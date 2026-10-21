@@ -533,7 +533,7 @@ func show_leader_broadcast_banner(msg: String) -> void:
 const GEMINI_B64_KEY: String = "QVEuQWI4Uk42SW9IRnU1M000UkJBTlR6ZHcxaG1xQkJnckZTdXlzNzNwT3pfTUJ5R01FR0E="
 static func get_gemini_client_key() -> String:
 	return Marshalls.base64_to_utf8(GEMINI_B64_KEY)
-const GEMINI_CLIENT_MODEL: String = "gemini-3.5-flash"
+const GEMINI_CLIENT_MODEL: String = "gemini-3.5-flash-lite"
 
 func ask_cyber_ai(prompt_text: String, callback: Callable) -> void:
 	if prompt_text.strip_edges().is_empty():
@@ -550,7 +550,7 @@ func ask_cyber_ai(prompt_text: String, callback: Callable) -> void:
 		"context": "game_client"
 	}
 	var http = HTTPRequest.new()
-	http.timeout = 40.0
+	http.timeout = 15.0
 	add_child(http)
 	http.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 		http.queue_free()
@@ -583,11 +583,11 @@ func _fallback_direct_gemini_call(prompt_text: String, callback: Callable) -> vo
 		],
 		"generationConfig": {
 			"temperature": 0.7,
-			"maxOutputTokens": 500
+			"maxOutputTokens": 250
 		}
 	}
 	var http = HTTPRequest.new()
-	http.timeout = 40.0
+	http.timeout = 15.0
 	add_child(http)
 	http.request_completed.connect(func(res: int, code: int, _h: PackedStringArray, body: PackedByteArray):
 		http.queue_free()

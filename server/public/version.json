@@ -1,8 +1,8 @@
 {
-  "version": "1.2.14",
-  "version_code": 14,
+  "version": "1.2.15",
+  "version_code": 15,
   "release_date": "2026-10-21",
-  "title": "🤖 تحديث الذكاء الاصطناعي CyberAI مدعوم بنموذج Gemini 3.5 Flash",
+  "title": "⚡ تسريع استجابة CyberAI (Gemini 3.5 Flash) في ثانية واحدة",
   "changelog": [
     "إضافة مستشار الذكاء الاصطناعي CyberAI داخل اللعبة وفي موقع الإدارة وبوابة الزوار",
     "الربط المباشر بنموذج Google Gemini 3.5 Flash فائق السرعة والذكاء",
@@ -10,8 +10,8 @@
     "مساعد صوتي وبصري كامل داخل القائمة الرئيسية وخيارات أسئلة سريعة"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 120725,
-  "sha256": "1f1c733e4fb288e951e5c4a9d6116e4451c87d19a13f4c8d5a49e3e4a87b0520",
+  "file_size_bytes": 120668,
+  "sha256": "09ecdd5ca24d3e8b16b4d843ccee0448cdc96ffdecb71d596048f6f63e898d27",
   "mandatory": true,
   "has_new_ipa": true,
   "requires_ipa": true,

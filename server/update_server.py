@@ -287,8 +287,8 @@ def _resolve_gemini_key():
         return ""
 
 GEMINI_API_KEY = _resolve_gemini_key()
-GEMINI_MODEL = "gemini-3.5-flash"
-GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-flash-latest"]
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"]
 
 def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int, dict]:
     """Generates intelligent game responses using Google Gemini 3.5 Flash."""
@@ -301,7 +301,7 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
         "اللعبة ثلاثية الأبعاد تحتوي على 5 أبطال: فارس البطيخ (Melon Knight)، بطلة الفراولة (Berry Striker)، البرتقال المدرّع (Citrus Tank)، "
         "الأدمن الخارق (Admin 500 HP)، وسبايدر هودي (Spider Hero). "
         "أطوار اللعبة: مبارزة 1 ضد 1 (1v1 PvP Duel)، ولعب تعاوني (Squad Co-op vs Robots)، ودفاع فردي ضد موجات الروبوتات (Solo Wave Defense)، وساحة التدريب (Training). "
-        "أجب دائماً بلغة عربية ذكية، واضحة، حماسية ومختصرة ومفيدة للاعب أو القائد."
+        "أجب دائماً بلغة عربية ذكية، حماسية، مختصرة ومباشرة جداً (في سطرين إلى 4 أسطر كحد أقصى) لتصل الإجابة فائقة السرعة للاعب أو القائد."
     )
 
     payload = {
@@ -314,7 +314,7 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
         ],
         "generationConfig": {
             "temperature": 0.7,
-            "maxOutputTokens": 600
+            "maxOutputTokens": 300
         }
     }
     encoded_body = json.dumps(payload).encode("utf-8")
@@ -328,7 +328,7 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
                 data=encoded_body, 
                 headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=35) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 candidates = data.get("candidates", [])
                 if candidates and "content" in candidates[0]:
@@ -620,6 +620,8 @@ def send_json_response(handler, data, status_code: int = 200):
     handler.wfile.write(body)
 
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
 
@@ -1220,6 +1222,8 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         self.end_headers()
 
 class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     """
     Dedicated Guest & Player handler (Port 8081):
     - Default page '/' serves guest.html

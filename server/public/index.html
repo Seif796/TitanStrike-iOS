@@ -855,7 +855,7 @@
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <h2 style="font-size: 20px; font-weight: 900; color: white; margin: 0;">مساعد الذكاء الاصطناعي (Cyber AI Assistant)</h2>
-                            <span style="background: linear-gradient(135deg, #f43f5e, #fb7185); color: white; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 12px; letter-spacing: 0.5px;">GEMINI 3.5 FLASH</span>
+                            <span style="background: linear-gradient(135deg, #f43f5e, #fb7185); color: white; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 12px; letter-spacing: 0.5px;">⚡ GEMINI 3.5 FLASH (استجابة فائقة السرعة ⚡)</span>
                         </div>
                         <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0;">مستشارك التكتيكي لإدارة اللعبة وتأليف إعلانات حماسية وتحليل استراتيجيات 1v1 وموازنة طاقة وسرعة الأبطال!</p>
                     </div>
@@ -1866,11 +1866,24 @@
         fetchRooms();
         fetchGameConsole();
 
-        // Fast 1-second real-time live synchronization
-        setInterval(fetchServerStatus, 1000);
-        setInterval(fetchRooms, 1000);
-        setInterval(fetchGameConsole, 1000);
-        setInterval(fetchDevices, 2500);
+        // Smooth, non-blocking real-time synchronization (2s loop, prevents socket exhaustion)
+        let _syncInProgress = false;
+        async function syncDashboardLoop() {
+            if (_syncInProgress) return;
+            _syncInProgress = true;
+            try {
+                await fetchServerStatus();
+                await fetchRooms();
+                await fetchGameConsole();
+            } catch (e) {
+                console.warn("Sync loop warn:", e);
+            } finally {
+                _syncInProgress = false;
+                setTimeout(syncDashboardLoop, 2000);
+            }
+        }
+        syncDashboardLoop();
+        setInterval(fetchDevices, 6000);
 
         async function refreshAllInstantly() {
             showToast("⚡ جاري التحديث الفوري لجميع البيانات...");
