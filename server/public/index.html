@@ -862,19 +862,28 @@
                 </div>
             </div>
 
-            <!-- AI Quick Action Buttons -->
+            <!-- AI Quick Action Buttons (Executive Commander Commands) -->
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-                <button type="button" onclick="askAiQuick('اكتب لي رسالة وإعلان حماسي جداً من القائد في سطرين لجميع اللاعبين باللعبة لحثهم على القتال والمبارزة')" class="btn btn-outline" style="border-color: #f43f5e; color: #fb7185; font-size: 12px; padding: 6px 14px;">
-                    📢 تأليف إعلان حماسي للاعبين
+                <button type="button" onclick="askAiQuick('خش اللعبة واعمل الغرفة وقولي الكود كام عشان أدخل ألعب معاك')" class="btn btn-primary" style="background: linear-gradient(135deg, #f43f5e, #e11d48); font-size: 12px; padding: 7px 16px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);">
+                    ⚔️ خش اللعبة واعمل غرفة 1v1 واديني الكود
                 </button>
-                <button type="button" onclick="askAiQuick('حلل لي الأبطال الخمسة واقترح لي تعديل موازنة للسرعة والصحة (HP & Speed) لجعل اللعبة أكثر حماساً وتوازناً')" class="btn btn-outline" style="border-color: #38bdf8; color: #38bdf8; font-size: 12px; padding: 6px 14px;">
-                    ⚖️ اقتراح موازنة طاقات الأبطال
+                <button type="button" onclick="askAiQuick('ابعت رسالة وإعلان حماسي الآن لجميع اللاعبين باللعبة: استعدوا للمواجهة الكبرى في الساحة!')" class="btn btn-outline" style="border-color: #38bdf8; color: #38bdf8; font-size: 12px; padding: 6px 14px;">
+                    📢 أرسل إعلان لجميع اللاعبين باللعبة
                 </button>
-                <button type="button" onclick="askAiQuick('ما هي أفضل تكتيكات واستراتيجيات الفوز في طور 1v1 PvP ضد بطل الأدمن والبرتقال المدرع؟')" class="btn btn-outline" style="border-color: #facc15; color: #facc15; font-size: 12px; padding: 6px 14px;">
-                    ⚔️ استراتيجيات الفوز بـ 1v1
+                <button type="button" onclick="askAiQuick('شغل صفارة الإنذار العامة باللعبة')" class="btn btn-outline" style="border-color: #facc15; color: #facc15; font-size: 12px; padding: 6px 14px;">
+                    🚨 تشغيل صفارات الإنذار
                 </button>
-                <button type="button" onclick="askAiQuick('كيف أستطيع فتح جميع الأبطال وما هي النصائح لهزيمة البيج بوس في الجولة الأخيرة؟')" class="btn btn-outline" style="border-color: #34d399; color: #34d399; font-size: 12px; padding: 6px 14px;">
-                    🔓 أسرار فتح الأبطال وهزيمة البوس
+                <button type="button" onclick="askAiQuick('اطفي صفارة الإنذار')" class="btn btn-outline" style="border-color: #94a3b8; color: #cbd5e1; font-size: 12px; padding: 6px 14px;">
+                    🔕 إطفاء صفارات الإنذار
+                </button>
+                <button type="button" onclick="askAiQuick('حلل الأبطال واقترح موازنة ممتازة لطاقة وسرعة الأبطال')" class="btn btn-outline" style="border-color: #a855f7; color: #c084fc; font-size: 12px; padding: 6px 14px;">
+                    ⚖️ موازنة طاقات الأبطال
+                </button>
+                <button type="button" onclick="askAiQuick('اقفل السيرفر مؤقتاً للصيانة')" class="btn btn-outline" style="border-color: #ef4444; color: #f87171; font-size: 12px; padding: 6px 14px;">
+                    🔴 إغلاق السيرفر للصيانة
+                </button>
+                <button type="button" onclick="askAiQuick('افتح السيرفر لجميع اللاعبين')" class="btn btn-outline" style="border-color: #10b981; color: #34d399; font-size: 12px; padding: 6px 14px;">
+                    🟢 فتح السيرفر للجميع
                 </button>
             </div>
 
@@ -2326,15 +2335,37 @@
                 if (chatBox) {
                     if (data.success && data.reply) {
                         const formattedReply = data.reply.replace(/\n/g, '<br>');
+                        let actionBadgeHtml = '';
+                        if (data.action_result) {
+                            actionBadgeHtml = `
+                                <div style="margin-top: 8px; background: rgba(16, 185, 129, 0.18); border: 1.5px solid #10b981; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 800; color: #34d399; display: flex; align-items: center; gap: 6px;">
+                                    <span>⚡ تم تنفيذ الأمر بنجاح:</span>
+                                    <span>${escapeHtml(data.action_result)}</span>
+                                </div>
+                            `;
+                            showToast("⚡ نفذ CyberAI أمر القائد: " + data.action_result);
+                        }
+
                         chatBox.innerHTML += `
                             <div style="display: flex; gap: 10px; align-items: flex-start;">
                                 <div style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🤖</div>
                                 <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #f1f5f9; max-width: 85%;">
-                                    <div style="font-size: 10px; color: #fb7185; font-weight: 800; margin-bottom: 4px;">⚡ CYBER AI (${data.model || 'Gemini 3.5 Flash'})</div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <div style="font-size: 10px; color: #fb7185; font-weight: 800;">⚡ CYBER AI (${data.model || 'Gemini 3.5 Flash'})</div>
+                                        <span style="font-size: 10px; background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); padding: 1px 8px; border-radius: 10px;">👑 موجه للقائد</span>
+                                    </div>
                                     <div>${formattedReply}</div>
+                                    ${actionBadgeHtml}
                                 </div>
                             </div>
                         `;
+
+                        // Immediate UI refresh for any affected components
+                        if (data.action) {
+                            fetchRooms();
+                            fetchServerStatus();
+                            fetchGameConsole();
+                        }
                     } else {
                         chatBox.innerHTML += `
                             <div style="display: flex; gap: 10px; align-items: flex-start;">

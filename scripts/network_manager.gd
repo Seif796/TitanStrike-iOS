@@ -97,6 +97,10 @@ func generate_room_code() -> String:
 	current_room_code = "7777"
 	return current_room_code
 
+func is_ai_duel_room_code(code: String) -> bool:
+	var clean = code.strip_edges().to_upper().replace("#", "")
+	return clean in ["AI1V1", "CYBERAI", "BOT1V1", "AI-1V1", "BOT", "AI"]
+
 func decode_room_code_to_ip(code: String) -> String:
 	code = code.strip_edges().replace("#", "")
 	

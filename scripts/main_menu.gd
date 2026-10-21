@@ -854,6 +854,21 @@ func _on_create_room_pressed() -> void:
 	else:
 		status_label.text = "Error creating room: %s" % error_string(err)
 
+func start_duel_against_cyber_ai(ai_hero_id: int = 4) -> void:
+	AudioManager.play_sfx("click")
+	var p_name = _validate_player_name()
+	if p_name.is_empty():
+		p_name = "Player"
+	NetworkManager.leave_game()
+	NetworkManager.local_player_name = p_name
+	NetworkManager.local_class_id = selected_class
+	GameManager.selected_game_mode = GameManager.GameMode.PVP_DUEL
+	GameManager.bot_enabled = true
+	GameManager.bot_class_id = ai_hero_id
+	UpdateManager.report_active_player_session(p_name, "⚔️ 1v1 Duel vs CyberAI", GameManager.CLASSES.get(selected_class, {}).get("name", "Hero"), "IN_MATCH")
+	UpdateManager.log_game_event("⚔️ انطلقت مبارزة 1v1 بين '%s' ومساعد الذكاء الاصطناعي CyberAI!" % p_name, "SUCCESS", "DUEL")
+	GameManager.start_game_scene()
+
 func _on_join_room_pressed() -> void:
 	if not _can_enter_game():
 		return
@@ -1460,6 +1475,29 @@ func _show_cyber_ai_dialog() -> void:
 			ai_lbl.add_theme_font_size_override("font_size", 13)
 			ai_lbl.add_theme_color_override("font_color", Color(0.3, 0.95, 0.85))
 			messages_vbox.add_child(ai_lbl)
+
+			# If the conversation involves playing 1v1, offer direct Arena Launch button
+			var lower_all = (question + " " + reply).to_lower()
+			if "ai1v1" in lower_all or "1v1" in lower_all or "غرفة" in lower_all or "روم" in lower_all or "مبارزة" in lower_all:
+				var duel_btn = Button.new()
+				duel_btn.text = "⚔️ دخول ساحة المبارزة 1v1 ضد CyberAI الآن! (#AI1V1)"
+				duel_btn.custom_minimum_size = Vector2(0, 44)
+				var d_style = StyleBoxFlat.new()
+				d_style.bg_color = Color(0.85, 0.15, 0.35, 0.95)
+				d_style.corner_radius_top_left = 10
+				d_style.corner_radius_top_right = 10
+				d_style.corner_radius_bottom_left = 10
+				d_style.corner_radius_bottom_right = 10
+				duel_btn.add_theme_stylebox_override("normal", d_style)
+				duel_btn.add_theme_color_override("font_color", Color.WHITE)
+				duel_btn.pressed.connect(func():
+					if _ai_dialog_layer:
+						_ai_dialog_layer.queue_free()
+						_ai_dialog_layer = null
+					start_duel_against_cyber_ai(4)
+				)
+				messages_vbox.add_child(duel_btn)
+
 			AudioManager.play_sfx("redeem")
 			chat_scroll.scroll_vertical = 99999
 			input_edit.grab_focus()

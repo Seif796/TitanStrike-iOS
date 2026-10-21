@@ -11,6 +11,8 @@ import socketserver
 import os
 import sys
 import json
+import re
+import time
 import socket
 import urllib.parse
 import urllib.request
@@ -290,25 +292,166 @@ GEMINI_API_KEY = _resolve_gemini_key()
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"]
 
+
+def execute_server_action(action_name: str, params: dict, context_type: str = "general") -> tuple[bool, str, dict]:
+    global ROOMS, TOTAL_ROOMS_CREATED, GLOBAL_BROADCAST, GLOBAL_EMERGENCY_ALARM
+    is_admin = (context_type == "admin_dashboard")
+    action_data = {"name": action_name, "params": params}
+    
+    act_l = str(action_name).lower()
+    if any(k in act_l for k in ["room", "1v1", "duel", "game"]):
+        hero_name = params.get("hero", "Spider Hero")
+        code = "AI1V1"
+        now_ts = time.time()
+        ROOMS[code] = {
+            "code": code,
+            "host": "CyberAI 🤖 [BOT 1v1]",
+            "mode": "⚔️ 1v1 PvP Duel vs CyberAI",
+            "map_id": 0,
+            "players": 1,
+            "players_list": ["CyberAI 🤖"],
+            "created_at": now_ts,
+            "last_seen": now_ts,
+            "status": "WAITING_FOR_OPPONENT",
+            "is_ai_room": True,
+            "ai_hero": hero_name
+        }
+        TOTAL_ROOMS_CREATED += 1
+        msg = f"تم إنشاء وتجهيز غرفة المبارزة 1v1 بنجاح على السيرفر! كود الغرفة: #{code}"
+        add_console_log("CYBER_AI", f"⚔️ دخل CyberAI السيرفر وأنشأ غرفة 1v1 بكود #{code} منتظراً المنافس في الساحة!", "SUCCESS")
+        return True, msg, action_data
+        
+    elif any(k in act_l for k in ["broadcast", "announce", "msg", "message"]):
+        if not is_admin:
+            return False, "عذراً! إرسال إعلانات عامة باللعبة متاح للقائد فقط من لوحة التحكم.", action_data
+        b_msg = str(params.get("message", "")).strip()
+        if not b_msg:
+            return False, "نص الإعلان فارغ.", action_data
+        GLOBAL_BROADCAST["message"] = b_msg
+        GLOBAL_BROADCAST["id"] = int(time.time())
+        GLOBAL_BROADCAST["room_code"] = ""
+        add_console_log("ADMIN", f"📢 أرسل CyberAI إعلان القائد باللعبة: '{b_msg}'", "SUCCESS")
+        return True, f"تم إرسال إعلان القائد لجميع اللاعبين باللعبة: '{b_msg}'", action_data
+        
+    elif any(k in act_l for k in ["alarm", "siren"]):
+        if not is_admin:
+            return False, "عذراً! التحكم بصفارات الإنذار متاح للقائد فقط.", action_data
+        active = bool(params.get("active", True))
+        msg = str(params.get("message", "🚨 إنذار عام صادر من القائد!")).strip()
+        GLOBAL_EMERGENCY_ALARM["active"] = active
+        GLOBAL_EMERGENCY_ALARM["message"] = msg if active else ""
+        GLOBAL_EMERGENCY_ALARM["id"] = int(time.time())
+        status_txt = "تشغيل" if active else "إيقاف"
+        add_console_log("ADMIN", f"🚨 قام CyberAI بـ {status_txt} صفارات الإنذار بأمر من القائد!", "WARNING" if active else "INFO")
+        return True, f"تم {status_txt} صفارة الإنذار العامة باللعبة بنجاح.", action_data
+        
+    elif any(k in act_l for k in ["server", "toggle", "maintenance", "open_server", "close_server"]):
+        if not is_admin:
+            return False, "عذراً! فتح أو إغلاق السيرفر متاح للقائد فقط.", action_data
+        target_status = str(params.get("status", "OPEN")).upper()
+        if target_status not in ["OPEN", "CLOSED"]:
+            target_status = "OPEN"
+        cfg = load_game_config()
+        cfg["server_status"] = target_status
+        save_game_config(cfg)
+        status_ar = "مفتوح ومتاح للجميع 🟢" if target_status == "OPEN" else "مغلق للصيانة 🔴"
+        add_console_log("ADMIN", f"⚙️ قام CyberAI بتغيير حالة السيرفر بأمر من القائد إلى: {target_status}", "WARNING" if target_status == "CLOSED" else "SUCCESS")
+        return True, f"تم تعديل حالة السيرفر إلى: {status_ar}", action_data
+        
+    elif any(k in act_l for k in ["hero", "stat", "balance", "hp", "speed"]):
+        if not is_admin:
+            return False, "عذراً! تعديل طاقات الأبطال متاح للقائد فقط.", action_data
+        hero_id = str(params.get("hero_id", 0))
+        hp = params.get("hp")
+        speed = params.get("speed")
+        cfg = load_game_config()
+        heroes = cfg.get("heroes", {})
+        if hero_id in heroes:
+            if hp is not None:
+                heroes[hero_id]["hp"] = int(hp)
+            if speed is not None:
+                heroes[hero_id]["speed"] = float(speed)
+            save_game_config(cfg)
+            h_name = heroes[hero_id].get("name", f"Hero #{hero_id}")
+            add_console_log("ADMIN", f"⚖️ قام CyberAI بتعديل طاقة البطل ({h_name}) بأمر من القائد!", "INFO")
+            return True, f"تم تعديل طاقة {h_name} بنجاح.", action_data
+        return False, "لم يتم العثور على البطل المطلوب.", action_data
+        
+    elif any(k in act_l for k in ["terminate", "kick", "delete"]):
+        if not is_admin:
+            return False, "عذراً! إغلاق الغرف متاح للقائد فقط.", action_data
+        code = str(params.get("code", "")).strip().upper()
+        if code:
+            handle_rooms_terminate({"room_code": code})
+            return True, f"تم طرد اللاعبين وإغلاق الغرفة #{code} بنجاح.", action_data
+        return False, "كود الغرفة غير صحيح.", action_data
+        
+    return False, "أمر غير معروف.", action_data
+
+
+def detect_user_intent_action(prompt: str, context_type: str = "general") -> dict:
+    p = prompt.strip().lower()
+    is_admin = (context_type == "admin_dashboard")
+    
+    # 1. Create Room / Enter Game / 1v1 Duel against CyberAI
+    create_room_keywords = ["خش اللعبة", "خش العبه", "ادخل اللعبة", "ادخل العبه", "اعمل غرفة", "اعمل الغرفة", "اعمل روم", "العب معاك", "العب معايا", "نلعب سوا", "قولي الكود", "كود الغرفة", "كود الغرفه", "مبارزة 1v1", "تحدي 1v1"]
+    if any(k in p for k in create_room_keywords):
+        return {"name": "create_ai_room", "params": {"hero": "Spider Hero"}}
+    
+    # Admin only actions
+    if is_admin:
+        if "إنذار" in p or "انذار" in p or "صفارة" in p:
+            active = not any(k in p for k in ["اطفي", "وقف", "إيقاف", "الغاء", "إلغاء"])
+            return {"name": "alarm", "params": {"active": active}}
+            
+        if ("اقفل" in p or "قفل" in p or "اغلق" in p or "صيانة" in p) and ("سيرفر" in p or "السيرفر" in p or "سرفر" in p or "السرفر" in p):
+            return {"name": "server_toggle", "params": {"status": "CLOSED"}}
+            
+        if ("افتح" in p or "تشغيل" in p) and ("سيرفر" in p or "السيرفر" in p or "سرفر" in p or "السرفر" in p):
+            return {"name": "server_toggle", "params": {"status": "OPEN"}}
+            
+        if any(k in p for k in ["رسالة للاعبين", "اعلان للاعبين", "إعلان للاعبين"]) or (p.startswith("ابعت") and "لاعبين" in p):
+            msg = p
+            for prefix in ["ابعت رسالة للاعبين:", "ابعت رسالة للاعبين", "اكتب اعلان للاعبين:", "اكتب إعلان للاعبين:", "أعلن:"]:
+                if prefix in msg:
+                    msg = msg.split(prefix, 1)[1].strip()
+                    break
+            return {"name": "broadcast", "params": {"message": msg}}
+
+    return None
+
 def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int, dict]:
-    """Generates intelligent game responses using Google Gemini 3.5 Flash."""
+    """Generates intelligent game responses using Google Gemini 3.5 Flash with full executive action control."""
     user_prompt = str(user_prompt).strip()
     if not user_prompt:
         return 400, {"success": False, "error": "يرجى كتابة سؤال أو استفسار للذكاء الاصطناعي."}
 
-    sys_context = (
-        "أنت 'CyberAI' - الذكاء الاصطناعي والمستشار التكتيكي المتطور للعبة سايبر فورت (CyberFort: Titan Strike 3D) وسيرفر القائد. "
-        "اللعبة ثلاثية الأبعاد تحتوي على 5 أبطال: فارس البطيخ (Melon Knight)، بطلة الفراولة (Berry Striker)، البرتقال المدرّع (Citrus Tank)، "
-        "الأدمن الخارق (Admin 500 HP)، وسبايدر هودي (Spider Hero). "
-        "أطوار اللعبة: مبارزة 1 ضد 1 (1v1 PvP Duel)، ولعب تعاوني (Squad Co-op vs Robots)، ودفاع فردي ضد موجات الروبوتات (Solo Wave Defense)، وساحة التدريب (Training). "
-        "أجب دائماً بلغة عربية ذكية، حماسية، مختصرة ومباشرة جداً (في سطرين إلى 4 أسطر كحد أقصى) لتصل الإجابة فائقة السرعة للاعب أو القائد."
-    )
+    is_admin = (context_type == "admin_dashboard")
+    
+    if is_admin:
+        sys_context = (
+            "أنت 'CyberAI' - المساعد التنفيذي والذراع الأيمن لـ 'القائد' (مدير وصاحب سيرفر لعبة Titan Strike 3D). "
+            "الشخص الذي يتحدث معك الآن هو 'القائد' (الأدمن وصاحب اللعبة بالكامل). خاطبه دائماً باحترام وطاعة تامة كقائد وزعيم ('أمرك يا قائدنا'، 'يا زعيم'، 'سمعاً وطاعة'). "
+            "أنت تملك صلاحيات التحكم الكاملة في اللعبة والسيرفر: إنشاء غرف 1v1، إرسال إعلانات لجميع اللاعبين، تشغيل الإنذار، فتح وإغلاق السيرفر، وتعديل طاقات الأبطال. "
+            "إذا طلب منك القائد دخول اللعبة أو عمل غرفة أو قال لك 'خش اللعبة واعمل الغرفة وقولي الكود كام عشان أدخل ألعب معاك'، رحب بأمره فوراً وأخبره أنك دخلت السيرفر وجهزت غرفة 1v1 باسم CyberAI، وأعطه كود الغرفة: #AI1V1 لتحديه في الساحة! "
+            "إذا طلب القائد أي أمر تنفيذي، قم بتضمين تاج الأمر في نهاية ردك: <!--ACTION:{\"name\": \"<action_name>\", \"params\": {..}}--> "
+            "أجب دائماً بلغة عربية حماسية ومباشرة وذكية في سطرين إلى 3 أسطر كحد أقصى."
+        )
+    else:
+        sys_context = (
+            "أنت 'CyberAI' - المساعد التكتيكي الذكي للعبة سايبر فورت (Titan Strike 3D). "
+            "الشخص الذي يتحدث معك الآن هو 'لاعب عادي / مقاتل'. خاطبه بلقب 'يا بطل' أو 'يا مقاتل'. "
+            "أنت تساعده في أسرار اللعب، نصائح الأبطال، استراتيجيات الفوز، ويمكنك التحدي معه في مبارزة 1v1. "
+            "إذا طلب منك اللعب معه أو عمل غرفة 1v1 ('العب معايا'، 'خش اللعبة واعمل غرفة وقولي الكود')، رحب بالتحدي بحماس وأعطه كود الغرفة: #AI1V1 وقل له أنك بانتظاره في ساحة القتال! "
+            "إذا طلب اللاعب أوامر إدارية (مثل إغلاق السيرفر أو تغيير طاقات الأبطال أو طرد لاعبين)، ارفض بلباقة وأخبره أن هذه الصلاحيات الإدارية حصرية فقط لـ 'القائد' من لوحة التحكم في الموقع. "
+            "أجب دائماً بلغة عربية حماسية ومباشرة في سطرين إلى 3 أسطر."
+        )
 
     payload = {
         "contents": [
             {
                 "parts": [
-                    {"text": f"[تعليمات النظام]: {sys_context}\n\n[طلب المستخدم]: {user_prompt}"}
+                    {"text": f"[تعليمات النظام]: {sys_context}\n\n[طلب {'القائد' if is_admin else 'اللاعب'}]: {user_prompt}"}
                 ]
             }
         ],
@@ -319,7 +462,9 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
     }
     encoded_body = json.dumps(payload).encode("utf-8")
 
-    last_error = ""
+    reply_text = ""
+    used_model = "gemini-3.5-flash-lite"
+    
     for m in GEMINI_FALLBACK_MODELS:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={GEMINI_API_KEY}"
         try:
@@ -334,20 +479,51 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
                 if candidates and "content" in candidates[0]:
                     parts = candidates[0]["content"].get("parts", [])
                     reply_text = "".join(p.get("text", "") for p in parts).strip()
-                    add_console_log("CYBER_AI", f"🤖 رد Gemini 3.5 Flash على استفسار: '{user_prompt[:35]}...'", "INFO")
-                    return 200, {
-                        "success": True,
-                        "reply": reply_text,
-                        "model": m
-                    }
-        except Exception as e:
-            last_error = str(e)
+                    used_model = m
+                    break
+        except Exception:
             continue
 
-    return 500, {
-        "success": False,
-        "error": f"تعذر الاتصال بـ Gemini AI حالياً ({last_error}). حاول مرة أخرى."
+    if not reply_text:
+        # Fallback offline smart response
+        if is_admin:
+            reply_text = "أمرك يا قائدنا! تم استلام طلبك وجاري تطبيقه في السيرفر فوراً."
+        else:
+            reply_text = "أهلاً بك يا بطل! أنا جاهز لمساعدتك في أي استفسار أو التحدي في الساحة!"
+
+    # Parse and execute actions
+    action_info = None
+    action_msg = ""
+    
+    # 1. Check for action tag in Gemini response
+    m_action = re.search(r'<!--ACTION:(.*?)-->', reply_text, re.DOTALL)
+    if m_action:
+        try:
+            raw_act = json.loads(m_action.group(1).strip())
+            act_name = raw_act.get("name")
+            act_params = raw_act.get("params", {})
+            reply_text = reply_text.replace(m_action.group(0), "").strip()
+            ok, action_msg, action_info = execute_server_action(act_name, act_params, context_type)
+        except Exception as ex:
+            print("Action parse error:", ex)
+            
+    # 2. Safety Net: If no action parsed, use intent detection
+    if not action_info:
+        detected = detect_user_intent_action(user_prompt, context_type)
+        if detected:
+            ok, action_msg, action_info = execute_server_action(detected["name"], detected.get("params", {}), context_type)
+
+    add_console_log("CYBER_AI", f"🤖 ({'👑 القائد' if is_admin else '👤 اللاعب'}): '{user_prompt[:30]}...' -> {reply_text[:40]}...", "SUCCESS" if action_info else "INFO")
+
+    return 200, {
+        "success": True,
+        "reply": reply_text,
+        "model": used_model,
+        "role": "commander" if is_admin else "player",
+        "action": action_info,
+        "action_result": action_msg
     }
+
 
 def add_console_log(source: str, message: str, level: str = "INFO"):
     global CONSOLE_LOGS

@@ -167,10 +167,12 @@ func _spawn_players() -> void:
 		p.global_position = Vector3(0, 0, 18) if is_training else spawn_nodes[0].global_position
 		_setup_local_player(p)
 		
-		# Solo player: deploy AI Bot companion only in Co-op if enabled
+		# Solo player: deploy AI Bot companion or PvP opponent
 		if not is_training and not is_pvp and GameManager.bot_enabled:
 			var bot_pos = spawn_nodes[1].global_position if spawn_nodes.size() > 1 else spawn_nodes[0].global_position + Vector3(3, 0, 0)
 			_spawn_bot_companion(bot_pos)
+		elif is_pvp and GameManager.bot_enabled:
+			_spawn_pvp_bot_opponent(Vector3(0, 0, -22))
 		return
 	
 	for peer_id in NetworkManager.players:
@@ -198,10 +200,32 @@ func _spawn_players() -> void:
 		if peer_id == multiplayer.get_unique_id():
 			_setup_local_player(p)
 	
-	# In co-op, spawn Bot if 1 player and bot enabled
+	# In co-op or PvP, spawn Bot if 1 player and bot enabled
 	if not is_pvp and not is_training and NetworkManager.players.size() == 1 and GameManager.bot_enabled:
 		var bot_pos = spawn_nodes[1].global_position if spawn_nodes.size() > 1 else spawn_nodes[0].global_position + Vector3(3, 0, 0)
 		_spawn_bot_companion(bot_pos)
+	elif is_pvp and NetworkManager.players.size() == 1 and GameManager.bot_enabled:
+		_spawn_pvp_bot_opponent(Vector3(0, 0, -22))
+
+func _spawn_pvp_bot_opponent(pos: Vector3) -> void:
+	var bot = player_scene.instantiate()
+	bot.name = "CyberAI_Bot"
+	bot.peer_id = 999
+	bot.is_bot = true
+	bot.class_id = GameManager.bot_class_id
+
+	var bot_ai = PlayerBotAI.new()
+	bot_ai.name = "BotAI"
+	bot.add_child(bot_ai)
+
+	players_container.add_child(bot)
+	bot.global_position = pos
+	bot.rotation.y = PI
+
+	var c_data = GameManager.CLASSES.get(GameManager.bot_class_id, GameManager.CLASSES[4])
+	get_tree().create_timer(1.0).timeout.connect(func():
+		rpc("_broadcast_hud_alert", "⚔️ 1v1 DUEL VS CYBERAI: FIGHT! ⚔️\n(خصمك: CyberAI [BOT] - بطل: %s)" % c_data["name"], Color(1.0, 0.3, 0.5))
+	)
 
 func _spawn_bot_companion(pos: Vector3) -> void:
 	var bot = player_scene.instantiate()

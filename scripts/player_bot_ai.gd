@@ -121,8 +121,9 @@ func _behavior_combat(delta: float) -> void:
 		bot.bot_aim_target = Vector3.ZERO
 		return
 	
-	# Squad leash: if human is far, escort instead of engaging
-	if is_instance_valid(human_player) and not human_player.is_down:
+	# Squad leash: if human is far, escort instead of engaging (co-op only)
+	var is_pvp = (GameManager.selected_game_mode == GameManager.GameMode.PVP_DUEL)
+	if not is_pvp and is_instance_valid(human_player) and not human_player.is_down:
 		var dist_to_human = bot.global_position.distance_to(human_player.global_position)
 		if dist_to_human > 26.0:
 			_behavior_escort_player(delta)

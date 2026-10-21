@@ -782,6 +782,9 @@
 
             <!-- Quick Suggestions -->
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+                <button type="button" onclick="askAiGuestQuick('خش اللعبة واعمل غرفة 1v1 واديني الكود عشان ألعب معاك')" class="btn btn-primary" style="background: linear-gradient(135deg, #f43f5e, #fb7185); font-size: 12px; padding: 6px 14px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);">
+                    ⚔️ خش اللعبة واعمل غرفة 1v1 واديني الكود
+                </button>
                 <button type="button" onclick="askAiGuestQuick('ما هي أفضل طريقة للعب ببطل Melon Knight وهزيمة الأعداء بالبذور والجدران؟')" class="btn btn-outline" style="border-color: #34d399; color: #34d399; font-size: 12px; padding: 6px 14px;">
                     🍉 نصائح احتراف بطل البطيخ
                 </button>
@@ -1043,12 +1046,26 @@
                 if (chatBox) {
                     if (data.success && data.reply) {
                         const formattedReply = data.reply.replace(/\n/g, '<br>');
+                        let actionBadgeHtml = '';
+                        if (data.action_result) {
+                            actionBadgeHtml = `
+                                <div style="margin-top: 8px; background: rgba(16, 185, 129, 0.18); border: 1.5px solid #10b981; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 800; color: #34d399; display: flex; align-items: center; gap: 6px;">
+                                    <span>⚡ النتيجة:</span>
+                                    <span>${escapeHtml(data.action_result)}</span>
+                                </div>
+                            `;
+                        }
+
                         chatBox.innerHTML += `
                             <div style="display: flex; gap: 10px; align-items: flex-start;">
                                 <div style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🤖</div>
                                 <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #f1f5f9; max-width: 85%;">
-                                    <div style="font-size: 10px; color: #fb7185; font-weight: 800; margin-bottom: 4px;">⚡ CYBER AI (${data.model || 'Gemini 3.5 Flash'})</div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <div style="font-size: 10px; color: #fb7185; font-weight: 800;">⚡ CYBER AI (${data.model || 'Gemini 3.5 Flash'})</div>
+                                        <span style="font-size: 10px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 1px 8px; border-radius: 10px;">👤 موجه للاعب</span>
+                                    </div>
                                     <div>${formattedReply}</div>
+                                    ${actionBadgeHtml}
                                 </div>
                             </div>
                         `;
