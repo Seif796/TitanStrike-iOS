@@ -440,78 +440,9 @@ func show_ejected_by_leader_notification(old_code: String) -> void:
 	)
 
 func show_leader_broadcast(msg: String) -> void:
-	if _broadcast_overlay != null:
-		_broadcast_overlay.queue_free()
-		_broadcast_overlay = null
-	
-	AudioManager.play_sfx("redeem")
-	_broadcast_overlay = CanvasLayer.new()
-	_broadcast_overlay.layer = 128
-	
-	var margin = MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_right", 24)
-	_broadcast_overlay.add_child(margin)
-	
-	var card = PanelContainer.new()
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.09, 0.18, 0.96)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(0.65, 0.35, 1.0, 0.95)
-	style.corner_radius_top_left = 14
-	style.corner_radius_top_right = 14
-	style.corner_radius_bottom_left = 14
-	style.corner_radius_bottom_right = 14
-	card.add_theme_stylebox_override("panel", style)
-	margin.add_child(card)
-	
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
-	card.add_child(hbox)
-	
-	var icon = Label.new()
-	icon.text = "📢"
-	icon.add_theme_font_size_override("font_size", 28)
-	hbox.add_child(icon)
-	
-	var vbox = VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(vbox)
-	
-	var title = Label.new()
-	title.text = "كلمة ورسالة عاجلة من القائد (Message from Leader)"
-	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(0.75, 0.5, 1.0))
-	vbox.add_child(title)
-	
-	var content = Label.new()
-	content.text = msg
-	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_theme_font_size_override("font_size", 14)
-	content.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
-	vbox.add_child(content)
-	
-	var close_btn = Button.new()
-	close_btn.text = " ✕ "
-	close_btn.pressed.connect(func():
-		if _broadcast_overlay:
-			_broadcast_overlay.queue_free()
-			_broadcast_overlay = null
-	)
-	hbox.add_child(close_btn)
-	
-	get_tree().root.add_child(_broadcast_overlay)
-	
-	get_tree().create_timer(7.5).timeout.connect(func():
-		if _broadcast_overlay:
-			_broadcast_overlay.queue_free()
-			_broadcast_overlay = null
-	)
+	var um = get_node_or_null("/root/UpdateManager")
+	if um:
+		um.show_leader_broadcast_banner(msg)
 
 # --- MULTIPLAYER CALLBACKS ---
 

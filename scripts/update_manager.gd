@@ -105,8 +105,10 @@ var _heartbeat_timer: Timer = null
 var _unauthorized_overlay: CanvasLayer = null
 var _server_closed_overlay: CanvasLayer = null
 var _alarm_overlay: CanvasLayer = null
+var _broadcast_overlay: CanvasLayer = null
 var current_session_data: Dictionary = {}
 var last_seen_alarm_id: int = 0
+var last_seen_broadcast_id: int = 0
 var _is_checking_heartbeat: bool = false
 var _heartbeat_candidate_idx: int = 0
 var _heartbeat_candidates: Array[String] = []
@@ -299,6 +301,13 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 			if a_id > last_seen_alarm_id:
 				last_seen_alarm_id = a_id
 				trigger_emergency_alarm_ui(str(alarm.get("message", "🚨 إنذار طارئ من قائد السيرفر!")))
+		
+		# Check for leader broadcast message in the center-top of the screen
+		var b_msg = str(json.data.get("broadcast_message", "")).strip_edges()
+		var b_id = int(json.data.get("broadcast_id", 0))
+		if not b_msg.is_empty() and b_id > last_seen_broadcast_id:
+			last_seen_broadcast_id = b_id
+			show_leader_broadcast_banner(b_msg)
 	
 	# Verify device access authorization
 	verify_device_access()
@@ -434,6 +443,88 @@ func trigger_emergency_alarm_ui(msg: String) -> void:
 		if _alarm_overlay:
 			_alarm_overlay.queue_free()
 			_alarm_overlay = null
+	)
+
+func show_leader_broadcast_banner(msg: String) -> void:
+	if _broadcast_overlay != null:
+		_broadcast_overlay.queue_free()
+		_broadcast_overlay = null
+	
+	AudioManager.play_sfx("redeem")
+	_broadcast_overlay = CanvasLayer.new()
+	_broadcast_overlay.layer = 138
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_broadcast_overlay.add_child(center)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_top", 20)
+	center.add_child(margin)
+	
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.08, 0.18, 0.96)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(0.0, 0.95, 1.0, 1.0) # Cyber neon cyan
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.shadow_color = Color(0.0, 0.9, 1.0, 0.45)
+	style.shadow_size = 18
+	card.add_theme_stylebox_override("panel", style)
+	card.custom_minimum_size = Vector2(480, 0)
+	margin.add_child(card)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	card.add_child(vbox)
+	
+	var header = HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
+	vbox.add_child(header)
+	
+	var icon = Label.new()
+	icon.text = "📢"
+	icon.add_theme_font_size_override("font_size", 22)
+	header.add_child(icon)
+	
+	var title = Label.new()
+	title.text = "كلمة ورسالة عاجلة من القائد (Leader Broadcast)"
+	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	
+	var close_btn = Button.new()
+	close_btn.text = " ✕ "
+	close_btn.pressed.connect(func():
+		if _broadcast_overlay:
+			_broadcast_overlay.queue_free()
+			_broadcast_overlay = null
+	)
+	header.add_child(close_btn)
+	
+	# The floating message in the center of the screen
+	var content = Label.new()
+	content.text = msg
+	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_theme_font_size_override("font_size", 22)
+	content.add_theme_color_override("font_color", Color(1.0, 0.92, 0.25))
+	vbox.add_child(content)
+	
+	get_tree().root.add_child(_broadcast_overlay)
+	
+	get_tree().create_timer(8.5).timeout.connect(func():
+		if _broadcast_overlay:
+			_broadcast_overlay.queue_free()
+			_broadcast_overlay = null
 	)
 
 func _show_server_closed_overlay() -> void:

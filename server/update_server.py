@@ -260,6 +260,7 @@ TOTAL_ROOMS_CREATED = 0
 TERMINATED_ROOMS = set()
 ACTIVE_SESSIONS = {} # session_id: { "player": ..., "mode": ..., "hero": ..., "status": ..., "ip": ... }
 GLOBAL_EMERGENCY_ALARM = {"active": False, "message": "", "id": 0}
+GLOBAL_BROADCAST = {"message": "", "id": 0, "room_code": ""}
 
 def add_console_log(source: str, message: str, level: str = "INFO"):
     global CONSOLE_LOGS
@@ -414,15 +415,28 @@ def handle_rooms_close(data: dict) -> tuple[int, dict]:
     return 200, {"success": True, "active_rooms_count": len(ROOMS)}
 
 def handle_rooms_terminate(data: dict) -> tuple[int, dict]:
-    global ROOMS, TERMINATED_ROOMS
+    global ROOMS, TERMINATED_ROOMS, ACTIVE_SESSIONS
     code = str(data.get("room_code", "")).strip().upper()
     if not code:
         return 400, {"success": False, "error": "Missing room code"}
     
     TERMINATED_ROOMS.add(code)
     room = ROOMS.pop(code, None)
-    host_name = room.get("host", "غير معروف") if room else "غير معروف"
-    add_console_log("ADMIN", f"🛑 قام القائد بطرد وإخراج اللاعبين وإنهاء الغرفة #{code} فوراً (المضيف: {host_name})!", "ERROR")
+    
+    # Also pop any matching session or players belonging to this room
+    removed_sessions = []
+    for s_id in list(ACTIVE_SESSIONS.keys()):
+        s = ACTIVE_SESSIONS[s_id]
+        if code in s.get("mode", "") or code == s.get("id", "") or code in s.get("player", ""):
+            removed_sessions.append(ACTIVE_SESSIONS.pop(s_id))
+    
+    host_name = room.get("host", "") if room else ""
+    if not host_name and removed_sessions:
+        host_name = removed_sessions[0].get("player", "لاعب")
+    if not host_name:
+        host_name = "اللاعبين"
+
+    add_console_log("ADMIN", f"🛑 قام القائد بقفل وإغلاق الغرفة #{code} وطرد جميع لاعبيها فوراً (المضيف: {host_name})!", "ERROR")
     return 200, {
         "success": True, 
         "message": f"تم إغلاق الغرفة #{code} وطرد اللاعبين بنجاح وفصلهم!",
@@ -430,7 +444,7 @@ def handle_rooms_terminate(data: dict) -> tuple[int, dict]:
     }
 
 def handle_rooms_message(data: dict) -> tuple[int, dict]:
-    global ROOMS
+    global ROOMS, GLOBAL_BROADCAST
     code = str(data.get("room_code", "")).strip().upper()
     msg = str(data.get("message", "")).strip()
     if not msg:
@@ -439,43 +453,72 @@ def handle_rooms_message(data: dict) -> tuple[int, dict]:
     import time
     msg_id = int(time.time() * 1000)
     
+    GLOBAL_BROADCAST = {
+        "message": msg,
+        "id": msg_id,
+        "room_code": code
+    }
+    
+    for r_code in ROOMS:
+        ROOMS[r_code]["broadcast_message"] = msg
+        ROOMS[r_code]["message_id"] = msg_id
+    
     if not code or code == "ALL":
-        for r_code in ROOMS:
-            ROOMS[r_code]["broadcast_message"] = msg
-            ROOMS[r_code]["message_id"] = msg_id
-        add_console_log("ADMIN", f"📢 أرسل القائد رسالة عامة لجميع اللاعبين والغرف: '{msg}'", "WARNING")
-        return 200, {"success": True, "message": "تم إرسال الرسالة لجميع اللاعبين والغرف بنجاح!"}
+        add_console_log("ADMIN", f"📢 أرسل القائد كلمة في نص الشاشة لجميع اللاعبين: '{msg}'", "SUCCESS")
+        return 200, {"success": True, "message": f"تم إرسال '{msg}' في نص شاشات اللاعبين فوراً!"}
     
     if code in ROOMS:
-        ROOMS[code]["broadcast_message"] = msg
-        ROOMS[code]["message_id"] = msg_id
-        add_console_log("ADMIN", f"💬 أرسل القائد رسالة لغرفة #{code}: '{msg}'", "INFO")
-        return 200, {"success": True, "message": f"تم إرسال الرسالة لغرفة #{code} بنجاح!"}
+        add_console_log("ADMIN", f"💬 أرسل القائد كلمة للاعبي الغرفة #{code}: '{msg}'", "INFO")
+        return 200, {"success": True, "message": f"تم إرسال '{msg}' في نص الشاشة بنجاح!"}
     else:
-        add_console_log("ADMIN", f"💬 تعذر إرسال الرسالة: الغرفة #{code} غير نشطة", "WARNING")
-        return 404, {"success": False, "error": f"الغرفة #{code} غير نشطة"}
+        add_console_log("ADMIN", f"📢 أرسل القائد كلمة للاعبين: '{msg}'", "INFO")
+        return 200, {"success": True, "message": f"تم إرسال '{msg}' في نص الشاشة بنجاح!"}
 
 def handle_rooms_check(code: str) -> tuple[int, dict]:
-    global GLOBAL_EMERGENCY_ALARM
+    global GLOBAL_EMERGENCY_ALARM, GLOBAL_BROADCAST
     code = code.strip().upper()
     alarm_info = dict(GLOBAL_EMERGENCY_ALARM)
+    b_msg = GLOBAL_BROADCAST.get("message", "")
+    b_id = GLOBAL_BROADCAST.get("id", 0)
     if code in TERMINATED_ROOMS:
-        return 200, {"code": code, "active": False, "terminated": True, "emergency_alarm": alarm_info}
+        return 200, {
+            "code": code, 
+            "active": False, 
+            "terminated": True, 
+            "emergency_alarm": alarm_info,
+            "message": b_msg,
+            "message_id": b_id,
+            "broadcast_message": b_msg,
+            "broadcast_id": b_id
+        }
     if code in ROOMS:
         import time
         ROOMS[code]["last_seen"] = time.time()
         room = ROOMS[code]
+        r_msg = room.get("broadcast_message", "") or b_msg
+        r_id = room.get("message_id", 0) or b_id
         return 200, {
             "code": code, 
             "active": True, 
             "terminated": False,
             "host_ip": room.get("host_ip", ""),
             "port": room.get("port", 7777),
-            "message": room.get("broadcast_message", ""),
-            "message_id": room.get("message_id", 0),
+            "message": r_msg,
+            "message_id": r_id,
+            "broadcast_message": r_msg,
+            "broadcast_id": r_id,
             "emergency_alarm": alarm_info
         }
-    return 200, {"code": code, "active": False, "terminated": False, "emergency_alarm": alarm_info}
+    return 200, {
+        "code": code, 
+        "active": False, 
+        "terminated": False, 
+        "emergency_alarm": alarm_info,
+        "message": b_msg,
+        "message_id": b_id,
+        "broadcast_message": b_msg,
+        "broadcast_id": b_id
+    }
 
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -545,7 +588,13 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         elif path == "/api/server_status":
             cfg_data = load_game_config()
             st = cfg_data.get("server_status", "OPEN").upper()
-            send_json_response(self, {"status": st, "is_open": (st == "OPEN")})
+            send_json_response(self, {
+                "status": st, 
+                "is_open": (st == "OPEN"),
+                "emergency_alarm": GLOBAL_EMERGENCY_ALARM,
+                "broadcast_message": GLOBAL_BROADCAST.get("message", ""),
+                "broadcast_id": GLOBAL_BROADCAST.get("id", 0)
+            })
             return
 
         elif path == "/api/devices":
@@ -1103,7 +1152,13 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/server_status":
             cfg_data = load_game_config()
             st = cfg_data.get("server_status", "OPEN").upper()
-            send_json_response(self, {"status": st, "is_open": (st == "OPEN")})
+            send_json_response(self, {
+                "status": st, 
+                "is_open": (st == "OPEN"),
+                "emergency_alarm": GLOBAL_EMERGENCY_ALARM,
+                "broadcast_message": GLOBAL_BROADCAST.get("message", ""),
+                "broadcast_id": GLOBAL_BROADCAST.get("id", 0)
+            })
             return
 
         elif path == "/api/game_config":
