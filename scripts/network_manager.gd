@@ -180,6 +180,10 @@ func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -
 	
 	print("Room created with Code: ", current_room_code, " | Host IP: ", get_local_ip())
 	_report_room_created(current_room_code, local_player_name)
+	var um = get_node_or_null("/root/UpdateManager")
+	if um:
+		var hero_n = GameManager.CLASSES.get(local_class_id, {}).get("name", "Hero")
+		um.report_active_player_session(local_player_name, "👑 Squad Room #%s (Host)" % current_room_code, hero_n, "HOSTING")
 	if _room_watchdog_timer:
 		_room_watchdog_timer.start()
 	return OK
@@ -248,11 +252,17 @@ func _report_room_created(code: String, host_name: String) -> void:
 	if um == null or um.server_url.is_empty():
 		return
 	var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/create"
+	var p_names: Array[String] = [host_name]
+	for p_id in players:
+		var n = players[p_id].get("name", "")
+		if not n.is_empty() and not p_names.has(n):
+			p_names.append(n)
 	var payload = {
 		"room_code": code,
 		"host_name": host_name,
 		"mode": "Multiplayer",
-		"players": players.size()
+		"players": max(1, players.size()),
+		"players_list": p_names
 	}
 	var http = HTTPRequest.new()
 	http.timeout = 2.5
@@ -315,6 +325,9 @@ func _check_room_status_with_server() -> void:
 	
 	var um = get_node_or_null("/root/UpdateManager")
 	if um and not um.server_url.is_empty():
+		# Host keeps room status actively synced
+		if multiplayer and multiplayer.is_server():
+			update_room_details()
 		var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/check?code=" + current_room_code
 		if _room_api_http and _room_api_http.get_http_client_status() == HTTPClient.STATUS_DISCONNECTED:
 			_room_api_http.request(endpoint)
@@ -542,6 +555,11 @@ func _on_connected_to_server() -> void:
 		"class_id": local_class_id,
 		"ready": true
 	})
+	var um = get_node_or_null("/root/UpdateManager")
+	if um:
+		var hero_n = GameManager.CLASSES.get(local_class_id, {}).get("name", "Hero")
+		um.report_active_player_session(local_player_name, "👥 Squad Room #%s" % current_room_code, hero_n, "IN_ROOM")
+		um.log_game_event("دخل اللاعب '%s' الغرفة #%s بنجاح!" % [local_player_name, current_room_code], "SUCCESS", "ROOM")
 	connection_succeeded.emit()
 
 func _on_connection_failed() -> void:
@@ -556,6 +574,12 @@ func _register_player(id: int, info: Dictionary) -> void:
 	players[id] = info
 	player_connected.emit(id, info)
 	lobby_updated.emit()
+	if multiplayer and multiplayer.is_server():
+		update_room_details("", players.size())
+		var p_name = info.get("name", "لاعب")
+		var um = get_node_or_null("/root/UpdateManager")
+		if um and id != 1:
+			um.log_game_event("انضم اللاعب '%s' إلى الغرفة #%s بنجاح!" % [p_name, current_room_code], "SUCCESS", "ROOM")
 
 func get_local_ip() -> String:
 	var all_ips: Array[String] = []

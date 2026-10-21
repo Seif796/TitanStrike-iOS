@@ -312,26 +312,52 @@ def handle_session_update(data: dict, client_ip: str) -> tuple[int, dict]:
     return 200, {"success": True, "active_count": len(ACTIVE_SESSIONS), "sessions": list(ACTIVE_SESSIONS.values())}
 
 def handle_rooms_update(data: dict) -> tuple[int, dict]:
-    global ROOMS
+    global ROOMS, TOTAL_ROOMS_CREATED
     code = str(data.get("room_code", "")).strip().upper()
     if not code:
         return 400, {"success": False, "error": "Missing room code"}
     
+    import datetime
+    import time
+    now_ts = time.time()
+    
     if code in ROOMS:
+        ROOMS[code]["last_seen"] = now_ts
         if "mode" in data and data["mode"]:
             old_mode = ROOMS[code].get("mode", "")
             new_mode = str(data["mode"]).strip()
             ROOMS[code]["mode"] = new_mode
             if old_mode != new_mode:
                 add_console_log("ROOM", f"🔄 تم تغيير طور الغرفة #{code} إلى ({new_mode})", "INFO")
-        if "players" in data and data["players"] is not None:
-            ROOMS[code]["players"] = int(data["players"])
-        if "status" in data and data["status"]:
-            ROOMS[code]["status"] = str(data["status"]).strip()
         if "players_list" in data:
             ROOMS[code]["players_list"] = data["players_list"]
+        if "players" in data and data["players"] is not None:
+            p_cnt = int(data["players"])
+            if "players_list" in ROOMS[code] and len(ROOMS[code]["players_list"]) > p_cnt:
+                p_cnt = len(ROOMS[code]["players_list"])
+            ROOMS[code]["players"] = max(1, p_cnt)
+        if "status" in data and data["status"]:
+            ROOMS[code]["status"] = str(data["status"]).strip()
         return 200, {"success": True, "room": ROOMS[code]}
-    return 404, {"success": False, "error": f"Room #{code} not found"}
+    else:
+        # Re-register room if host is still running
+        p_list = data.get("players_list", [])
+        ROOMS[code] = {
+            "code": code,
+            "host": str(data.get("host_name", "لاعب")).strip(),
+            "mode": str(data.get("mode", "Multiplayer")).strip(),
+            "players": max(1, len(p_list), int(data.get("players", 1))),
+            "players_list": p_list,
+            "created_at": datetime.datetime.now().strftime("%H:%M:%S"),
+            "host_ip": get_lan_ip(),
+            "port": 7777,
+            "status": str(data.get("status", "ACTIVE")).strip(),
+            "broadcast_message": "",
+            "message_id": 0,
+            "last_seen": now_ts
+        }
+        TOTAL_ROOMS_CREATED += 1
+        return 200, {"success": True, "room": ROOMS[code]}
 
 def handle_rooms_create(data: dict, client_ip: str = "") -> tuple[int, dict]:
     global TOTAL_ROOMS_CREATED, ROOMS, TERMINATED_ROOMS
@@ -344,24 +370,31 @@ def handle_rooms_create(data: dict, client_ip: str = "") -> tuple[int, dict]:
         return 400, {"success": False, "error": "Missing room code"}
     
     import datetime
+    import time
     now_str = datetime.datetime.now().strftime("%H:%M:%S")
     
     clean_ip = str(client_ip).replace("::ffff:", "").strip()
     if not clean_ip or clean_ip in ("127.0.0.1", "localhost", "::1"):
         clean_ip = get_lan_ip()
     
+    p_list = data.get("players_list", [host])
+    if not p_list:
+        p_list = [host]
+    
     TERMINATED_ROOMS.discard(code)
     ROOMS[code] = {
         "code": code,
         "host": host,
         "mode": mode,
-        "players": players,
+        "players": max(len(p_list), players),
+        "players_list": p_list,
         "created_at": now_str,
         "host_ip": clean_ip,
         "port": 7777,
         "status": "ACTIVE",
         "broadcast_message": "",
-        "message_id": 0
+        "message_id": 0,
+        "last_seen": time.time()
     }
     TOTAL_ROOMS_CREATED += 1
     add_console_log("ROOM", f"🎮 تم إنشاء الغرفة #{code} بواسطة المضيف '{host}' (IP: {clean_ip} | الطور: {mode})", "SUCCESS")
@@ -429,6 +462,8 @@ def handle_rooms_check(code: str) -> tuple[int, dict]:
     if code in TERMINATED_ROOMS:
         return 200, {"code": code, "active": False, "terminated": True, "emergency_alarm": alarm_info}
     if code in ROOMS:
+        import time
+        ROOMS[code]["last_seen"] = time.time()
         room = ROOMS[code]
         return 200, {
             "code": code, 
@@ -543,14 +578,20 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         elif path == "/api/rooms":
             import time
             now_ts = time.time()
-            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 18]
+            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 45]
             for k in stale_keys:
                 ACTIVE_SESSIONS.pop(k, None)
             
-            total_players = len(ACTIVE_SESSIONS) + sum(int(r.get("players", 1)) for r in ROOMS.values())
+            # Clean up stale rooms not seen in 90 seconds
+            stale_rooms = [k for k, v in ROOMS.items() if (now_ts - v.get("last_seen", now_ts)) > 90]
+            for k in stale_rooms:
+                ROOMS.pop(k, None)
+            
+            total_active = len(ROOMS) + len(ACTIVE_SESSIONS)
+            total_players = len(ACTIVE_SESSIONS) + sum(max(len(r.get("players_list", [])), int(r.get("players", 1))) for r in ROOMS.values())
             send_json_response(self, {
-                "total_created": TOTAL_ROOMS_CREATED,
-                "active_count": len(ROOMS),
+                "total_created": max(TOTAL_ROOMS_CREATED, total_active),
+                "active_count": total_active,
                 "rooms": list(ROOMS.values()),
                 "active_sessions": list(ACTIVE_SESSIONS.values()),
                 "online_players_count": total_players,
@@ -1076,14 +1117,20 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/rooms":
             import time
             now_ts = time.time()
-            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 18]
+            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 45]
             for k in stale_keys:
                 ACTIVE_SESSIONS.pop(k, None)
             
-            total_players = len(ACTIVE_SESSIONS) + sum(int(r.get("players", 1)) for r in ROOMS.values())
+            # Clean up stale rooms not seen in 90 seconds
+            stale_rooms = [k for k, v in ROOMS.items() if (now_ts - v.get("last_seen", now_ts)) > 90]
+            for k in stale_rooms:
+                ROOMS.pop(k, None)
+            
+            total_active = len(ROOMS) + len(ACTIVE_SESSIONS)
+            total_players = len(ACTIVE_SESSIONS) + sum(max(len(r.get("players_list", [])), int(r.get("players", 1))) for r in ROOMS.values())
             send_json_response(self, {
-                "total_created": TOTAL_ROOMS_CREATED,
-                "active_count": len(ROOMS),
+                "total_created": max(TOTAL_ROOMS_CREATED, total_active),
+                "active_count": total_active,
                 "rooms": list(ROOMS.values()),
                 "active_sessions": list(ACTIVE_SESSIONS.values()),
                 "online_players_count": total_players,
@@ -1154,10 +1201,32 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
-                code, resp = handle_rooms_create(data)
+                code, resp = handle_rooms_create(data, self.client_address[0])
                 send_json_response(self, resp, code)
             except Exception as e:
                 self.send_error(500, f"Rooms create error: {e}")
+            return
+
+        elif path == "/api/rooms/update":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_update(data)
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"Rooms update error: {e}")
+            return
+
+        elif path == "/api/sessions/update":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_session_update(data, self.client_address[0])
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"Session update error: {e}")
             return
 
         elif path == "/api/rooms/close":

@@ -147,7 +147,11 @@ func _ready() -> void:
 	_heartbeat_timer.autostart = true
 	_heartbeat_timer.one_shot = false
 	add_child(_heartbeat_timer)
-	_heartbeat_timer.timeout.connect(check_server_heartbeat)
+	_heartbeat_timer.timeout.connect(func():
+		check_server_heartbeat()
+		if not current_session_data.is_empty():
+			_send_session_heartbeat()
+	)
 	
 	# Automatically check for updates, sync game config, and check heartbeat on startup
 	get_tree().create_timer(1.0).timeout.connect(func():
