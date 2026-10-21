@@ -20,6 +20,8 @@ from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 PORT = 8080
 GUEST_PORT = 8081
@@ -256,6 +258,8 @@ MAX_CONSOLE_LOGS = 250
 ROOMS = {} # room_code: { "code": code, "host": host, "mode": mode, "players": count, "created_at": time, "status": "ACTIVE" }
 TOTAL_ROOMS_CREATED = 0
 TERMINATED_ROOMS = set()
+ACTIVE_SESSIONS = {} # session_id: { "player": ..., "mode": ..., "hero": ..., "status": ..., "ip": ... }
+GLOBAL_EMERGENCY_ALARM = {"active": False, "message": "", "id": 0}
 
 def add_console_log(source: str, message: str, level: str = "INFO"):
     global CONSOLE_LOGS
@@ -270,6 +274,64 @@ def add_console_log(source: str, message: str, level: str = "INFO"):
     CONSOLE_LOGS.append(entry)
     if len(CONSOLE_LOGS) > MAX_CONSOLE_LOGS:
         CONSOLE_LOGS.pop(0)
+
+def handle_session_update(data: dict, client_ip: str) -> tuple[int, dict]:
+    global ACTIVE_SESSIONS
+    session_id = str(data.get("session_id", "")).strip()
+    if not session_id:
+        session_id = f"sess_{str(client_ip).replace(':', '_')}"
+    
+    action = str(data.get("action", "heartbeat")).strip()
+    if action == "leave":
+        removed = ACTIVE_SESSIONS.pop(session_id, None)
+        if removed:
+            add_console_log("SESSION", f"👋 خرج اللاعب '{removed.get('player', '')}' من الجلسة", "INFO")
+        return 200, {"success": True, "active_count": len(ACTIVE_SESSIONS)}
+    
+    import datetime
+    import time
+    now_str = datetime.datetime.now().strftime("%H:%M:%S")
+    clean_ip = str(client_ip).replace("::ffff:", "").strip()
+    
+    is_new = session_id not in ACTIVE_SESSIONS
+    ACTIVE_SESSIONS[session_id] = {
+        "id": session_id,
+        "player": str(data.get("player_name", "لاعب")).strip(),
+        "mode": str(data.get("mode", "⚔️ 1v1 PvP Duel")).strip(),
+        "hero": str(data.get("hero", "Melon Boy")).strip(),
+        "status": str(data.get("status", "PLAYING")).strip(),
+        "ip": clean_ip,
+        "time": now_str,
+        "last_seen": time.time()
+    }
+    if is_new:
+        p_name = ACTIVE_SESSIONS[session_id]["player"]
+        m_name = ACTIVE_SESSIONS[session_id]["mode"]
+        add_console_log("SESSION", f"🎮 دخل اللاعب '{p_name}' طور ({m_name}) الآن!", "SUCCESS")
+    
+    return 200, {"success": True, "active_count": len(ACTIVE_SESSIONS), "sessions": list(ACTIVE_SESSIONS.values())}
+
+def handle_rooms_update(data: dict) -> tuple[int, dict]:
+    global ROOMS
+    code = str(data.get("room_code", "")).strip().upper()
+    if not code:
+        return 400, {"success": False, "error": "Missing room code"}
+    
+    if code in ROOMS:
+        if "mode" in data and data["mode"]:
+            old_mode = ROOMS[code].get("mode", "")
+            new_mode = str(data["mode"]).strip()
+            ROOMS[code]["mode"] = new_mode
+            if old_mode != new_mode:
+                add_console_log("ROOM", f"🔄 تم تغيير طور الغرفة #{code} إلى ({new_mode})", "INFO")
+        if "players" in data and data["players"] is not None:
+            ROOMS[code]["players"] = int(data["players"])
+        if "status" in data and data["status"]:
+            ROOMS[code]["status"] = str(data["status"]).strip()
+        if "players_list" in data:
+            ROOMS[code]["players_list"] = data["players_list"]
+        return 200, {"success": True, "room": ROOMS[code]}
+    return 404, {"success": False, "error": f"Room #{code} not found"}
 
 def handle_rooms_create(data: dict, client_ip: str = "") -> tuple[int, dict]:
     global TOTAL_ROOMS_CREATED, ROOMS, TERMINATED_ROOMS
@@ -361,9 +423,11 @@ def handle_rooms_message(data: dict) -> tuple[int, dict]:
         return 404, {"success": False, "error": f"الغرفة #{code} غير نشطة"}
 
 def handle_rooms_check(code: str) -> tuple[int, dict]:
+    global GLOBAL_EMERGENCY_ALARM
     code = code.strip().upper()
+    alarm_info = dict(GLOBAL_EMERGENCY_ALARM)
     if code in TERMINATED_ROOMS:
-        return 200, {"code": code, "active": False, "terminated": True}
+        return 200, {"code": code, "active": False, "terminated": True, "emergency_alarm": alarm_info}
     if code in ROOMS:
         room = ROOMS[code]
         return 200, {
@@ -373,9 +437,10 @@ def handle_rooms_check(code: str) -> tuple[int, dict]:
             "host_ip": room.get("host_ip", ""),
             "port": room.get("port", 7777),
             "message": room.get("broadcast_message", ""),
-            "message_id": room.get("message_id", 0)
+            "message_id": room.get("message_id", 0),
+            "emergency_alarm": alarm_info
         }
-    return 200, {"code": code, "active": False, "terminated": False}
+    return 200, {"code": code, "active": False, "terminated": False, "emergency_alarm": alarm_info}
 
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -476,10 +541,20 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             return
 
         elif path == "/api/rooms":
+            import time
+            now_ts = time.time()
+            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 18]
+            for k in stale_keys:
+                ACTIVE_SESSIONS.pop(k, None)
+            
+            total_players = len(ACTIVE_SESSIONS) + sum(int(r.get("players", 1)) for r in ROOMS.values())
             send_json_response(self, {
                 "total_created": TOTAL_ROOMS_CREATED,
                 "active_count": len(ROOMS),
-                "rooms": list(ROOMS.values())
+                "rooms": list(ROOMS.values()),
+                "active_sessions": list(ACTIVE_SESSIONS.values()),
+                "online_players_count": total_players,
+                "emergency_alarm": GLOBAL_EMERGENCY_ALARM
             })
             return
 
@@ -866,6 +941,51 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 self.send_error(500, f"Rooms message error: {e}")
             return
 
+        elif path == "/api/rooms/update":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_rooms_update(data)
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"Rooms update error: {e}")
+            return
+
+        elif path == "/api/sessions/update":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, resp = handle_session_update(data, self.client_address[0])
+                send_json_response(self, resp, code)
+            except Exception as e:
+                self.send_error(500, f"Session update error: {e}")
+            return
+
+        elif path == "/api/emergency_alarm":
+            if not self.check_router_access():
+                return
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            try:
+                import time
+                data = json.loads(body.decode("utf-8")) if body else {}
+                active = bool(data.get("active", True))
+                msg = str(data.get("message", "🚨 إنذار طارئ من قائد السيرفر!")).strip()
+                global GLOBAL_EMERGENCY_ALARM
+                GLOBAL_EMERGENCY_ALARM = {
+                    "active": active,
+                    "message": msg,
+                    "id": int(time.time() * 1000)
+                }
+                status_txt = "تفعيل" if active else "إيقاف"
+                add_console_log("ADMIN", f"🚨 قام القائد بـ ({status_txt}) صفارة الإنذار العامة باللعبة: '{msg}'", "WARNING" if active else "INFO")
+                send_json_response(self, {"success": True, "emergency_alarm": GLOBAL_EMERGENCY_ALARM})
+            except Exception as e:
+                self.send_error(500, f"Alarm error: {e}")
+            return
+
         elif path == "/api/console_log":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
@@ -954,10 +1074,20 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/rooms":
+            import time
+            now_ts = time.time()
+            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 18]
+            for k in stale_keys:
+                ACTIVE_SESSIONS.pop(k, None)
+            
+            total_players = len(ACTIVE_SESSIONS) + sum(int(r.get("players", 1)) for r in ROOMS.values())
             send_json_response(self, {
                 "total_created": TOTAL_ROOMS_CREATED,
                 "active_count": len(ROOMS),
-                "rooms": list(ROOMS.values())
+                "rooms": list(ROOMS.values()),
+                "active_sessions": list(ACTIVE_SESSIONS.values()),
+                "online_players_count": total_players,
+                "emergency_alarm": GLOBAL_EMERGENCY_ALARM
             })
             return
 

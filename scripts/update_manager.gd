@@ -104,6 +104,9 @@ var _device_verify_http: HTTPRequest = null
 var _heartbeat_timer: Timer = null
 var _unauthorized_overlay: CanvasLayer = null
 var _server_closed_overlay: CanvasLayer = null
+var _alarm_overlay: CanvasLayer = null
+var current_session_data: Dictionary = {}
+var last_seen_alarm_id: int = 0
 var _is_checking_heartbeat: bool = false
 var _heartbeat_candidate_idx: int = 0
 var _heartbeat_candidates: Array[String] = []
@@ -138,9 +141,9 @@ func _ready() -> void:
 	add_child(_device_verify_http)
 	_device_verify_http.request_completed.connect(_on_device_verify_completed)
 	
-	# Setup periodic quiet background heartbeat refresh timer (every 3 seconds)
+	# Setup periodic quiet background heartbeat refresh timer (every 1.5 seconds for instant real-time sync)
 	_heartbeat_timer = Timer.new()
-	_heartbeat_timer.wait_time = 3.0
+	_heartbeat_timer.wait_time = 1.5
 	_heartbeat_timer.autostart = true
 	_heartbeat_timer.one_shot = false
 	add_child(_heartbeat_timer)
@@ -284,13 +287,22 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 			server_status_updated.emit(false, "close")
 			if was_open:
 				server_closed_notification.emit()
+		
+		# Check for emergency alarm from leader
+		var alarm = json.data.get("emergency_alarm", {})
+		if typeof(alarm) == TYPE_DICTIONARY and alarm.get("active", false) == true:
+			var a_id = int(alarm.get("id", 0))
+			if a_id > last_seen_alarm_id:
+				last_seen_alarm_id = a_id
+				trigger_emergency_alarm_ui(str(alarm.get("message", "🚨 إنذار طارئ من قائد السيرفر!")))
 	
 	# Verify device access authorization
 	verify_device_access()
 	
-	# Quietly refresh game configuration every 9 seconds without disrupting user
-	if _heartbeat_ticks % 3 == 0:
-		sync_game_config()
+	# Instant real-time game configuration refresh (every 1.5 seconds)
+	sync_game_config()
+	if not current_session_data.is_empty():
+		_send_session_heartbeat()
 
 func log_game_event(event_message: String, level: String = "INFO", source: String = "GAME") -> void:
 	if server_url.is_empty():
@@ -309,6 +321,116 @@ func log_game_event(event_message: String, level: String = "INFO", source: Strin
 	)
 	var headers = PackedStringArray(["Content-Type: application/json"])
 	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+func report_active_player_session(p_name: String, mode_name: String, hero_name: String, status_str: String = "PLAYING") -> void:
+	current_session_data = {
+		"session_id": "sess_" + str(randi()),
+		"player_name": p_name,
+		"mode": mode_name,
+		"hero": hero_name,
+		"status": status_str,
+		"action": "start"
+	}
+	_send_session_payload(current_session_data)
+
+func _send_session_heartbeat() -> void:
+	if current_session_data.is_empty() or server_url.is_empty():
+		return
+	var payload = current_session_data.duplicate()
+	payload["action"] = "heartbeat"
+	_send_session_payload(payload)
+
+func clear_active_player_session() -> void:
+	if current_session_data.is_empty() or server_url.is_empty():
+		current_session_data.clear()
+		return
+	var payload = current_session_data.duplicate()
+	payload["action"] = "leave"
+	current_session_data.clear()
+	_send_session_payload(payload)
+
+func _send_session_payload(payload: Dictionary) -> void:
+	if server_url.is_empty():
+		return
+	var endpoint = server_url.trim_suffix("/") + "/api/sessions/update"
+	var http = HTTPRequest.new()
+	http.timeout = 2.0
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+func trigger_emergency_alarm_ui(msg: String) -> void:
+	if _alarm_overlay != null:
+		_alarm_overlay.queue_free()
+		_alarm_overlay = null
+	
+	AudioManager.play_sfx("error")
+	_alarm_overlay = CanvasLayer.new()
+	_alarm_overlay.layer = 140
+	
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 20)
+	_alarm_overlay.add_child(margin)
+	
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.2, 0.02, 0.04, 0.98)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(1.0, 0.1, 0.1, 1.0)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	card.add_theme_stylebox_override("panel", style)
+	margin.add_child(card)
+	
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 14)
+	card.add_child(hbox)
+	
+	var icon = Label.new()
+	icon.text = "🚨"
+	icon.add_theme_font_size_override("font_size", 34)
+	hbox.add_child(icon)
+	
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "🚨 إنذار طارئ من قائد السيرفر! (EMERGENCY ALARM)"
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	vbox.add_child(title)
+	
+	var desc = Label.new()
+	desc.text = msg
+	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_color_override("font_color", Color(1.0, 0.9, 0.9))
+	vbox.add_child(desc)
+	
+	var close_btn = Button.new()
+	close_btn.text = " ✕ إغلاق "
+	close_btn.pressed.connect(func():
+		if _alarm_overlay:
+			_alarm_overlay.queue_free()
+			_alarm_overlay = null
+	)
+	hbox.add_child(close_btn)
+	
+	get_tree().root.add_child(_alarm_overlay)
+	get_tree().create_timer(10.0).timeout.connect(func():
+		if _alarm_overlay:
+			_alarm_overlay.queue_free()
+			_alarm_overlay = null
+	)
 
 func _show_server_closed_overlay() -> void:
 	if _server_closed_overlay != null:

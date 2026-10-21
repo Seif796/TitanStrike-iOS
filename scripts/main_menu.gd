@@ -150,6 +150,7 @@ func _ready() -> void:
 	_setup_mode_select_view()
 	
 	_refresh_top_pills()
+	UpdateManager.clear_active_player_session()
 	
 	GameManager.classes_updated.connect(func():
 		_refresh_hero_options()
@@ -283,6 +284,7 @@ func _setup_update_system() -> void:
 	UpdateManager.update_installed.connect(_on_update_installed)
 	UpdateManager.server_opened_notification.connect(_on_server_opened_notification)
 	UpdateManager.server_closed_notification.connect(_on_server_closed_notification)
+	UpdateManager.game_config_synced.connect(_on_game_config_synced)
 	
 	if update_later_btn:
 		update_later_btn.pressed.connect(func():
@@ -786,12 +788,36 @@ func _validate_player_name() -> String:
 		return ""
 	return p_name
 
+func _on_game_config_synced(_cfg: Dictionary) -> void:
+	_refresh_hero_options()
+	if not GameManager.is_hero_enabled(selected_class):
+		var old_hero_name = GameManager.CLASSES.get(selected_class, {}).get("name", "البطل")
+		var fallback_id = 0
+		for id in GameManager.CLASSES:
+			if GameManager.is_hero_enabled(id):
+				fallback_id = id
+				break
+		selected_class = fallback_id
+		if class_option:
+			for i in range(class_option.item_count):
+				if class_option.get_item_id(i) == fallback_id:
+					class_option.select(i)
+					break
+		_update_class_info(fallback_id)
+		AudioManager.play_sfx("error")
+		if status_label:
+			status_label.text = "⛔ قام القائد بتعطيل شخصية '%s' فوراً! تم تحويلك لشخصية متاحة." % old_hero_name
+			status_label.modulate = Color(1.0, 0.3, 0.3)
+		_show_update_toast("⛔ تم قفل وتعطيل '%s' بأمر من القائد!" % old_hero_name)
+
 func _on_solo_wave_pressed() -> void:
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	if p_name.is_empty():
 		return
 	_speak_prompt("Starting Solo Wave Defense...")
+	var h_name = GameManager.CLASSES.get(selected_class, {}).get("name", "Melon Boy")
+	UpdateManager.report_active_player_session(p_name, "🧟 Solo Wave Defense", h_name, "IN_MATCH")
 	UpdateManager.log_game_event("🎮 بدأ اللاعب '%s' طور موجات الزومبي (Solo Wave Defense)" % p_name, "INFO", "SOLO")
 	GameManager.selected_game_mode = GameManager.GameMode.COOP_WAVES
 	NetworkManager.leave_game()
@@ -803,6 +829,8 @@ func _on_training_pressed() -> void:
 	AudioManager.play_sfx("click")
 	var p_name = _validate_player_name()
 	_speak_prompt("Entering Training Grounds...")
+	var h_name = GameManager.CLASSES.get(selected_class, {}).get("name", "Melon Boy")
+	UpdateManager.report_active_player_session(p_name if not p_name.is_empty() else "لاعب", "🎯 ساحة التدريب الفردي", h_name, "IN_MATCH")
 	UpdateManager.log_game_event("🎯 دخل اللاعب '%s' ساحة التدريب الفردي (Training Grounds)" % (p_name if not p_name.is_empty() else "لاعب"), "INFO", "TRAINING")
 	GameManager.start_training_mode(selected_class)
 

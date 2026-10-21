@@ -276,6 +276,37 @@ func _report_room_closed(code: String) -> void:
 	var headers = PackedStringArray(["Content-Type: application/json"])
 	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
 
+func update_room_details(mode_name: String = "", player_count: int = -1, status_str: String = "") -> void:
+	if current_room_code.is_empty() or not multiplayer or not multiplayer.is_server():
+		return
+	var um = get_node_or_null("/root/UpdateManager")
+	if um == null or um.server_url.is_empty():
+		return
+	var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/update"
+	var payload = {
+		"room_code": current_room_code
+	}
+	if not mode_name.is_empty():
+		payload["mode"] = mode_name
+	if player_count >= 0:
+		payload["players"] = player_count
+	else:
+		payload["players"] = players.size()
+	if not status_str.is_empty():
+		payload["status"] = status_str
+	
+	var p_names: Array[String] = []
+	for p_id in players:
+		p_names.append(players[p_id].get("name", "Player"))
+	payload["players_list"] = p_names
+
+	var http = HTTPRequest.new()
+	http.timeout = 2.0
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+
 func _check_room_status_with_server() -> void:
 	if current_room_code.is_empty() or peer == null:
 		if _room_watchdog_timer:
@@ -478,6 +509,7 @@ func _on_peer_connected(id: int) -> void:
 		# Sync the currently chosen map and game mode to the new player immediately!
 		rpc_id(id, "_sync_initial_lobby_map", GameManager.selected_map_id, int(GameManager.selected_game_mode))
 		lobby_updated.emit()
+		update_room_details("", players.size() + 1)
 
 @rpc("any_peer", "call_local", "reliable")
 func _sync_initial_lobby_map(map_id: int, mode_id: int = 0) -> void:
@@ -500,6 +532,8 @@ func _on_peer_disconnected(id: int) -> void:
 		players.erase(id)
 		player_disconnected.emit(id)
 		lobby_updated.emit()
+		if multiplayer.is_server():
+			update_room_details("", players.size())
 
 func _on_connected_to_server() -> void:
 	var local_id = multiplayer.get_unique_id()

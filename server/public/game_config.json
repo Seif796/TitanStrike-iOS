@@ -2,9 +2,9 @@
   "heroes": {
     "0": {
       "name": "🍉 Melon Knight (فارس البطيخ)",
-      "enabled": true,
+      "enabled": false,
       "hp": 130,
-      "speed": 1,
+      "speed": 10,
       "role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls."
     },
     "1": {
@@ -25,7 +25,7 @@
       "name": "👑 Admin (الأدمن الخارق)",
       "enabled": true,
       "hp": 500,
-      "speed": 15,
+      "speed": 20,
       "role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor."
     },
     "4": {
@@ -45,20 +45,19 @@
     5,
     6
   ],
-  "server_announcement": "🔥 تم إطلاق إصدار جديد (v1.2.11)! يرجى تنزيل ملف الـ IPA الجديد من الموقع لتثبيت أحدث الميزات.",
+  "server_announcement": "🔥 تم إطلاق إصدار جديد (v1.2.13)! يرجى تنزيل ملف الـ IPA الجديد من الموقع لتثبيت أحدث الميزات.",
   "server_status": "OPEN",
   "device_security": {
     "whitelist_enabled": true,
-    "allowed_devices": [],
-    "pending_devices": [
+    "allowed_devices": [
       {
         "id": "{88b5ac79-2a3a-11eb-b696-806e6f6e6963}",
-        "name": "HP 255 G8 Notebook PC",
-        "os": "Windows",
-        "username": "seif1",
-        "ip": "127.0.0.1",
-        "requested_at": "2026-10-20"
+        "name": "HP 255 G8 Notebook PC 👑 (كامل الصلاحيات)",
+        "status": "APPROVED",
+        "role": "FULL_ACCESS",
+        "approved_at": "2026-10-20 23:16"
       }
-    ]
+    ],
+    "pending_devices": []
   }
 }
