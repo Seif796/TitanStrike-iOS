@@ -152,6 +152,26 @@ def get_server_status_summary() -> str:
         except Exception:
             pass
 
+        # Player list details
+        players_details = []
+        for s_id, s in list(ACTIVE_SESSIONS.items()):
+            p_name = s.get("player", "لاعب")
+            p_mode = s.get("mode", "متصل باللعبة")
+            p_hero = s.get("hero", "بطل")
+            players_details.append(f"  • 👤 <b>{p_name}</b> ({p_hero}) - <i>{p_mode}</i>")
+        
+        for code, r in list(ROOMS.items()):
+            for pl in r.get("players_list", []):
+                if not any(pl in d for d in players_details):
+                    players_details.append(f"  • 👤 <b>{pl}</b> - <i>غرفة #{code}</i>")
+        
+        total_online = max(active_sess_cnt, len(players_details))
+        players_section = f"👥 <b>اللاعبين المتصلين:</b> <code>{total_online}</code>\n"
+        if players_details:
+            players_section += "\n".join(players_details[:6]) + "\n"
+        else:
+            players_section += "  <i>(لا يوجد لاعبين متصلين حالياً)</i>\n"
+
         rooms_summary = ""
         if ROOMS:
             rooms_summary = "\n<b>🎮 الغرف النشطة الحالية:</b>\n"
@@ -167,7 +187,7 @@ def get_server_status_summary() -> str:
             f"⚡ <b>[تقرير حالة سيرفر Titan Strike 3D]</b>\n"
             f"📅 <b>التوقيت:</b> <code>{now_str}</code>\n\n"
             f"📡 <b>حالة السيرفر:</b> {status_emoji}\n"
-            f"👥 <b>اللاعبين المتصلين:</b> <code>{active_sess_cnt}</code>\n"
+            f"{players_section}"
             f"🚪 <b>الغرف المفتوحة:</b> <code>{active_rooms_cnt}</code>\n"
             f"🚨 <b>صفارات الإنذار:</b> {alarm_txt}\n"
             f"{sys_info}"
@@ -272,16 +292,21 @@ def handle_user_command(chat_id: int, text: str) -> bool:
         return True
 
     # 3. Status variations (/status, /statues, /state, etc.)
-    status_variations = ["/status", "/statues", "/state", "/statu", "حالة السيرفر", "السيرفر شغال؟", "حاله السيرفر", "status", "statues", "اخبار السيرفر", "أخبار السيرفر"]
-    if cmd_lower in status_variations or any(cmd_lower == s for s in status_variations):
+    status_variations = [
+        "/status", "/statues", "/state", "/statu", "/stats",
+        "status", "statues", "state", "stats",
+        "حالة السيرفر", "حاله السيرفر", "السيرفر شغال؟", "السيرفر شغال", "اخبار السيرفر", "أخبار السيرفر",
+        "مين بيلعب", "مين متصل", "اللاعبين", "كم لاعب"
+    ]
+    if cmd_lower in status_variations or any(cmd_lower == s for s in status_variations) or ("حالة" in cmd_lower and "سيرفر" in cmd_lower):
         send_telegram_message(chat_id, get_server_status_summary())
         return True
 
-    # 4. Rooms
-    if cmd_lower in ["/rooms", "/room", "الغرف", "الرومات", "الغرف النشطة", "rooms"]:
+    # 4. Rooms list query (only when inquiring about rooms)
+    if cmd_lower in ["/rooms", "/room", "الغرف", "الرومات", "الغرف النشطة", "rooms"] or (cmd_lower.startswith("عرض") and "غرف" in cmd_lower):
         from update_server import ROOMS
         if not ROOMS:
-            send_telegram_message(chat_id, "🎮 <b>لا توجد غرف نشطة حالياً بالسيرفر.</b>\nيمكنك إنشاء غرفة مبارزة 1v1 بكتابة: /1v1")
+            send_telegram_message(chat_id, "🎮 <b>لا توجد غرف نشطة حالياً بالسيرفر.</b>\nيمكنك إنشاء غرفة مبارزة فوراً بكتابة:\n<i>اعمل لي الغرف</i> أو <i>/1v1</i>")
         else:
             txt = f"🎮 <b>الغرف النشطة بالسيرفر ({len(ROOMS)}):</b>\n\n"
             for code, r in ROOMS.items():
@@ -292,16 +317,31 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             send_telegram_message(chat_id, txt)
         return True
 
-    # 5. 1v1 Room creation
-    if cmd_lower.startswith("/1v1") or any(k in cmd_lower for k in ["انشئ 1v1", "اعمل روم 1v1", "تحدي 1v1", "1v1"]):
+    # 5. Room Creation & 1v1 Duel against CyberAI (instant < 0.1s execution)
+    is_room_create = False
+    if cmd_lower.startswith("/1v1") or cmd_lower.startswith("/create") or cmd_lower.startswith("/createroom"):
+        is_room_create = True
+    else:
+        create_verbs = ["اعمل", "سوي", "انشئ", "أنشئ", "افتح", "كريت", "جهز", "ادخل", "خش", "نلعب", "العب", "هات", "طلع"]
+        room_nouns = ["غرفة", "غرفه", "غرف", "الغرف", "الغرفه", "الغرفة", "روم", "رومات", "الروم", "الرومات", "1v1", "تحدي", "مبارزة", "مبارزه"]
+        if any(v in cmd_lower for v in create_verbs) and any(n in cmd_lower for n in room_nouns):
+            is_room_create = True
+        elif any(phrase in cmd_lower for phrase in [
+            "اعمل لي الغرف", "اعمل الغرف", "سوي الغرف", "اعمل روم", "اعمل لي روم", "اعمل غرفه", "اعمل غرفة",
+            "سوي روم", "سوي غرفة", "سوي غرفه", "انشئ روم", "افتح روم", "افتح غرفه", "افتح غرفة",
+            "خش اللعبة", "خش العبه", "ادخل اللعبة", "ادخل العبه", "العب معاك", "العب معايا", "نلعب سوا", "نلعب مع بعض"
+        ]):
+            is_room_create = True
+
+    if is_room_create:
         try:
             from update_server import execute_server_action
             ok, msg, _ = execute_server_action("create_ai_room", {"hero": "Spider Hero"}, context_type="admin_dashboard")
             reply = (
-                f"⚔️ <b>أمرك يا قائدنا! تم إنشاء غرفة المبارزة 1v1 فوراً!</b>\n\n"
-                f"🔑 <b>كود الغرفة:</b> <code>#AI1V1</code>\n"
-                f"🎮 تم إرسال إشعار التحدي المباشر لشاشة لعبتك بالكمبيوتر/الموبايل.\n"
-                f"ادخل الساحة وستجد CyberAI بانتظارك فوراً!"
+                "⚔️ <b>سمعاً وطاعة يا قائدنا سيف! تم إنشاء وتجهيز الغرفة بنجاح!</b>\n\n"
+                "🔑 <b>كود الغرفة:</b> <code>#AI1V1</code>\n"
+                "🎮 تم بث إشعار التحدي فوراً في منتصف شاشات اللعبة بالكمبيوتر والموبايل!\n"
+                "ادخل الساحة وستجد CyberAI بانتظارك فوراً يا زعيم! ⚡"
             )
             send_telegram_message(chat_id, reply)
             return True

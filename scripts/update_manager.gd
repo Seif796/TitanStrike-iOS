@@ -172,6 +172,8 @@ func _ready() -> void:
 		check_for_updates()
 		sync_game_config()
 		verify_device_access()
+		var p_name = get_active_player_name()
+		report_active_player_session(p_name, "🎮 متصل باللعبة (Online)", "Melon Boy", "ACTIVE")
 	)
 
 func _process(_delta: float) -> void:
@@ -356,10 +358,28 @@ func log_game_event(event_message: String, level: String = "INFO", source: Strin
 	var headers = PackedStringArray(["Content-Type: application/json"])
 	http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
 
+var current_session_id: String = ""
+
+func get_active_player_name() -> String:
+	var am = get_node_or_null("/root/AccountManager")
+	if am and am.has_method("get_current_user"):
+		var u = am.get_current_user()
+		if not u.is_empty():
+			return u
+	var nm = get_node_or_null("/root/NetworkManager")
+	if nm and not nm.local_player_name.is_empty():
+		return nm.local_player_name
+	return "القائد"
+
 func report_active_player_session(p_name: String, mode_name: String, hero_name: String, status_str: String = "PLAYING") -> void:
+	if current_session_id.is_empty():
+		current_session_id = "sess_" + str(randi())
+	var clean_name = p_name.strip_edges()
+	if clean_name.is_empty():
+		clean_name = get_active_player_name()
 	current_session_data = {
-		"session_id": "sess_" + str(randi()),
-		"player_name": p_name,
+		"session_id": current_session_id,
+		"player_name": clean_name,
 		"mode": mode_name,
 		"hero": hero_name,
 		"status": status_str,
@@ -368,20 +388,19 @@ func report_active_player_session(p_name: String, mode_name: String, hero_name: 
 	_send_session_payload(current_session_data)
 
 func _send_session_heartbeat() -> void:
-	if current_session_data.is_empty() or server_url.is_empty():
+	if server_url.is_empty():
+		return
+	if current_session_data.is_empty():
+		var default_name = get_active_player_name()
+		report_active_player_session(default_name, "🎮 متصل باللعبة (Online)", "Melon Boy", "ACTIVE")
 		return
 	var payload = current_session_data.duplicate()
 	payload["action"] = "heartbeat"
 	_send_session_payload(payload)
 
 func clear_active_player_session() -> void:
-	if current_session_data.is_empty() or server_url.is_empty():
-		current_session_data.clear()
-		return
-	var payload = current_session_data.duplicate()
-	payload["action"] = "leave"
-	current_session_data.clear()
-	_send_session_payload(payload)
+	var default_name = get_active_player_name()
+	report_active_player_session(default_name, "القائمة الرئيسية (Main Menu)", "Melon Boy", "IN_MENU")
 
 func _send_session_payload(payload: Dictionary) -> void:
 	if server_url.is_empty():

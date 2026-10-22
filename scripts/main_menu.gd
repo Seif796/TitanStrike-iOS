@@ -150,7 +150,10 @@ func _ready() -> void:
 	_setup_mode_select_view()
 	
 	_refresh_top_pills()
-	UpdateManager.clear_active_player_session()
+	var p_name = AccountManager.get_current_user() if AccountManager.is_logged_in() else name_input.text.strip_edges()
+	if p_name.is_empty(): p_name = "القائد"
+	var hero_name = GameManager.CLASSES.get(selected_class, {}).get("name", "Melon Boy")
+	UpdateManager.report_active_player_session(p_name, "🎮 القائمة الرئيسية (Main Menu)", hero_name, "IN_MENU")
 	
 	GameManager.classes_updated.connect(func():
 		_refresh_hero_options()

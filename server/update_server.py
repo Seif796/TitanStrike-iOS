@@ -358,7 +358,11 @@ def execute_server_action(action_name: str, params: dict, context_type: str = "g
         GLOBAL_AI_DUEL_TRIGGER["active"] = True
         GLOBAL_AI_DUEL_TRIGGER["id"] = int(time.time() * 1000)
         GLOBAL_AI_DUEL_TRIGGER["room_code"] = code
-        GLOBAL_AI_DUEL_TRIGGER["message"] = f"⚔️ جهز CyberAI غرفة 1v1 بكود #{code} ويدعوك لدخول الساحة فوراً!"
+        GLOBAL_AI_DUEL_TRIGGER["message"] = f"⚔️ أنشأ CyberAI غرفة 1v1 بكود #{code} ويدعوك للنزال فوراً!"
+        
+        GLOBAL_BROADCAST["message"] = f"⚔️ أنشأ CyberAI غرفة 1v1 بكود #{code} ويدعوك لدخول الساحة فوراً!"
+        GLOBAL_BROADCAST["id"] = int(time.time() * 1000)
+        GLOBAL_BROADCAST["room_code"] = code
         
         msg = f"تم إنشاء وتجهيز غرفة المبارزة 1v1 بنجاح على السيرفر! كود الغرفة: #{code}"
         add_console_log("CYBER_AI", f"⚔️ دخل CyberAI السيرفر وأنشأ غرفة 1v1 بكود #{code} بانتظار القائد في الساحة فوراً!", "SUCCESS")
@@ -439,8 +443,10 @@ def detect_user_intent_action(prompt: str, context_type: str = "general") -> dic
     # 1. Create Room / Enter Game / 1v1 Duel against CyberAI
     create_room_keywords = [
         "خش اللعبة", "خش العبه", "ادخل اللعبة", "ادخل العبه", "اعمل غرفة", "اعمل الغرفة", 
-        "اعمل روم", "روم 1v1", "1v1", "العب معاك", "العب معايا", "نلعب سوا", "نلعب مع بعض", 
-        "نلعب ضد بعض", "قولي الكود", "كود الغرفة", "كود الغرفه", "مبارزة", "تحدي", "روم", "غرفة", "غرفه"
+        "اعمل روم", "اعمل لي روم", "اعمل غرفه", "اعمل الغرفه", "اعمل الغرف", "اعمل لي الغرف", 
+        "سوي روم", "سوي غرفة", "سوي غرفه", "سوي الغرف", "افتح روم", "افتح غرفة", "افتح غرفه", "افتح الغرف",
+        "روم 1v1", "1v1", "العب معاك", "العب معايا", "نلعب سوا", "نلعب مع بعض", 
+        "نلعب ضد بعض", "قولي الكود", "كود الغرفة", "كود الغرفه", "مبارزة", "تحدي", "روم", "غرفة", "غرفه", "الغرف", "غرف"
     ]
     if any(k in p for k in create_room_keywords):
         return {"name": "create_ai_room", "params": {"hero": "Spider Hero"}}
@@ -991,7 +997,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         elif path == "/api/rooms":
             import time
             now_ts = time.time()
-            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 45]
+            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 180]
             for k in stale_keys:
                 ACTIVE_SESSIONS.pop(k, None)
             
@@ -1570,7 +1576,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/rooms":
             import time
             now_ts = time.time()
-            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 45]
+            stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 180]
             for k in stale_keys:
                 ACTIVE_SESSIONS.pop(k, None)
             
