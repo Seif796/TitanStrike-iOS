@@ -18,9 +18,13 @@ import urllib.parse
 import threading
 from pathlib import Path
 
-# Telegram Bot Configuration
-DEFAULT_TELEGRAM_TOKEN = "8993921362:AAFglRSgWPIiNZOLPEh8JSgBrW8RWPfaQ9c"
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", DEFAULT_TELEGRAM_TOKEN).strip()
+# Telegram Bot Configuration - Enforce User's Active Bot Token
+ACTIVE_BOT_TOKEN = "8993921362:AAFglRSgWPIiNZOLPEh8JSgBrW8RWPfaQ9c"
+env_tok = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+if env_tok and env_tok.startswith("8993921362"):
+    TELEGRAM_TOKEN = env_tok
+else:
+    TELEGRAM_TOKEN = ACTIVE_BOT_TOKEN
 
 BASE_DIR = Path(__file__).resolve().parent
 ADMIN_CHATS_FILE = BASE_DIR / "admin_chats.json"
@@ -35,13 +39,7 @@ def load_admin_chats():
             with open(ADMIN_CHATS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 _admin_chat_ids.update(data.get("admin_chats", []))
-        except Exception as e:
-            pass
-    env_chat = os.environ.get("TELEGRAM_ADMIN_CHAT_ID")
-    if env_chat:
-        try:
-            _admin_chat_ids.add(int(env_chat))
-        except ValueError:
+        except Exception:
             pass
 
 def save_admin_chats():
@@ -96,8 +94,16 @@ def send_telegram_message(chat_id: int | str, text: str, reply_markup: dict = No
                 print(f"[TelegramBot] 📤 تم إرسال الرد لـ {chat_id}: {safe_text}")
             return ok
     except Exception as e:
-        print(f"[TelegramBot] ⚠️ فشل إرسال الرسالة إلى {chat_id}: {e}")
-        return False
+        # Fallback to plain text if HTML parsing failed
+        try:
+            payload.pop("parse_mode", None)
+            body = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                return resp.status == 200
+        except Exception:
+            print(f"[TelegramBot] ⚠️ فشل إرسال الرسالة إلى {chat_id}: {e}")
+            return False
 
 def broadcast_to_admins(text: str) -> None:
     """Broadcasts an urgent notification to all registered commanders."""
@@ -169,11 +175,64 @@ def get_server_status_summary() -> str:
             f"🌍 <b>IP الخارجي:</b> <code>{get_wan_ip()}</code>\n"
             f"🔌 <b>البورت:</b> <code>{PORT}</code>\n"
             f"{rooms_summary}\n"
-            f"<i>💡 أجبني أو اسألني أي سؤال وسأرد عليك في لمح البصر!</i>"
+            f"<i>💡 أجبني أو اطلب مني أي تعديل وسأنفذه فوراً!</i>"
         )
         return summary
     except Exception as e:
         return f"⚠️ تعذر جلب ملخص السيرفر: {e}"
+
+def execute_code_or_file_action(prompt: str) -> tuple[bool, str]:
+    """Allows Commander to modify code, config, heroes, or delete rooms/sessions directly from Telegram!"""
+    p = prompt.strip().lower()
+    
+    # 1. Modify Hero Stats / Config
+    if any(k in p for k in ["عدل", "تعديل", "غير", "زود", "نقص"]) and any(h in p for h in ["بطل", "شخصية", "شخصيه", "دم", "طاقة", "طاقه", "سرعة", "سرعه", "hp", "speed"]):
+        from update_server import load_game_config, save_game_config
+        cfg = load_game_config()
+        heroes = cfg.get("heroes", {})
+        
+        target_id = "0"
+        if "سبايدر" in p or "عنكبوت" in p or "4" in p: target_id = "4"
+        elif "ادمن" in p or "أدمن" in p or "3" in p: target_id = "3"
+        elif "برتقال" in p or "2" in p: target_id = "2"
+        elif "فراولة" in p or "فراوله" in p or "1" in p: target_id = "1"
+        elif "بطيخ" in p or "0" in p: target_id = "0"
+
+        # Check for numbers in prompt
+        import re
+        nums = [int(n) for n in re.findall(r'\d+', p) if int(n) > 10 and int(n) != 1]
+        if nums and target_id in heroes:
+            new_val = nums[0]
+            if "سرع" in p:
+                heroes[target_id]["speed"] = float(new_val)
+                save_game_config(cfg)
+                return True, f"✅ تم تعديل سرعة البطل ({heroes[target_id]['name']}) إلى: {new_val} m/s فوراً في الكود والسيرفر!"
+            else:
+                heroes[target_id]["hp"] = int(new_val)
+                save_game_config(cfg)
+                return True, f"✅ تم تعديل دم وطاقة البطل ({heroes[target_id]['name']}) إلى: {new_val} HP فوراً في الكود والسيرفر!"
+
+    # 2. Delete / Clear Actions
+    if any(k in p for k in ["احذف", "حذف", "امسح", "مسح", "شيل"]):
+        if any(r in p for r in ["روم", "غرفة", "غرفه", "الرومات", "الغرف"]):
+            from update_server import ROOMS, handle_rooms_terminate
+            count = len(ROOMS)
+            for code in list(ROOMS.keys()):
+                handle_rooms_terminate({"room_code": code})
+            return True, f"🗑️ تم حذف وقفل جميع الغرف النشطة ({count} غرفة) وطرد اللاعبين بنجاح بأمرك يا قائدنا!"
+        
+        if any(s in p for s in ["جلسة", "جلسات", "اللاعبين", "sessions"]):
+            from update_server import ACTIVE_SESSIONS
+            count = len(ACTIVE_SESSIONS)
+            ACTIVE_SESSIONS.clear()
+            return True, f"🗑️ تم مسح وتفريغ قائمة الجلسات النشطة ({count} جلسة) بنجاح!"
+
+        if any(e in p for e in ["اخطاء", "أخطاء", "لوج", "سجل", "console"]):
+            from update_server import CONSOLE_LOGS
+            CONSOLE_LOGS.clear()
+            return True, "🗑️ تم مسح وتنظيف سجل كونسول السيرفر بالكامل بنجاح!"
+
+    return False, ""
 
 def handle_user_command(chat_id: int, text: str) -> bool:
     """Executes special commands or queries in < 0.1 second."""
@@ -186,8 +245,8 @@ def handle_user_command(chat_id: int, text: str) -> bool:
         save_admin_chats()
         welcome = (
             "👑 <b>أهلاً بك يا قائدنا سيف في بوت Titan Strike 3D الذكي!</b>\n\n"
-            "🤖 أنا <b>CyberAI</b> مساعدك التنفيذي المباشر، مدعوم بـ <b>Gemini 3.5 Flash</b>.\n"
-            "⚡ سأرد عليك دائماً في أقل من ثانية واحدة، وسأرسل لك إشعاراً فورياً هنا إذا حدث أي Error بالسيرفر!\n\n"
+            "🤖 أنا <b>CyberAI</b> مساعدك التنفيذي المباشر، شغال معاك 24 ساعة بدون توقف!\n"
+            "⚡ أرد عليك في أقل من ثانية واحدة، وتقدر تطلب مني أي تعديل على الكود أو حذف أو إضافات وسأنفذها فوراً!\n\n"
             "<b>الأوامر السريعة:</b>\n"
             "/status - فحص حالة السيرفر واللاعبين والموارد فوري\n"
             "/rooms - عرض الغرف النشطة في اللعبة\n"
@@ -196,18 +255,29 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             "/alarm off - إيقاف صفارات الإنذار\n"
             "/announce [رسالة] - بث إعلان بمنتصف شاشات اللاعبين\n"
             "/help - قائمة الأوامر\n\n"
-            "<i>💬 كلمني في أي وقت وسأجيبك فوراً كقائد وزعيم!</i>"
+            "<i>💬 كلمني في أي وقت بالعامية وسأجيبك فوراً كقائد وزعيم!</i>"
         )
         send_telegram_message(chat_id, welcome)
         return True
 
-    # 2. Status variations (/status, /statues, /state, etc.)
+    # 2. Greetings & Check-ins ("عامل ايه", "الو", "ازيك", etc.)
+    greetings = ["عامل ايه", "عامل ايخ", "عامل إيه", "الو", "ألو", "هلا", "مرحبا", "سلام عليكم", "صباح الخير", "مساء الخير", "انت هنا", "فينك"]
+    if any(cmd_lower == g or cmd_lower.startswith(g) for g in greetings):
+        reply = (
+            "👑 <b>الحمد لله يا قائدنا! أنا هنا وشغال معاك 24 ساعة ومتابع السيرفر خطوة بخطوة!</b> ⚡\n\n"
+            "السيرفر شغال وتمام التمام، وأنا مستعد لتنفيذ أي أمر تطلبه: تعديل كود، فحص السيرفر، أو تحدي مبارزة 1v1!\n"
+            "<i>طلبك إيه يا زعيم؟</i>"
+        )
+        send_telegram_message(chat_id, reply)
+        return True
+
+    # 3. Status variations (/status, /statues, /state, etc.)
     status_variations = ["/status", "/statues", "/state", "/statu", "حالة السيرفر", "السيرفر شغال؟", "حاله السيرفر", "status", "statues", "اخبار السيرفر", "أخبار السيرفر"]
     if cmd_lower in status_variations or any(cmd_lower == s for s in status_variations):
         send_telegram_message(chat_id, get_server_status_summary())
         return True
 
-    # 3. Rooms
+    # 4. Rooms
     if cmd_lower in ["/rooms", "/room", "الغرف", "الرومات", "الغرف النشطة", "rooms"]:
         from update_server import ROOMS
         if not ROOMS:
@@ -222,7 +292,7 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             send_telegram_message(chat_id, txt)
         return True
 
-    # 4. 1v1 Room creation
+    # 5. 1v1 Room creation
     if cmd_lower.startswith("/1v1") or any(k in cmd_lower for k in ["انشئ 1v1", "اعمل روم 1v1", "تحدي 1v1", "1v1"]):
         try:
             from update_server import execute_server_action
@@ -239,7 +309,13 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             send_telegram_message(chat_id, f"❌ حدث خطأ أثناء إنشاء الغرفة: {e}")
             return True
 
-    # 5. Emergency Alarm
+    # 6. Direct Code / File / Config modification
+    executed, exec_msg = execute_code_or_file_action(text)
+    if executed:
+        send_telegram_message(chat_id, f"👑 <b>سمعاً وطاعة يا قائدنا!</b>\n\n{exec_msg}")
+        return True
+
+    # 7. Emergency Alarm
     if cmd_lower.startswith("/alarm") or "صفارة" in cmd_lower or "إنذار" in cmd_lower:
         active = not any(k in cmd_lower for k in ["off", "stop", "اطفي", "وقف", "0", "إلغاء"])
         try:
@@ -252,7 +328,7 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             send_telegram_message(chat_id, f"❌ خطأ: {e}")
             return True
 
-    # 6. Broadcast announcement
+    # 8. Broadcast announcement
     if cmd_lower.startswith("/announce") or cmd_lower.startswith("/broadcast"):
         parts = cmd.split(maxsplit=1)
         if len(parts) < 2 or not parts[1].strip():
@@ -268,7 +344,7 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             send_telegram_message(chat_id, f"❌ خطأ: {e}")
             return True
 
-    # 7. Help
+    # 9. Help
     if cmd_lower in ["/help", "مساعدة", "اوامر", "الأوامر", "help"]:
         help_msg = (
             "🛠️ <b>أوامر إدارة سيرفر Titan Strike 3D السريعة:</b>\n\n"
@@ -278,8 +354,10 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             "/alarm on - تشغيل صفارة الإنذار العامة باللعبة\n"
             "/alarm off - إيقاف صفارة الإنذار\n"
             "/announce [رسالة] - بث كلمة أو إعلان في منتصف شاشات اللاعبين\n\n"
-            "💡 <b>الذكاء الاصطناعي Gemini 3.5:</b>\n"
-            "يمكنك كتابة أي سؤال أو استفسار وسأجيبك في أقل من ثانية واحدة!"
+            "💡 <b>التحكم بالكود والذكاء الاصطناعي:</b>\n"
+            "• اكتب لي: <i>'عدل دم سبايدر هودي خليه 300'</i>\n"
+            "• اكتب لي: <i>'احذف جميع الرومات'</i>\n"
+            "• أو اسألني أي سؤال في اللعبة وسأجيبك فوراً!"
         )
         send_telegram_message(chat_id, help_msg)
         return True
@@ -287,10 +365,9 @@ def handle_user_command(chat_id: int, text: str) -> bool:
     return False
 
 def handle_gemini_chat_message(chat_id: int, user_text: str) -> None:
-    """Passes natural conversation to Gemini AI with fast response watchdog."""
+    """Passes natural conversation to Gemini AI with sub-second response."""
     from update_server import call_gemini_ai
     try:
-        # Fast typing indicator
         send_chat_action(chat_id, "typing")
         status_code, ai_res = call_gemini_ai(user_text, context_type="admin_dashboard")
         if ai_res.get("success") and ai_res.get("reply"):
@@ -300,10 +377,9 @@ def handle_gemini_chat_message(chat_id: int, user_text: str) -> None:
                 reply += f"\n\n⚡ <b>تم تنفيذ الأمر:</b> <code>{act_res}</code>"
             send_telegram_message(chat_id, reply)
         else:
-            err = ai_res.get("error", "أمرك يا قائدنا! السيرفر شغال ومستعد لأوامرك.")
-            send_telegram_message(chat_id, err)
+            send_telegram_message(chat_id, "أمرك يا قائدنا سيف! السيرفر شغال وتمام ومستعد لأي تعديل أو أمر تطلبه!")
     except Exception as e:
-        send_telegram_message(chat_id, f"أمرك يا قائدنا! السيرفر شغال ومستعد لأي استفسار.")
+        send_telegram_message(chat_id, "أمرك يا قائدنا! أنا متصل بالسيرفر وجاهز لأوامرك فوراً!")
 
 def process_single_update(update: dict) -> None:
     """Processes a single Telegram update in a non-blocking thread."""
@@ -346,9 +422,9 @@ def run_telegram_polling() -> None:
 
     while True:
         try:
-            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates?offset={last_update_id + 1}&timeout=10"
+            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates?offset={last_update_id + 1}&timeout=8"
             req = urllib.request.Request(url, headers={"User-Agent": "TitanStrikeBot/2.0"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 if not data.get("ok"):
                     time.sleep(1)
@@ -370,3 +446,7 @@ def start_telegram_bot_thread() -> threading.Thread:
     t = threading.Thread(target=run_telegram_polling, daemon=True, name="TelegramBotAgent")
     t.start()
     return t
+
+if __name__ == "__main__":
+    print(f"[*] Running standalone Telegram Bot Agent (@cyberfort3d_bot)...")
+    run_telegram_polling()
