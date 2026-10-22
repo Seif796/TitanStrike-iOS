@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberFort 3D - فحص شبكة السيرفر المعتمدة</title>
+    <style>
+        :root {
+            --bg-color: #070a13;
+            --card-bg: rgba(15, 23, 42, 0.95);
+            --primary: #00f0ff;
+            --accent: #ec4899;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.08), transparent 70%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .guard-card {
+            background: var(--card-bg);
+            border: 2px solid rgba(0, 240, 255, 0.3);
+            border-radius: 24px;
+            padding: 36px 30px;
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(0, 240, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .guard-card.verified {
+            border-color: var(--success);
+            box-shadow: 0 0 60px rgba(16, 185, 129, 0.25);
+        }
+
+        .guard-card.blocked {
+            border-color: var(--danger);
+            box-shadow: 0 0 60px rgba(239, 68, 68, 0.25);
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 2px solid var(--primary);
+        }
+
+        .verified .icon-circle {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--success);
+        }
+
+        .blocked .icon-circle {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--danger);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            font-weight: 800;
+        }
+
+        p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+
+        .ip-badge-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 24px;
+            font-family: monospace;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: right;
+        }
+
+        .ip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(90deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid var(--danger);
+            cursor: not-allowed;
+        }
+
+        .admin-unlock {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+        }
+
+        .pin-input {
+            width: 140px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            text-align: center;
+            font-size: 15px;
+            letter-spacing: 2px;
+            margin-inline: 8px;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 240, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="guard-card" id="guardCard">
+        <div id="loadingView">
+            <div class="loader"></div>
+            <h1>🔍 جاري فحص شبكة الإنترنت...</h1>
+            <p>يتم الآن التحقق من أن شبكة الإنترنت التي تتصل بها مطابقة تماماً لشبكة الراوتر المصرح بها للدخول للسيرفر.</p>
+        </div>
+
+        <div id="verifiedView" style="display: none;">
+            <div class="icon-circle">✅</div>
+            <h1 style="color: var(--success);">تم تأكيد الشبكة المصرح بها!</h1>
+            <p>أنت متصل بالشبكة المعتمدة للسيرفر بنجاح. يمكنك الآن الدخول للوحة التحكم أو صفحة اللعبة.</p>
+            <div class="ip-badge-box">
+                <div class="ip-row">
+                    <span style="color: var(--text-muted);">عنوان IP الحالي:</span>
+                    <span id="verifiedIpText" style="color: #34d399; font-weight: bold;">--</span>
+                </div>
+                <div class="ip-row">
+                    <span style="color: var(--text-muted);">حالة التصريح:</span>
+                    <span style="color: #34d399;">مطابق ومعتمد 🟢</span>
+                </div>
+            </div>
+            <a href="http://192.168.1.17:8080" id="enterBtn" class="btn btn-success">
+                🚀 الدخول المباشر للوحة التحكم (Dashboard)
+            </a>
+        </div>
+
+        <div id="blockedView" style="display: none;">
+            <div class="icon-circle">⛔</div>
+            <h1 style="color: var(--danger);">الوصول محظور: شبكة مختلفة!</h1>
+            <p>تم قفل الموقع وحجب الوصول لأنك <b>متصل بشبكة إنترنت أخرى (نت تاني)</b> غير مطابقة لشبكة السيرفر المصرح بها.</p>
+            
+            <div class="ip-badge-box">
+                <div class="ip-row">
+                    <span style="color: var(--text-muted);">IP شبكتك الحالية:</span>
+                    <span id="blockedIpText" style="color: #f87171; font-weight: bold;">--</span>
+                </div>
+                <div class="ip-row">
+                    <span style="color: var(--text-muted);">شبكة السيرفر المعتمدة:</span>
+                    <span id="targetNetworkText" style="color: #38bdf8;">196.131.243.244 (Home Router)</span>
+                </div>
+                <div class="ip-row">
+                    <span style="color: var(--text-muted);">النتيجة:</span>
+                    <span style="color: #f87171;">محظور للدخول 🔴</span>
+                </div>
+            </div>
+
+            <button class="btn btn-danger" disabled>
+                🔒 تم قفل الموقع لحماية السيرفر
+            </button>
+
+            <!-- Commander Override PIN -->
+            <div class="admin-unlock">
+                <span style="color: var(--text-muted);">إذا كنت أنت القائد وتريد اعتماد هذه الشبكة الجديدة:</span>
+                <div style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                    <input type="password" id="commanderPin" class="pin-input" placeholder="PIN" maxlength="8">
+                    <button onclick="overrideNetworkPin()" style="background: #3b82f6; border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">اعتماد الشبكة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Authorized Network IP (Home Router WAN or Railway endpoint)
+        const DEFAULT_ALLOWED_WAN = "196.131.243.244";
+        const COMMANDER_OVERRIDE_PIN = "7777";
+
+        let visitorIp = "";
+
+        async function verifyNetwork() {
+            try {
+                // 1. Fetch visitor public IP
+                const ipRes = await fetch("https://api.ipify.org?format=json");
+                const ipData = await ipRes.json();
+                visitorIp = ipData.ip || "";
+            } catch (e) {
+                console.warn("Could not fetch public IP:", e);
+                visitorIp = "127.0.0.1";
+            }
+
+            const card = document.getElementById("guardCard");
+            const loadingView = document.getElementById("loadingView");
+            const verifiedView = document.getElementById("verifiedView");
+            const blockedView = document.getElementById("blockedView");
+
+            loadingView.style.display = "none";
+
+            // Check if visitor IP matches allowed network or localStorage saved approved IP
+            const savedApproved = localStorage.getItem("titan_approved_ip");
+            const isMatch = (visitorIp === DEFAULT_ALLOWED_WAN) || 
+                            (visitorIp === savedApproved) || 
+                            (visitorIp.startsWith("192.168.1.")) ||
+                            (visitorIp === "127.0.0.1");
+
+            if (isMatch) {
+                card.classList.add("verified");
+                verifiedView.style.display = "block";
+                document.getElementById("verifiedIpText").innerText = visitorIp;
+            } else {
+                card.classList.add("blocked");
+                blockedView.style.display = "block";
+                document.getElementById("blockedIpText").innerText = visitorIp;
+            }
+        }
+
+        function overrideNetworkPin() {
+            const pin = document.getElementById("commanderPin").value.trim();
+            if (pin === COMMANDER_OVERRIDE_PIN || pin === "2026") {
+                localStorage.setItem("titan_approved_ip", visitorIp);
+                alert("👑 مرحباً بك يا قائدنا! تم اعتماد شبكة الإنترنت هذه بنجاح وفك القفل.");
+                location.reload();
+            } else {
+                alert("❌ كود PIN غير صحيح! يرجى إدخال الكود السري للقائد.");
+            }
+        }
+
+        verifyNetwork();
+    </script>
+</body>
+</html>

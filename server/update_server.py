@@ -593,6 +593,14 @@ def add_console_log(source: str, message: str, level: str = "INFO"):
     CONSOLE_LOGS.append(entry)
     if len(CONSOLE_LOGS) > MAX_CONSOLE_LOGS:
         CONSOLE_LOGS.pop(0)
+    
+    # Instant Telegram Alert on any server or game error
+    if level == "ERROR":
+        try:
+            from telegram_bot import notify_server_error
+            notify_server_error(source, message)
+        except Exception:
+            pass
 
 def handle_session_update(data: dict, client_ip: str) -> tuple[int, dict]:
     global ACTIVE_SESSIONS
@@ -943,6 +951,25 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 "pending_devices": []
             })
             send_json_response(self, dev_sec)
+            return
+
+        elif path == "/api/verify_network":
+            client_ip = self.client_address[0]
+            forwarded = self.headers.get("X-Forwarded-For")
+            if forwarded:
+                client_ip = forwarded.split(",")[0].strip()
+            server_wan = get_wan_ip()
+            is_local = is_local_router_client(client_ip)
+            is_same_wan = (client_ip == server_wan)
+            allowed = is_local or is_same_wan
+            send_json_response(self, {
+                "allowed": allowed,
+                "client_ip": client_ip,
+                "server_wan": server_wan,
+                "is_local_router": is_local,
+                "network_match": allowed,
+                "message": "تم التحقق من شبكة الاتصال بنجاح" if allowed else "شبكة إنترنت غير مطابقة لشبكة السيرفر"
+            })
             return
 
         elif path == "/api/network_info":
@@ -1749,6 +1776,14 @@ def run_server():
         print(f"    - رابط الزوار (Wi-Fi):          http://{lan_ip}:{GUEST_PORT}")
         print(f"    - رابط الإنترنت (WAN):          http://{wan_ip}:{GUEST_PORT}")
     print("=" * 75)
+    # Launch Telegram Bot Gemini Agent Daemon
+    try:
+        from telegram_bot import start_telegram_bot_thread
+        start_telegram_bot_thread()
+        print("🤖 [Telegram Bot Agent] نشط ويعمل بنجاح لاستقبال الأوامر وإرسال تنبيهات الأخطاء!")
+    except Exception as e:
+        print(f"[!] Warning: Could not start Telegram Bot: {e}")
+
     print("[*] All servers are running actively! Ready to serve clients.")
     print("[*] Press Ctrl+C anytime to stop.")
     print("=" * 75)
