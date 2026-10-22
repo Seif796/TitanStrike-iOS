@@ -18,6 +18,7 @@ signal server_status_updated(is_open: bool, status_str: String)
 signal device_access_checked(is_allowed: bool, message: String)
 signal server_opened_notification()
 signal server_closed_notification()
+signal ai_duel_invited(message: String, room_code: String)
 
 const CONFIG_PATH: String = "user://update_config.cfg"
 const STATE_PATH: String = "user://version_state.json"
@@ -118,6 +119,7 @@ var _broadcast_overlay: CanvasLayer = null
 var current_session_data: Dictionary = {}
 var last_seen_alarm_id: int = 0
 var last_seen_broadcast_id: int = 0
+var last_seen_ai_duel_id: int = 0
 var _is_checking_heartbeat: bool = false
 var _heartbeat_candidate_idx: int = 0
 var _heartbeat_candidates: Array[String] = []
@@ -317,6 +319,16 @@ func _on_status_request_completed(result: int, response_code: int, _headers: Pac
 		if not b_msg.is_empty() and b_id > last_seen_broadcast_id:
 			last_seen_broadcast_id = b_id
 			show_leader_broadcast_banner(b_msg)
+		
+		# Check for live 1v1 duel invite from CyberAI (triggered from Web Control Center)
+		var duel = json.data.get("ai_duel_trigger", {})
+		if typeof(duel) == TYPE_DICTIONARY and duel.get("active", false) == true:
+			var d_id = int(duel.get("id", 0))
+			if d_id > last_seen_ai_duel_id:
+				last_seen_ai_duel_id = d_id
+				var d_msg = str(duel.get("message", "⚔️ دعاك CyberAI لمبارزة 1v1!"))
+				var d_code = str(duel.get("room_code", "AI1V1"))
+				ai_duel_invited.emit(d_msg, d_code)
 	
 	# Verify device access authorization
 	verify_device_access()
@@ -536,88 +548,7 @@ func show_leader_broadcast_banner(msg: String) -> void:
 			_broadcast_overlay = null
 	)
 
-# ==============================================================================
-# CYBER AI (GEMINI 3.5 FLASH) ASSISTANT
-# ==============================================================================
-const GEMINI_B64_KEY: String = "QVEuQWI4Uk42SW9IRnU1M000UkJBTlR6ZHcxaG1xQkJnckZTdXlzNzNwT3pfTUJ5R01FR0E="
-static func get_gemini_client_key() -> String:
-	return Marshalls.base64_to_utf8(GEMINI_B64_KEY)
-const GEMINI_CLIENT_MODEL: String = "gemini-3.5-flash-lite"
 
-func ask_cyber_ai(prompt_text: String, callback: Callable) -> void:
-	if prompt_text.strip_edges().is_empty():
-		callback.call("يرجى كتابة سؤال أو استفسار أولاً.", "none")
-		return
-	
-	if server_url.is_empty():
-		_fallback_direct_gemini_call(prompt_text, callback)
-		return
-		
-	var endpoint = server_url.trim_suffix("/") + "/api/ai/chat"
-	var payload = {
-		"prompt": prompt_text,
-		"context": "game_client"
-	}
-	var http = HTTPRequest.new()
-	http.timeout = 15.0
-	add_child(http)
-	http.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
-		http.queue_free()
-		if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-			_fallback_direct_gemini_call(prompt_text, callback)
-			return
-		var json = JSON.new()
-		if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
-			var reply = str(json.data.get("reply", "لم يتم استلام رد من النموذج."))
-			var model = str(json.data.get("model", "gemini-3.5-flash"))
-			callback.call(reply, model)
-		else:
-			_fallback_direct_gemini_call(prompt_text, callback)
-	)
-	var headers = PackedStringArray(["Content-Type: application/json"])
-	var err = http.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
-	if err != OK:
-		http.queue_free()
-		_fallback_direct_gemini_call(prompt_text, callback)
-
-func _fallback_direct_gemini_call(prompt_text: String, callback: Callable) -> void:
-	var url = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s" % [GEMINI_CLIENT_MODEL, get_gemini_client_key()]
-	var payload = {
-		"contents": [
-			{
-				"parts": [
-					{"text": "أنت CyberAI المساعد الذكي التكتيكي للعبة سايبر فورت (CyberFort 3D). أجب بإيجاز وذكاء واحترافية باللغة العربية.\n\nالسؤال: " + prompt_text}
-				]
-			}
-		],
-		"generationConfig": {
-			"temperature": 0.7,
-			"maxOutputTokens": 250
-		}
-	}
-	var http = HTTPRequest.new()
-	http.timeout = 15.0
-	add_child(http)
-	http.request_completed.connect(func(res: int, code: int, _h: PackedStringArray, body: PackedByteArray):
-		http.queue_free()
-		if res == HTTPRequest.RESULT_SUCCESS and code == 200:
-			var json = JSON.new()
-			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
-				var candidates = json.data.get("candidates", [])
-				if not candidates.is_empty() and candidates[0].has("content"):
-					var parts = candidates[0]["content"].get("parts", [])
-					var text = ""
-					for p in parts:
-						text += p.get("text", "")
-					callback.call(text.strip_edges(), GEMINI_CLIENT_MODEL)
-					return
-		callback.call("عذراً، تعذر الوصول لـ Gemini 3.5 Flash حالياً. يرجى التحقق من اتصال الإنترنت.", "error")
-	)
-	var headers = PackedStringArray(["Content-Type: application/json"])
-	var err = http.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
-	if err != OK:
-		http.queue_free()
-		callback.call("خطأ في بدء الاتصال بـ Gemini.", "error")
 
 func _show_server_closed_overlay() -> void:
 	if _server_closed_overlay != null:

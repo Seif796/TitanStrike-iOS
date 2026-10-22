@@ -2319,7 +2319,17 @@
             const chatBox = document.getElementById("ai-chat-box");
             if (chatBox) {
                 // User bubble
-                chatBox.innerHTML += `
+                if (data.action && (data.action.name === 'create_ai_room' || String(data.action.name).includes('room') || String(data.action.name).includes('1v1'))) {
+                            actionBadgeHtml += `
+                                <div style="margin-top: 10px; background: linear-gradient(135deg, rgba(244, 63, 94, 0.2), rgba(168, 85, 247, 0.2)); border: 1.5px solid #f43f5e; border-radius: 10px; padding: 12px; text-align: center;">
+                                    <div style="font-weight: 800; color: #fb7185; font-size: 14px; margin-bottom: 6px;">⚔️ غرفة المبارزة 1v1 جاهزة الآن بكود (#AI1V1)</div>
+                                    <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 10px;">تم إرسال إشعار التحدي المباشر لشاشة لعبتك الآن، أو اضغط بالأسفل لبدء التحدي واللعب فوراً:</div>
+                                    <button onclick="launchGameDuel()" style="background: linear-gradient(90deg, #ec4899, #8b5cf6); border: none; color: white; padding: 8px 20px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 13px; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);">🚀 دخول الساحة واللعب مع CyberAI الآن</button>
+                                </div>
+                            `;
+                        }
+
+                        chatBox.innerHTML += `
                     <div style="display: flex; gap: 10px; align-items: flex-start; justify-content: flex-end;">
                         <div style="background: rgba(244, 63, 94, 0.25); border: 1px solid rgba(244, 63, 94, 0.45); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #ffe4e6; max-width: 80%;">
                             ${escapeHtml(prompt)}
@@ -2411,6 +2421,17 @@
             if (input) {
                 input.value = promptText;
                 sendAiMessage();
+            }
+        }
+
+        async function launchGameDuel() {
+            try {
+                showToast("⚔️ جاري توجيهك للساحة والبدء مع CyberAI...");
+                const res = await fetch('/api/launch_game', { method: 'POST' });
+                const d = await res.json();
+                showToast("🚀 " + (d.message || "تم إرسال أمر دخول الساحة بنجاح!"));
+            } catch (e) {
+                showToast("⚠️ كود الغرفة هو #AI1V1 - اكتبه داخل اللعبة في خانة الكود!");
             }
         }
 

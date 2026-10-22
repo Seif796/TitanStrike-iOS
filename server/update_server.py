@@ -290,6 +290,7 @@ TERMINATED_ROOMS = set()
 ACTIVE_SESSIONS = {} # session_id: { "player": ..., "mode": ..., "hero": ..., "status": ..., "ip": ... }
 GLOBAL_EMERGENCY_ALARM = {"active": False, "message": "", "id": 0}
 GLOBAL_BROADCAST = {"message": "", "id": 0, "room_code": ""}
+GLOBAL_AI_DUEL_TRIGGER = {"active": False, "message": "", "room_code": "AI1V1", "ai_name": "CyberAI", "id": 0}
 
 # ==============================================================================
 # GEMINI 3.5 FLASH AI INTEGRATION (CyberAI Engine)
@@ -324,11 +325,18 @@ def execute_server_action(action_name: str, params: dict, context_type: str = "g
     is_admin = (context_type == "admin_dashboard")
     action_data = {"name": action_name, "params": params}
     
+    global GLOBAL_AI_DUEL_TRIGGER
     act_l = str(action_name).lower()
-    if any(k in act_l for k in ["room", "1v1", "duel", "game"]):
+    if any(k in act_l for k in ["room", "1v1", "duel", "game", "ai_room"]):
         hero_name = params.get("hero", "Spider Hero")
         code = "AI1V1"
         now_ts = time.time()
+        import datetime
+        now_str = datetime.datetime.now().strftime("%H:%M:%S")
+        all_lan = get_all_lan_ips()
+        clean_lan = [ip for ip in all_lan if ip != "127.0.0.1"]
+        host_ip = clean_lan[0] if clean_lan else "127.0.0.1"
+        
         ROOMS[code] = {
             "code": code,
             "host": "CyberAI 🤖 [BOT 1v1]",
@@ -336,15 +344,24 @@ def execute_server_action(action_name: str, params: dict, context_type: str = "g
             "map_id": 0,
             "players": 1,
             "players_list": ["CyberAI 🤖"],
-            "created_at": now_ts,
+            "created_at": now_str,
+            "host_ip": host_ip,
+            "candidate_ips": all_lan,
+            "port": 7777,
             "last_seen": now_ts,
             "status": "WAITING_FOR_OPPONENT",
             "is_ai_room": True,
             "ai_hero": hero_name
         }
         TOTAL_ROOMS_CREATED += 1
+        
+        GLOBAL_AI_DUEL_TRIGGER["active"] = True
+        GLOBAL_AI_DUEL_TRIGGER["id"] = int(time.time() * 1000)
+        GLOBAL_AI_DUEL_TRIGGER["room_code"] = code
+        GLOBAL_AI_DUEL_TRIGGER["message"] = f"⚔️ جهز CyberAI غرفة 1v1 بكود #{code} ويدعوك لدخول الساحة فوراً!"
+        
         msg = f"تم إنشاء وتجهيز غرفة المبارزة 1v1 بنجاح على السيرفر! كود الغرفة: #{code}"
-        add_console_log("CYBER_AI", f"⚔️ دخل CyberAI السيرفر وأنشأ غرفة 1v1 بكود #{code} منتظراً المنافس في الساحة!", "SUCCESS")
+        add_console_log("CYBER_AI", f"⚔️ دخل CyberAI السيرفر وأنشأ غرفة 1v1 بكود #{code} بانتظار القائد في الساحة فوراً!", "SUCCESS")
         return True, msg, action_data
         
     elif any(k in act_l for k in ["broadcast", "announce", "msg", "message"]):
@@ -420,7 +437,11 @@ def detect_user_intent_action(prompt: str, context_type: str = "general") -> dic
     is_admin = (context_type == "admin_dashboard")
     
     # 1. Create Room / Enter Game / 1v1 Duel against CyberAI
-    create_room_keywords = ["خش اللعبة", "خش العبه", "ادخل اللعبة", "ادخل العبه", "اعمل غرفة", "اعمل الغرفة", "اعمل روم", "العب معاك", "العب معايا", "نلعب سوا", "قولي الكود", "كود الغرفة", "كود الغرفه", "مبارزة 1v1", "تحدي 1v1"]
+    create_room_keywords = [
+        "خش اللعبة", "خش العبه", "ادخل اللعبة", "ادخل العبه", "اعمل غرفة", "اعمل الغرفة", 
+        "اعمل روم", "روم 1v1", "1v1", "العب معاك", "العب معايا", "نلعب سوا", "نلعب مع بعض", 
+        "نلعب ضد بعض", "قولي الكود", "كود الغرفة", "كود الغرفه", "مبارزة", "تحدي", "روم", "غرفة", "غرفه"
+    ]
     if any(k in p for k in create_room_keywords):
         return {"name": "create_ai_room", "params": {"hero": "Spider Hero"}}
     
@@ -538,6 +559,14 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
         detected = detect_user_intent_action(user_prompt, context_type)
         if detected:
             ok, action_msg, action_info = execute_server_action(detected["name"], detected.get("params", {}), context_type)
+
+    if action_info and any(k in str(action_info.get("name", "")).lower() for k in ["room", "1v1", "duel"]):
+        reply_text = (
+            "أمرك يا قائدنا وسمعاً وطاعة! ⚔️\n"
+            "دخلت اللعبة وجهزتلك غرفة المبارزة 1v1 فوراً كخصم ومنافس لك في الساحة!\n"
+            "🔑 كود الغرفة: #AI1V1\n"
+            "تم إرسال إشعار التحدي المباشر لشاشة لعبتك الآن، أو اضغط على الزر بالأسفل للبدء فوراً!"
+        )
 
     add_console_log("CYBER_AI", f"🤖 ({'👑 القائد' if is_admin else '👤 اللاعب'}): '{user_prompt[:30]}...' -> {reply_text[:40]}...", "SUCCESS" if action_info else "INFO")
 
@@ -899,7 +928,8 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 "is_open": (st == "OPEN"),
                 "emergency_alarm": GLOBAL_EMERGENCY_ALARM,
                 "broadcast_message": GLOBAL_BROADCAST.get("message", ""),
-                "broadcast_id": GLOBAL_BROADCAST.get("id", 0)
+                "broadcast_id": GLOBAL_BROADCAST.get("id", 0),
+                "ai_duel_trigger": GLOBAL_AI_DUEL_TRIGGER
             })
             return
 
@@ -1027,7 +1057,25 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        if path == "/api/sync_github_ipa":
+        if path == "/api/launch_game":
+            global GLOBAL_AI_DUEL_TRIGGER
+            GLOBAL_AI_DUEL_TRIGGER["active"] = True
+            GLOBAL_AI_DUEL_TRIGGER["id"] = int(time.time() * 1000)
+            GLOBAL_AI_DUEL_TRIGGER["room_code"] = "AI1V1"
+            GLOBAL_AI_DUEL_TRIGGER["message"] = "⚔️ انطلقت مبارزة 1v1 مع CyberAI! جاري إدخالك للساحة..."
+            try:
+                import subprocess, psutil
+                godot_running = any("godot" in p.name().lower() for p in psutil.process_iter(['name']))
+                if not godot_running:
+                    godot_exe = r"C:\Users\Administrator\OneDrive\Desktop\Godot.exe"
+                    proj_dir = r"c:\Users\Administrator\OneDrive\Desktop\Game"
+                    subprocess.Popen([godot_exe, "--path", proj_dir])
+            except Exception as ex:
+                print("Launch game error:", ex)
+            send_json_response(self, {"success": True, "message": "تم إرسال أمر فتح ودخول اللعبة بنجاح!"})
+            return
+
+        elif path == "/api/sync_github_ipa":
             if not self.check_router_access():
                 return
             try:
@@ -1479,7 +1527,8 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 "is_open": (st == "OPEN"),
                 "emergency_alarm": GLOBAL_EMERGENCY_ALARM,
                 "broadcast_message": GLOBAL_BROADCAST.get("message", ""),
-                "broadcast_id": GLOBAL_BROADCAST.get("id", 0)
+                "broadcast_id": GLOBAL_BROADCAST.get("id", 0),
+                "ai_duel_trigger": GLOBAL_AI_DUEL_TRIGGER
             })
             return
 
