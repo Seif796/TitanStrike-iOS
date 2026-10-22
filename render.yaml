@@ -9,3 +9,4 @@ services:
         value: 8993921362:AAFglRSgWPIiNZOLPEh8JSgBrW8RWPfaQ9c
       - key: PORT
         value: 8080
+
