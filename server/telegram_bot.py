@@ -26,7 +26,6 @@ def load_admin_chats():
                 _admin_chat_ids = set(data.get("admin_chats", []))
         except Exception as e:
             print(f"[TelegramBot] Error loading admin chats: {e}")
-    # Also support from env
     env_chat = os.environ.get("TELEGRAM_ADMIN_CHAT_ID")
     if env_chat:
         try:
@@ -63,10 +62,13 @@ def send_telegram_message(chat_id: int | str, text: str, reply_markup: dict = No
             data=body,
             headers={"Content-Type": "application/json", "User-Agent": "TitanStrikeBot/2.0"}
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            ok = (resp.status == 200)
+            if ok:
+                print(f"[TelegramBot] 📤 تم إرسال الرد بنجاح لـ {chat_id}")
+            return ok
     except Exception as e:
-        # Ignore network errors in polling loop
+        print(f"[TelegramBot] ⚠️ فشل إرسال الرسالة إلى {chat_id}: {e}")
         return False
 
 def broadcast_to_admins(text: str) -> None:
@@ -107,7 +109,6 @@ def get_server_status_summary() -> str:
         
         now_str = time.strftime("%Y-%m-%d %H:%M:%S")
         
-        # System resource usage if psutil is available
         sys_info = ""
         try:
             import psutil
@@ -262,7 +263,6 @@ def handle_user_command(chat_id: int, text: str) -> bool:
 def handle_gemini_chat_message(chat_id: int, user_text: str) -> None:
     """Passes natural conversation to Gemini AI with live server context."""
     from update_server import call_gemini_ai
-    # Send typing action or temporary feedback
     try:
         status_code, ai_res = call_gemini_ai(user_text, context_type="admin_dashboard")
         if ai_res.get("success") and ai_res.get("reply"):
@@ -283,17 +283,17 @@ def run_telegram_polling() -> None:
         print("[TelegramBot] No bot token configured, polling disabled.")
         return
 
-    print(f"[TelegramBot] 🚀 Starting Telegram Gemini Bot Agent...")
+    print(f"[TelegramBot] 🚀 Starting Telegram Gemini Bot Agent (@cyberfort3d_bot)...")
     last_update_id = 0
 
     while True:
         try:
-            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates?offset={last_update_id + 1}&timeout=20"
+            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates?offset={last_update_id + 1}&timeout=15"
             req = urllib.request.Request(url, headers={"User-Agent": "TitanStrikeBot/2.0"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=25) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 if not data.get("ok"):
-                    time.sleep(3)
+                    time.sleep(2)
                     continue
 
                 for update in data.get("result", []):
@@ -304,24 +304,21 @@ def run_telegram_polling() -> None:
 
                     chat_id = msg["chat"]["id"]
                     text = msg["text"].strip()
+                    print(f"[TelegramBot] 📩 وصل طلب جديد من القائد ({chat_id}): '{text}'")
                     
-                    # Auto register commander chat ID
                     if chat_id not in _admin_chat_ids:
                         _admin_chat_ids.add(chat_id)
                         save_admin_chats()
 
-                    # 1. First try command handlers
                     if handle_user_command(chat_id, text):
                         continue
 
-                    # 2. Natural language conversation with Gemini Agent
                     handle_gemini_chat_message(chat_id, text)
 
         except urllib.error.URLError as e:
-            # Network hiccup or ISP throttling; retry quietly
-            time.sleep(5)
-        except Exception as e:
             time.sleep(3)
+        except Exception as e:
+            time.sleep(2)
 
 def start_telegram_bot_thread() -> threading.Thread:
     """Launches the Telegram bot in an independent background daemon thread."""
