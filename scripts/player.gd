@@ -378,17 +378,18 @@ func take_damage(amount: float) -> void:
 	if is_down:
 		return
 	
-	if is_bot or is_local_player():
+	if multiplayer.has_multiplayer_peer():
+		rpc("_sync_damage", amount)
+	else:
 		_apply_damage(amount)
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_damage", amount)
 
 @rpc("any_peer", "call_local", "reliable")
 func _sync_damage(amount: float) -> void:
-	if not is_local_player() and not is_bot:
-		_apply_damage(amount)
+	_apply_damage(amount)
 
 func _apply_damage(amount: float) -> void:
+	if is_down:
+		return
 	current_hp = max(0, current_hp - amount)
 	health_changed.emit(current_hp, max_hp)
 	

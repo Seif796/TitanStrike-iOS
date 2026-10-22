@@ -58,10 +58,16 @@ func _ready() -> void:
 		leave_btn.pressed.connect(_on_leave_pressed)
 	
 	var r_code = NetworkManager.current_room_code
-	var host_ip = NetworkManager.get_local_ip()
+	var all_ips = NetworkManager.get_all_local_ips()
+	var visible_ips: Array[String] = []
+	for ip in all_ips:
+		if ip != "127.0.0.1" and not visible_ips.has(ip):
+			visible_ips.append(ip)
+	var ips_str = " / ".join(visible_ips) if not visible_ips.is_empty() else NetworkManager.get_local_ip()
+	
 	if multiplayer.is_server():
 		room_title.text = "👑 SQUAD ROOM HOST (أنت صاحب الغرفة)"
-		code_banner.text = "🔑 ROOM CODE: #%s   |   📱 Direct IP: %s (يمكن كتابة هذا الرقم مباشرة)" % [r_code, host_ip]
+		code_banner.text = "🔑 كود الغرفة: #%s   |   🌐 عناوين الدخول: %s" % [r_code, ips_str]
 		if start_btn:
 			start_btn.visible = true
 			start_btn.disabled = false
@@ -69,7 +75,7 @@ func _ready() -> void:
 			start_btn.modulate = Color(0.2, 1.0, 0.5)
 	else:
 		room_title.text = "🎮 SQUAD ROOM - READY (تم الانضمام للغرفة بنجاح)"
-		code_banner.text = "🔑 متصل بالغرفة #%s   |   📱 Host IP: %s" % [r_code, host_ip]
+		code_banner.text = "🔑 متصل بالغرفة #%s   |   📱 السيرفر: %s" % [r_code, ips_str]
 		if start_btn:
 			start_btn.visible = true
 			start_btn.disabled = true

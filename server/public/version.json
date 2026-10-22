@@ -1,20 +1,15 @@
 {
-  "version": "1.2.16",
-  "version_code": 16,
-  "release_date": "2026-10-21",
-  "title": "👑 تحكم كامل لـ CyberAI: غرف 1v1 وتفرقة القائد عن اللاعبين",
+  "version": "1.1.0",
+  "version_code": 2,
+  "release_date": "2026-10-22",
+  "title": "تحديث جديد: تحسينات وإصلاحات شاملة",
   "changelog": [
-    "التحكم التنفيذي لـ CyberAI: إنشاء غرف 1v1، إعلانات، إنذار، وإدارة السيرفر بأمر القائد",
-    "القدرة على طلب دخول اللعبة من CyberAI والحصول على كود الغرفة #AI1V1 للمبارزة المباشرة",
-    "التمييز الذكي بين القائد في لوحة التحكم واللاعب العادي في التطبيق وبوابة الزوار",
-    "زر مباشر داخل شات اللعبة لبدء ومواجهة CyberAI في ساحة القتال 1v1"
+    "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
+    "ربط اللعبة بسيرفر التحديثات المباشر",
+    "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 121450,
-  "sha256": "4f30a0d5efcce330f65bc0d8c9855644ebd6d2e973fcc074ee9e96fae7aa1f93",
-  "mandatory": true,
-  "has_new_ipa": true,
-  "requires_ipa": true,
-  "ipa_download_url": "/downloads/TitanStrike-unsigned.ipa",
-  "ipa_file_size_mb": 22.6
+  "file_size_bytes": 122899,
+  "sha256": "0fb9f5dfc56aa70175421666351ea6542e1ca8b2473254c108fb7933a21d5305",
+  "mandatory": false
 }

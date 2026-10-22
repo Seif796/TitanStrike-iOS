@@ -57,6 +57,15 @@ func get_fallback_candidates() -> Array[String]:
 	list.append("http://192.168.43.1:8080")
 	list.append("http://192.168.43.1:8081")
 	
+	var nm = get_node_or_null("/root/NetworkManager")
+	if nm and nm.has_method("get_all_local_ips"):
+		for lip in nm.get_all_local_ips():
+			if lip != "127.0.0.1":
+				var u1 = "http://%s:8080" % lip
+				var u2 = "http://%s:8081" % lip
+				if not list.has(u1): list.append(u1)
+				if not list.has(u2): list.append(u2)
+	
 	if not server_url.is_empty():
 		list.erase(server_url)
 		if is_pc:

@@ -647,6 +647,11 @@ func _setup_mode_select_view() -> void:
 	NetworkManager.room_discovered.connect(_on_room_discovered)
 	NetworkManager.connection_succeeded.connect(_on_connection_succeeded)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
+	NetworkManager.connection_status_updated.connect(func(msg: String):
+		if status_label:
+			status_label.text = msg
+			status_label.modulate = Color.CYAN
+	)
 	
 	_speak_prompt("Welcome! Select your hero, then choose Singleplayer or Multiplayer.")
 

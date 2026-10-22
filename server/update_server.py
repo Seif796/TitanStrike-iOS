@@ -98,15 +98,41 @@ DEFAULT_GAME_CONFIG = {
 
 _cached_wan_ip = None
 
-def get_lan_ip():
+def get_all_lan_ips() -> list[str]:
+    """Returns all active local IPv4 addresses sorted by priority (LAN/Wi-Fi first, then Hotspot, vEthernet)."""
+    ips = []
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
+        primary = s.getsockname()[0]
         s.close()
-        return ip
+        if primary and primary != "127.0.0.1":
+            ips.append(primary)
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    try:
+        import psutil
+        for iface, addrs in psutil.net_if_addrs().items():
+            for a in addrs:
+                if a.family == socket.AF_INET:
+                    ip = a.address
+                    if ip and not ip.startswith("127.") and not ip.startswith("169.254."):
+                        if ip not in ips:
+                            if not ip.startswith("172."):
+                                ips.insert(0 if not ips else 1, ip)
+                            else:
+                                ips.append(ip)
+    except Exception:
+        pass
+
+    if not ips:
+        ips.append("127.0.0.1")
+    return ips
+
+def get_lan_ip() -> str:
+    all_lan = get_all_lan_ips()
+    return all_lan[0] if all_lan else "127.0.0.1"
 
 def get_wan_ip():
     global _cached_wan_ip
@@ -600,6 +626,8 @@ def handle_rooms_update(data: dict) -> tuple[int, dict]:
             if "players_list" in ROOMS[code] and len(ROOMS[code]["players_list"]) > p_cnt:
                 p_cnt = len(ROOMS[code]["players_list"])
             ROOMS[code]["players"] = max(1, p_cnt)
+        if "candidate_ips" in data and data["candidate_ips"]:
+            ROOMS[code]["candidate_ips"] = data["candidate_ips"]
         if "status" in data and data["status"]:
             ROOMS[code]["status"] = str(data["status"]).strip()
         return 200, {"success": True, "room": ROOMS[code]}
@@ -645,6 +673,17 @@ def handle_rooms_create(data: dict, client_ip: str = "") -> tuple[int, dict]:
     if not p_list:
         p_list = [host]
     
+    candidate_ips = data.get("candidate_ips", [])
+    if not candidate_ips:
+        candidate_ips = [clean_ip]
+    elif clean_ip not in candidate_ips and clean_ip not in ("127.0.0.1", "localhost"):
+        candidate_ips.insert(0, clean_ip)
+    
+    # Include all server local interface IPs
+    for sip in get_all_lan_ips():
+        if sip not in candidate_ips and sip != "127.0.0.1":
+            candidate_ips.append(sip)
+
     TERMINATED_ROOMS.discard(code)
     ROOMS[code] = {
         "code": code,
@@ -654,7 +693,8 @@ def handle_rooms_create(data: dict, client_ip: str = "") -> tuple[int, dict]:
         "players_list": p_list,
         "created_at": now_str,
         "host_ip": clean_ip,
-        "port": 7777,
+        "candidate_ips": candidate_ips,
+        "port": int(data.get("port", 7777)),
         "status": "ACTIVE",
         "broadcast_message": "",
         "message_id": 0,
@@ -765,6 +805,7 @@ def handle_rooms_check(code: str) -> tuple[int, dict]:
             "active": True, 
             "terminated": False,
             "host_ip": room.get("host_ip", ""),
+            "candidate_ips": room.get("candidate_ips", [room.get("host_ip", "")]),
             "port": room.get("port", 7777),
             "message": r_msg,
             "message_id": r_id,
@@ -879,6 +920,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 return
             net_data = {
                 "lan_ip": get_lan_ip(),
+                "all_lan_ips": get_all_lan_ips(),
                 "wan_ip": get_wan_ip(),
                 "port": PORT,
                 "lan_url": f"http://{get_lan_ip()}:{PORT}",

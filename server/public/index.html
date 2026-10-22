@@ -1273,6 +1273,18 @@
                 if (data.lan_url) {
                     document.getElementById('url-lan').innerText = data.lan_url;
                 }
+                if (data.all_lan_ips && data.all_lan_ips.length > 1) {
+                    const multiContainer = document.getElementById('multi-ip-list');
+                    if (!multiContainer) {
+                        const box = document.getElementById('box-lan');
+                        const div = document.createElement('div');
+                        div.id = 'multi-ip-list';
+                        div.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px;';
+                        div.innerHTML = '<span style="color: #94a3b8;">عناوين الاتصال المتعددة (Multi-IP):</span> ' + 
+                            data.all_lan_ips.map(ip => `<span style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 2px 8px; border-radius: 6px; font-family: monospace;">${ip}</span>`).join(' ');
+                        box.parentNode.insertBefore(div, box.nextSibling);
+                    }
+                }
                 if (data.wan_url) {
                     document.getElementById('url-wan').innerText = data.wan_url;
                 }

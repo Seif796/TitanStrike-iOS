@@ -16,6 +16,7 @@ signal lobby_updated()
 signal room_launch_countdown(seconds_left: int)
 signal room_discovered(room_code: String, host_ip: String, map_id: int)
 signal leader_broadcast_received(message: String)
+signal connection_status_updated(status_message: String)
 
 var peer: ENetMultiplayerPeer = null
 var players: Dictionary = {}
@@ -25,6 +26,12 @@ var current_room_code: String = ""
 var last_received_msg_id: int = 0
 var _broadcast_overlay: CanvasLayer = null
 var _ejected_overlay: CanvasLayer = null
+
+# Multi-IP Fast Connect Waterfall State
+var _joining_candidates: Array[String] = []
+var _candidate_idx: int = 0
+var _connecting_port: int = DEFAULT_PORT
+var _is_connecting: bool = false
 
 # UDP Room Broadcaster & Listener
 var udp_broadcaster: PacketPeerUDP = null
@@ -192,7 +199,7 @@ func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -
 		_room_watchdog_timer.start()
 	return OK
 
-# --- JOIN ROOM WITH ROOM CODE ---
+# --- JOIN ROOM WITH ROOM CODE (Multi-IP Fast Waterfall) ---
 
 func join_room_with_code(code: String, player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
 	leave_game()
@@ -200,28 +207,111 @@ func join_room_with_code(code: String, player_name: String, class_id: int, port:
 	local_class_id = class_id
 	current_room_code = code.strip_edges().to_upper().replace("#", "")
 	
-	var target_ip = decode_room_code_to_ip(current_room_code)
-	print("Joining Room Code: ", current_room_code, " -> Resolved IP: ", target_ip)
+	# 1. AI 1v1 Duel Special Code (#AI1V1, CYBERAI, etc.)
+	if is_ai_duel_room_code(current_room_code):
+		print("🤖 AI Duel code detected (#%s)! Starting 1v1 Duel with CyberAI immediately..." % current_room_code)
+		var cur_scene = get_tree().current_scene
+		if cur_scene and cur_scene.has_method("start_duel_against_cyber_ai"):
+			cur_scene.start_duel_against_cyber_ai()
+			return OK
+		else:
+			GameManager.selected_game_mode = GameManager.GameMode.PVP_DUEL
+			GameManager.bot_enabled = true
+			GameManager.bot_class_id = 4
+			GameManager.start_game_scene()
+			return OK
+	
+	# 2. Build prioritized candidate IPs list for fast multi-IP connection
+	_joining_candidates.clear()
+	_candidate_idx = 0
+	_connecting_port = port
+	
+	var decoded_ip = decode_room_code_to_ip(current_room_code)
+	if not decoded_ip.is_empty() and not _joining_candidates.has(decoded_ip):
+		_joining_candidates.append(decoded_ip)
+	
+	# Hotspot / Bluetooth host gateway
+	var gw_ip = get_bluetooth_or_hotspot_host_ip()
+	if not _joining_candidates.has(gw_ip):
+		_joining_candidates.append(gw_ip)
+	
+	# Local network interfaces candidate IPs
+	for ip in get_all_local_ips():
+		if not _joining_candidates.has(ip):
+			_joining_candidates.append(ip)
+	
+	if not _joining_candidates.has("127.0.0.1"):
+		_joining_candidates.append("127.0.0.1")
+	
+	# 3. Query server asynchronously for candidate IPs reported by host
+	_query_server_for_room_candidates(current_room_code)
+	
+	# 4. Start fast waterfall connection attempt (1.4s per candidate)
+	_start_next_candidate_connection()
+	return OK
+
+func _query_server_for_room_candidates(code: String) -> void:
+	var um = get_node_or_null("/root/UpdateManager")
+	if um == null or um.server_url.is_empty():
+		return
+	var http = HTTPRequest.new()
+	http.timeout = 1.2
+	add_child(http)
+	http.request_completed.connect(func(res: int, code_resp: int, _h: PackedStringArray, body: PackedByteArray):
+		if res == HTTPRequest.RESULT_SUCCESS and code_resp == 200:
+			var j = JSON.new()
+			if j.parse(body.get_string_from_utf8()) == OK and typeof(j.data) == TYPE_DICTIONARY:
+				var c_ips = j.data.get("candidate_ips", [])
+				if typeof(c_ips) == TYPE_ARRAY:
+					for cip in c_ips:
+						var s_ip = str(cip).strip_edges()
+						if not s_ip.is_empty() and not _joining_candidates.has(s_ip):
+							_joining_candidates.insert(_candidate_idx + 1, s_ip)
+		http.queue_free()
+	)
+	var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/check?code=" + code
+	http.request(endpoint)
+
+func _start_next_candidate_connection() -> void:
+	if _candidate_idx >= _joining_candidates.size():
+		print("❌ All candidate IPs failed for room #%s!" % current_room_code)
+		leave_game()
+		connection_failed.emit()
+		return
+	
+	var target_ip = _joining_candidates[_candidate_idx]
+	print("⚡ [Fast Connect] Trying candidate IP (%d/%d): %s:%d" % [_candidate_idx + 1, _joining_candidates.size(), target_ip, _connecting_port])
+	
+	var status_msg = "⚡ جاري الاتصال السريع عبر %s (%d/%d)..." % [target_ip, _candidate_idx + 1, _joining_candidates.size()]
+	connection_status_updated.emit(status_msg)
+	
+	var cur_scene = get_tree().current_scene
+	if cur_scene and "status_label" in cur_scene and cur_scene.status_label:
+		cur_scene.status_label.text = status_msg
+		cur_scene.status_label.modulate = Color.CYAN
+	
+	if peer:
+		peer.close()
+		multiplayer.multiplayer_peer = null
 	
 	peer = ENetMultiplayerPeer.new()
-	var error = peer.create_client(target_ip, port)
+	var error = peer.create_client(target_ip, _connecting_port)
 	if error != OK:
-		print("Failed to join room: ", error)
-		return error
+		print("Direct create_client failed for %s: %d. Advancing immediately..." % [target_ip, error])
+		_candidate_idx += 1
+		_start_next_candidate_connection()
+		return
 	
 	multiplayer.multiplayer_peer = peer
-	if _room_watchdog_timer:
-		_room_watchdog_timer.start()
+	_is_connecting = true
 	
-	# Connection watchdog: 6 seconds timeout
-	get_tree().create_timer(6.0).timeout.connect(func():
-		if peer and multiplayer.multiplayer_peer == peer and multiplayer.get_unique_id() == 0:
-			print("Connection watchdog timed out to: %s:%d" % [target_ip, port])
-			leave_game()
-			connection_failed.emit()
+	# Fast Watchdog: 1.4 seconds timeout per candidate
+	get_tree().create_timer(1.4).timeout.connect(func():
+		if _is_connecting and peer != null and multiplayer.multiplayer_peer == peer and multiplayer.get_unique_id() == 0:
+			print("⏱️ Watchdog: IP %s timed out after 1.4s. Advancing to next candidate..." % target_ip)
+			_candidate_idx += 1
+			_start_next_candidate_connection()
 	)
-	
-	return OK
 
 func start_discovery_listener() -> void:
 	if not udp_listener:
@@ -236,6 +326,9 @@ func stop_discovery_listener() -> void:
 		udp_listener = null
 
 func leave_game() -> void:
+	_is_connecting = false
+	_joining_candidates.clear()
+	_candidate_idx = 0
 	if _room_watchdog_timer:
 		_room_watchdog_timer.stop()
 	if multiplayer and multiplayer.is_server() and not current_room_code.is_empty():
@@ -266,7 +359,10 @@ func _report_room_created(code: String, host_name: String) -> void:
 		"host_name": host_name,
 		"mode": "Multiplayer",
 		"players": max(1, players.size()),
-		"players_list": p_names
+		"players_list": p_names,
+		"host_ip": get_local_ip(),
+		"candidate_ips": get_all_local_ips(),
+		"port": DEFAULT_PORT
 	}
 	var http = HTTPRequest.new()
 	http.timeout = 2.5
@@ -484,6 +580,11 @@ func _on_peer_disconnected(id: int) -> void:
 			update_room_details("", players.size())
 
 func _on_connected_to_server() -> void:
+	_is_connecting = false
+	_joining_candidates.clear()
+	_candidate_idx = 0
+	if _room_watchdog_timer:
+		_room_watchdog_timer.start()
 	var local_id = multiplayer.get_unique_id()
 	rpc("_register_player", local_id, {
 		"name": local_player_name,
@@ -498,6 +599,12 @@ func _on_connected_to_server() -> void:
 	connection_succeeded.emit()
 
 func _on_connection_failed() -> void:
+	if _is_connecting and _candidate_idx + 1 < _joining_candidates.size():
+		print("Peer connection failed for current candidate IP. Advancing immediately...")
+		_candidate_idx += 1
+		_start_next_candidate_connection()
+		return
+	_is_connecting = false
 	connection_failed.emit()
 
 func _on_server_disconnected() -> void:
@@ -516,52 +623,79 @@ func _register_player(id: int, info: Dictionary) -> void:
 		if um and id != 1:
 			um.log_game_event("انضم اللاعب '%s' إلى الغرفة #%s بنجاح!" % [p_name, current_room_code], "SUCCESS", "ROOM")
 
-func get_local_ip() -> String:
-	var all_ips: Array[String] = []
-	for ip in IP.get_local_addresses():
-		if ip.begins_with("127.") or ip.find(":") != -1 or ip.begins_with("169.254."):
+func get_all_local_ips() -> Array[String]:
+	var raw_ips = IP.get_local_addresses()
+	var wifi_lan: Array[String] = []
+	var hotspot: Array[String] = []
+	var other_private: Array[String] = []
+	var virtual_adapters: Array[String] = []
+	
+	for ip in raw_ips:
+		if ip.find(":") != -1 or ip.begins_with("169.254."):
 			continue
-		# Prioritize Bluetooth PAN (192.168.44.x)
-		if ip.begins_with("192.168.44."):
-			return ip
-		# Prioritize Android Hotspot (192.168.43.x)
-		if ip.begins_with("192.168.43."):
-			return ip
-		# Prioritize iOS Personal Hotspot / Bluetooth (172.20.10.x)
-		if ip.begins_with("172.20.10."):
-			return ip
-		all_ips.append(ip)
+		if ip == "127.0.0.1":
+			continue
+		
+		# Mobile Hotspots & Bluetooth Tethering
+		if ip.begins_with("192.168.43.") or ip.begins_with("172.20.10.") or ip.begins_with("192.168.44."):
+			if not hotspot.has(ip):
+				hotspot.append(ip)
+			continue
+		
+		# Real Wi-Fi / LAN: 192.168.x (not ending in .1 unless that's all there is)
+		if ip.begins_with("192.168."):
+			if not ip.ends_with(".1"):
+				if not wifi_lan.has(ip):
+					wifi_lan.append(ip)
+			else:
+				if not other_private.has(ip):
+					other_private.append(ip)
+			continue
+		
+		# Virtual Switches (Hyper-V, WSL, Docker: typically 172.16-31.x.1)
+		var is_v_switch = false
+		if ip.begins_with("172.") and ip.ends_with(".1"):
+			is_v_switch = true
+		
+		if is_v_switch:
+			if not virtual_adapters.has(ip):
+				virtual_adapters.append(ip)
+		else:
+			if not other_private.has(ip):
+				other_private.append(ip)
 
-	# If UpdateManager has an active server URL, pick the matching subnet!
+	var ordered: Array[String] = []
+	
+	# If UpdateManager has an active server URL, put matching subnet IP first!
 	var um = get_node_or_null("/root/UpdateManager")
 	if um and not um.server_url.is_empty():
-		for ip in all_ips:
-			var parts = ip.split(".")
-			if parts.size() == 4:
-				var prefix = parts[0] + "." + parts[1] + "." + parts[2] + "."
-				if um.server_url.find(prefix) != -1:
-					return ip
+		for group in [hotspot, wifi_lan, other_private, virtual_adapters]:
+			for ip in group:
+				var parts = ip.split(".")
+				if parts.size() == 4:
+					var prefix = parts[0] + "." + parts[1] + "." + parts[2] + "."
+					if um.server_url.find(prefix) != -1 and not ordered.has(ip):
+						ordered.append(ip)
 
-	# Priority 1: Real Wi-Fi subnets (192.168.x) not ending with .1 and not Hyper-V virtual switch
-	for ip in all_ips:
-		if ip.begins_with("192.168.") and not ip.ends_with(".1") and not ip.begins_with("192.168.128.") and not ip.begins_with("192.168.176."):
-			return ip
+	for ip in wifi_lan:
+		if not ordered.has(ip): ordered.append(ip)
+	for ip in hotspot:
+		if not ordered.has(ip): ordered.append(ip)
+	for ip in other_private:
+		if not ordered.has(ip): ordered.append(ip)
+	for ip in virtual_adapters:
+		if not ordered.has(ip): ordered.append(ip)
+	
+	if not ordered.has("127.0.0.1"):
+		ordered.append("127.0.0.1")
+	
+	return ordered
 
-	# Priority 2: Any 192.168.x not ending with .1
-	for ip in all_ips:
-		if ip.begins_with("192.168.") and not ip.ends_with(".1"):
-			return ip
-
-	# Priority 3: 172.x private subnets not ending with .1
-	for ip in all_ips:
-		if ip.begins_with("172.") and not ip.ends_with(".1"):
-			return ip
-
-	# Priority 4: 10.x private subnets not ending with .1
-	for ip in all_ips:
-		if ip.begins_with("10.") and not ip.ends_with(".1"):
-			return ip
-
-	if not all_ips.is_empty():
-		return all_ips[0]
+func get_local_ip() -> String:
+	var list = get_all_local_ips()
+	if not list.is_empty():
+		for ip in list:
+			if ip != "127.0.0.1":
+				return ip
+		return list[0]
 	return "127.0.0.1"
