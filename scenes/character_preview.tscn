@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/weapon_model.tscn" id="5_weapon_model"]
 [ext_resource type="PackedScene" path="res://scenes/admin_model.tscn" id="6_admin_model"]
 [ext_resource type="PackedScene" path="res://scenes/spiderman_model.tscn" id="7_spider_model"]
+[ext_resource type="PackedScene" path="res://scenes/strawberry_model.tscn" id="8_strawberry_model"]
+[ext_resource type="PackedScene" path="res://scenes/citrus_tank_model.tscn" id="9_citrus_model"]
 
 [sub_resource type="Environment" id="Environment_preview"]
 background_mode = 1
@@ -171,6 +173,12 @@ fov = 46.0
 [node name="MelonModel" parent="Model" instance=ExtResource("3_melon_knight")]
 
 [node name="AdminModel" parent="Model" instance=ExtResource("6_admin_model")]
+visible = false
+
+[node name="StrawberryModel" parent="Model" instance=ExtResource("8_strawberry_model")]
+visible = false
+
+[node name="CitrusModel" parent="Model" instance=ExtResource("9_citrus_model")]
 visible = false
 
 [node name="SpiderModel" parent="Model" instance=ExtResource("7_spider_model")]

@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" path="res://scenes/admin_model.tscn" id="9_admin_model"]
 [ext_resource type="PackedScene" path="res://scenes/overhead_health_bar.tscn" id="10_health_bar"]
 [ext_resource type="PackedScene" path="res://scenes/spiderman_model.tscn" id="11_spider_model"]
+[ext_resource type="PackedScene" path="res://scenes/strawberry_model.tscn" id="12_strawberry_model"]
+[ext_resource type="PackedScene" path="res://scenes/citrus_tank_model.tscn" id="13_citrus_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.45
@@ -380,6 +382,12 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="MelonModel" parent="Model" instance=ExtResource("6_melon_knight")]
 
 [node name="AdminModel" parent="Model" instance=ExtResource("9_admin_model")]
+visible = false
+
+[node name="StrawberryModel" parent="Model" instance=ExtResource("12_strawberry_model")]
+visible = false
+
+[node name="CitrusModel" parent="Model" instance=ExtResource("13_citrus_model")]
 visible = false
 
 [node name="SpiderModel" parent="Model" instance=ExtResource("11_spider_model")]

@@ -47,83 +47,191 @@ func _ready() -> void:
 func _apply_map_theme(map_id: int) -> void:
 	var floor_mat = StandardMaterial3D.new()
 	var pillar_mat = StandardMaterial3D.new()
+	var wall_mat = StandardMaterial3D.new()
+	
+	# Clean metallic wall base
+	wall_mat.albedo_color = Color(0.12, 0.14, 0.18)
+	wall_mat.metallic = 0.8
+	wall_mat.roughness = 0.35
+	
+	var sky_mat = ProceduralSkyMaterial.new()
+	var fog_col = Color(0.15, 0.2, 0.3)
+	var fog_dens = 0.003
 	
 	match map_id:
 		0: # Fruit Kingdom Arena (مملكة الفواكه الخضراء)
-			floor_mat.albedo_color = Color(0.24, 0.68, 0.22) # Lush green lawn
-			floor_mat.roughness = 0.8
-			pillar_mat.albedo_color = Color(0.9, 0.4, 0.15) # Fruit crates
-			if sun_light:
-				sun_light.light_color = Color(1.0, 0.95, 0.85)
-				sun_light.light_energy = 1.4
-		1: # Cyber Stadium (ساحة السايبر المستقبلية)
-			floor_mat.albedo_color = Color(0.08, 0.1, 0.16)
-			floor_mat.metallic = 0.75
-			floor_mat.roughness = 0.25
-			pillar_mat.albedo_color = Color(0.12, 0.22, 0.38)
+			floor_mat.albedo_color = Color(0.22, 0.65, 0.24) # Lush grass green
+			floor_mat.roughness = 0.75
+			pillar_mat.albedo_color = Color(0.95, 0.55, 0.15) # Gold fruit crate
+			pillar_mat.metallic = 0.3
 			pillar_mat.emission_enabled = true
-			pillar_mat.emission = Color(0, 0.85, 1.0)
-			pillar_mat.emission_energy_multiplier = 3.0
+			pillar_mat.emission = Color(0.4, 0.85, 0.2)
+			pillar_mat.emission_energy_multiplier = 1.2
+			sky_mat.sky_top_color = Color(0.25, 0.55, 0.95)
+			sky_mat.sky_horizon_color = Color(0.7, 0.85, 0.98)
+			sky_mat.ground_bottom_color = Color(0.15, 0.35, 0.12)
+			fog_col = Color(0.65, 0.82, 0.95)
+			fog_dens = 0.002
 			if sun_light:
-				sun_light.light_color = Color(0.5, 0.8, 1.0)
-				sun_light.light_energy = 1.1
-		2: # Desert Titan Canyon (وادي العمالقة الصحراوي)
-			floor_mat.albedo_color = Color(0.88, 0.65, 0.32) # Golden desert sand
-			floor_mat.roughness = 0.9
-			pillar_mat.albedo_color = Color(0.72, 0.38, 0.22) # Canyon sandstone
-			if sun_light:
-				sun_light.light_color = Color(1.0, 0.65, 0.4) # Sunset orange
-				sun_light.light_energy = 1.6
-		3: # Volcanic Magma Core (قلب البركان المشتعل)
-			floor_mat.albedo_color = Color(0.12, 0.08, 0.08) # Obsidian magma rock
-			floor_mat.metallic = 0.4
-			floor_mat.roughness = 0.4
-			pillar_mat.albedo_color = Color(0.25, 0.05, 0.05)
-			pillar_mat.emission_enabled = true
-			pillar_mat.emission = Color(1.0, 0.25, 0.05) # Glowing lava
-			pillar_mat.emission_energy_multiplier = 4.0
-			if sun_light:
-				sun_light.light_color = Color(1.0, 0.3, 0.15) # Crimson inferno
+				sun_light.light_color = Color(1.0, 0.96, 0.88)
 				sun_light.light_energy = 1.5
+
+		1: # Cyber Stadium 2077 (ساحة السايبر المستقبلية)
+			floor_mat.albedo_color = Color(0.06, 0.08, 0.14)
+			floor_mat.metallic = 0.85
+			floor_mat.roughness = 0.18
+			pillar_mat.albedo_color = Color(0.1, 0.25, 0.45)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(0.0, 0.92, 1.0)
+			pillar_mat.emission_energy_multiplier = 4.0
+			sky_mat.sky_top_color = Color(0.04, 0.05, 0.12)
+			sky_mat.sky_horizon_color = Color(0.0, 0.5, 0.8)
+			sky_mat.ground_bottom_color = Color(0.02, 0.03, 0.06)
+			fog_col = Color(0.0, 0.25, 0.5)
+			fog_dens = 0.004
+			if sun_light:
+				sun_light.light_color = Color(0.4, 0.85, 1.0)
+				sun_light.light_energy = 1.25
+
+		2: # Desert Titan Canyon (وادي العمالقة الصحراوي)
+			floor_mat.albedo_color = Color(0.86, 0.62, 0.32) # Golden desert dunes
+			floor_mat.roughness = 0.88
+			pillar_mat.albedo_color = Color(0.75, 0.36, 0.2) # Canyon sandstone
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(0.9, 0.45, 0.1)
+			pillar_mat.emission_energy_multiplier = 1.5
+			sky_mat.sky_top_color = Color(0.4, 0.2, 0.55) # Sunset twilight
+			sky_mat.sky_horizon_color = Color(1.0, 0.55, 0.25)
+			sky_mat.ground_bottom_color = Color(0.35, 0.18, 0.08)
+			fog_col = Color(0.95, 0.6, 0.35)
+			fog_dens = 0.003
+			if sun_light:
+				sun_light.light_color = Color(1.0, 0.68, 0.42)
+				sun_light.light_energy = 1.65
+
+		3: # Volcanic Magma Core (قلب البركان المشتعل)
+			floor_mat.albedo_color = Color(0.1, 0.07, 0.08) # Obsidian rock
+			floor_mat.metallic = 0.6
+			floor_mat.roughness = 0.35
+			pillar_mat.albedo_color = Color(0.3, 0.05, 0.05)
+			pillar_mat.emission_enabled = true
+			pillar_mat.emission = Color(1.0, 0.2, 0.0) # Fiery lava glow
+			pillar_mat.emission_energy_multiplier = 4.5
+			sky_mat.sky_top_color = Color(0.12, 0.02, 0.03)
+			sky_mat.sky_horizon_color = Color(0.85, 0.2, 0.05)
+			sky_mat.ground_bottom_color = Color(0.2, 0.04, 0.02)
+			fog_col = Color(0.7, 0.15, 0.05)
+			fog_dens = 0.0045
+			if sun_light:
+				sun_light.light_color = Color(1.0, 0.35, 0.12)
+				sun_light.light_energy = 1.55
+
 		4: # Frozen Ice Glacier (جليد القطب المتجمد)
-			floor_mat.albedo_color = Color(0.65, 0.88, 0.95) # Slick ice sheet
-			floor_mat.metallic = 0.5
-			floor_mat.roughness = 0.15
-			pillar_mat.albedo_color = Color(0.3, 0.65, 0.85)
+			floor_mat.albedo_color = Color(0.7, 0.9, 0.98) # Smooth polar ice
+			floor_mat.metallic = 0.4
+			floor_mat.roughness = 0.12
+			pillar_mat.albedo_color = Color(0.25, 0.6, 0.85)
 			pillar_mat.emission_enabled = true
-			pillar_mat.emission = Color(0.4, 0.9, 1.0) # Crystal glow
-			pillar_mat.emission_energy_multiplier = 2.5
+			pillar_mat.emission = Color(0.3, 0.92, 1.0) # Aurora cyan crystal
+			pillar_mat.emission_energy_multiplier = 3.5
+			sky_mat.sky_top_color = Color(0.08, 0.25, 0.45)
+			sky_mat.sky_horizon_color = Color(0.4, 0.85, 0.95)
+			sky_mat.ground_bottom_color = Color(0.1, 0.25, 0.4)
+			fog_col = Color(0.4, 0.8, 0.95)
+			fog_dens = 0.003
 			if sun_light:
-				sun_light.light_color = Color(0.75, 0.9, 1.0) # Aurora cold light
-				sun_light.light_energy = 1.3
+				sun_light.light_color = Color(0.8, 0.94, 1.0)
+				sun_light.light_energy = 1.4
+
 		5: # Cosmic Galaxy Station (محطة المجرة الفضائية)
-			floor_mat.albedo_color = Color(0.14, 0.08, 0.22) # Deep space floor
-			floor_mat.metallic = 0.8
-			floor_mat.roughness = 0.2
-			pillar_mat.albedo_color = Color(0.2, 0.12, 0.35)
+			floor_mat.albedo_color = Color(0.12, 0.06, 0.2) # Deep space deck
+			floor_mat.metallic = 0.85
+			floor_mat.roughness = 0.22
+			pillar_mat.albedo_color = Color(0.22, 0.1, 0.38)
 			pillar_mat.emission_enabled = true
-			pillar_mat.emission = Color(0.8, 0.2, 1.0) # Stellar nebula violet
-			pillar_mat.emission_energy_multiplier = 3.5
+			pillar_mat.emission = Color(0.85, 0.2, 1.0) # Starlight violet plasma
+			pillar_mat.emission_energy_multiplier = 4.0
+			sky_mat.sky_top_color = Color(0.06, 0.02, 0.14)
+			sky_mat.sky_horizon_color = Color(0.6, 0.15, 0.85)
+			sky_mat.ground_bottom_color = Color(0.05, 0.02, 0.1)
+			fog_col = Color(0.5, 0.1, 0.75)
+			fog_dens = 0.0038
 			if sun_light:
-				sun_light.light_color = Color(0.7, 0.5, 1.0) # Starlight purple
-				sun_light.light_energy = 1.2
+				sun_light.light_color = Color(0.75, 0.55, 1.0)
+				sun_light.light_energy = 1.3
+
 		6: # Neon Castle Citadel (قلعة النيون المظلمة)
-			floor_mat.albedo_color = Color(0.1, 0.1, 0.12) # Gothic dark stone
-			floor_mat.metallic = 0.3
-			floor_mat.roughness = 0.3
-			pillar_mat.albedo_color = Color(0.22, 0.15, 0.25)
+			floor_mat.albedo_color = Color(0.08, 0.08, 0.1) # Dark synth rock
+			floor_mat.metallic = 0.6
+			floor_mat.roughness = 0.25
+			pillar_mat.albedo_color = Color(0.25, 0.08, 0.22)
 			pillar_mat.emission_enabled = true
-			pillar_mat.emission = Color(1.0, 0.1, 0.6) # Hot neon magenta
-			pillar_mat.emission_energy_multiplier = 3.5
+			pillar_mat.emission = Color(1.0, 0.1, 0.65) # Hot magenta neon
+			pillar_mat.emission_energy_multiplier = 4.5
+			sky_mat.sky_top_color = Color(0.08, 0.02, 0.1)
+			sky_mat.sky_horizon_color = Color(0.85, 0.12, 0.55)
+			sky_mat.ground_bottom_color = Color(0.05, 0.02, 0.06)
+			fog_col = Color(0.8, 0.1, 0.5)
+			fog_dens = 0.004
 			if sun_light:
-				sun_light.light_color = Color(0.9, 0.4, 0.7) # Twilight magenta
-				sun_light.light_energy = 1.2
+				sun_light.light_color = Color(0.95, 0.45, 0.75)
+				sun_light.light_energy = 1.35
+
+	if world_env and world_env.environment:
+		var sky_res = Sky.new()
+		sky_res.sky_material = sky_mat
+		world_env.environment.sky = sky_res
+		world_env.environment.fog_light_color = fog_col
+		world_env.environment.fog_density = fog_dens
+		world_env.environment.ambient_light_color = fog_col
 	
 	if floor_mesh: floor_mesh.material = floor_mat
+	if wall_north: wall_north.material = wall_mat
+	if wall_south: wall_south.material = wall_mat
+	if wall_east: wall_east.material = wall_mat
+	if wall_west: wall_west.material = wall_mat
 	if pillar1: pillar1.material = pillar_mat
 	if pillar2: pillar2.material = pillar_mat
 	if pillar3: pillar3.material = pillar_mat
 	if pillar4: pillar4.material = pillar_mat
+	
+	_add_arena_corner_beacons(pillar_mat.emission)
+
+func _add_arena_corner_beacons(beacon_col: Color) -> void:
+	if has_node("CornerBeacons"):
+		get_node("CornerBeacons").queue_free()
+	
+	var container = Node3D.new()
+	container.name = "CornerBeacons"
+	add_child(container)
+	
+	var corners = [
+		Vector3(-42, 0, -42),
+		Vector3(42, 0, -42),
+		Vector3(-42, 0, 42),
+		Vector3(42, 0, 42)
+	]
+	
+	var beacon_mat = StandardMaterial3D.new()
+	beacon_mat.albedo_color = beacon_col
+	beacon_mat.emission_enabled = true
+	beacon_mat.emission = beacon_col
+	beacon_mat.emission_energy_multiplier = 4.0
+	
+	for pos in corners:
+		var beacon_pylon = CSGCylinder3D.new()
+		beacon_pylon.radius = 0.8
+		beacon_pylon.height = 10.0
+		beacon_pylon.position = pos + Vector3(0, 5, 0)
+		beacon_pylon.material = beacon_mat
+		container.add_child(beacon_pylon)
+		
+		var omni = OmniLight3D.new()
+		omni.light_color = beacon_col
+		omni.light_energy = 2.5
+		omni.omni_range = 16.0
+		omni.position = pos + Vector3(0, 9.5, 0)
+		container.add_child(omni)
 
 func _setup_coop_mode() -> void:
 	# Spawn Revive Station terminal in the central tactical zone
@@ -143,14 +251,86 @@ func _setup_pvp_mode() -> void:
 
 func _setup_training_mode() -> void:
 	GameManager.wave_updated.emit(1, 1, 0)
-	var dummy = training_dummy_scene.instantiate()
-	dummy.name = "TrainingDummy"
-	dummy.position = Vector3(0, 0, 0)
-	add_child(dummy)
+	
+	# 1. Target 1: Standard Dummy with DPS counter
+	var dummy1 = training_dummy_scene.instantiate()
+	dummy1.name = "TrainingDummy"
+	dummy1.position = Vector3(0, 0, 0)
+	dummy1.dummy_title = "🎯 روبوت التدريب المباشر (Standard Target)"
+	add_child(dummy1)
+	
+	# 2. Target 2: Heavy Armored Dummy (Sustained Firepower Practice)
+	var dummy2 = training_dummy_scene.instantiate()
+	dummy2.name = "ArmoredDummy"
+	dummy2.position = Vector3(0, 0, -18)
+	dummy2.start_hp = 3500.0
+	dummy2.dummy_title = "🛡️ درع الوحش الثقيل (Heavy Armored Dummy - 3500 HP)"
+	add_child(dummy2)
+	
+	# 3. Target 3: Moving Agility Drone (Aim & Leading Shots Practice)
+	var dummy3 = training_dummy_scene.instantiate()
+	dummy3.name = "MovingDrone"
+	dummy3.position = Vector3(0, 0.4, -9)
+	dummy3.is_moving = true
+	dummy3.move_speed = 5.5
+	dummy3.move_distance = 11.0
+	dummy3.dummy_title = "⚡ مجسم مناورة متحرك (Moving Drone Target)"
+	add_child(dummy3)
+	
+	# 4. Interactive Health & Ammo Recharge Pad
+	_setup_training_recharge_pad(Vector3(0, 0.05, 12))
 	
 	get_tree().create_timer(1.0).timeout.connect(func():
-		rpc("_broadcast_hud_alert", "🎯 TRAINING GROUNDS (طور التدريب) 🎯\n(تدرب على إطلاق النار والحركة بحرية)", Color(0.2, 0.9, 1.0))
+		rpc("_broadcast_hud_alert", "🎯 ساحة التدريب المتطورة (Advanced Training Grounds) 🎯\n• أهداف ثابتة ومتحركة مع حساب DPS\n• منصة استعادة الطاقة والذخيرة بالخلف", Color(0.1, 0.95, 0.6))
 	)
+
+func _setup_training_recharge_pad(pos: Vector3) -> void:
+	var pad_area = Area3D.new()
+	pad_area.name = "RechargePad"
+	pad_area.position = pos
+	
+	var col = CollisionShape3D.new()
+	var shape = CylinderShape3D.new()
+	shape.radius = 2.5
+	shape.height = 1.0
+	col.shape = shape
+	pad_area.add_child(col)
+	
+	var pad_mesh = CSGCylinder3D.new()
+	pad_mesh.radius = 2.5
+	pad_mesh.height = 0.1
+	var pad_mat = StandardMaterial3D.new()
+	pad_mat.albedo_color = Color(0.1, 0.85, 0.35)
+	pad_mat.emission_enabled = true
+	pad_mat.emission = Color(0.15, 0.95, 0.4)
+	pad_mat.emission_energy_multiplier = 3.0
+	pad_mesh.material = pad_mat
+	pad_area.add_child(pad_mesh)
+	
+	var pad_light = OmniLight3D.new()
+	pad_light.light_color = Color(0.2, 1.0, 0.5)
+	pad_light.light_energy = 2.0
+	pad_light.omni_range = 6.0
+	pad_light.position = Vector3(0, 1.0, 0)
+	pad_area.add_child(pad_light)
+	
+	var pad_lbl = Label3D.new()
+	pad_lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	pad_lbl.text = "⚡ منصة شحن الصحة والذخيرة فوراً (RECHARGE PAD) ⚡"
+	pad_lbl.position = Vector3(0, 2.2, 0)
+	pad_lbl.modulate = Color(0.3, 1.0, 0.6)
+	pad_lbl.font_size = 28
+	pad_area.add_child(pad_lbl)
+	
+	pad_area.body_entered.connect(func(body):
+		if body.is_in_group("players") and body.has_method("heal"):
+			body.heal(999.0)
+			AudioManager.play_sfx("redeem")
+			if hud:
+				hud.show_announcement("✨ تم شحن دمك وطاقتك بالكامل (100% HEALTH & AMMO)! ✨")
+	)
+	
+	add_child(pad_area)
 
 func _spawn_players() -> void:
 	var spawn_nodes = spawn_points.get_children()

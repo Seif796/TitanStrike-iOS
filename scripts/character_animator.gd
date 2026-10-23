@@ -61,10 +61,17 @@ func _physics_process(delta: float) -> void:
 	
 	var spider_node = player.get_node_or_null("Model/SpiderModel") if player else null
 	var admin_node = player.get_node_or_null("Model/AdminModel") if player else null
+	var straw_node = player.get_node_or_null("Model/StrawberryModel") if player else null
+	var citrus_node = player.get_node_or_null("Model/CitrusModel") if player else null
+	
 	if spider_node and spider_node.visible:
 		_animate_admin_model(delta, speed, spider_node)
 	elif admin_node and admin_node.visible:
 		_animate_admin_model(delta, speed, admin_node)
+	elif straw_node and straw_node.visible:
+		_animate_admin_model(delta, speed, straw_node)
+	elif citrus_node and citrus_node.visible:
+		_animate_admin_model(delta, speed, citrus_node)
 	elif melon_boy_mesh and melon_boy_mesh.visible:
 		_animate_melon_boy(delta, speed)
 	elif melon_boy_mesh and not melon_boy_mesh.visible:

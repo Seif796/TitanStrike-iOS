@@ -1,7 +1,7 @@
 {
   "version": "1.1.0",
   "version_code": 2,
-  "release_date": "2026-10-23",
+  "release_date": "2026-10-24",
   "title": "تحديث جديد: تحسينات وإصلاحات شاملة",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
@@ -9,7 +9,7 @@
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 120605,
-  "sha256": "cc24fac15b6c177f11bc50144d59169fe7ce5d16825cb0bf0c91189277877d8a",
+  "file_size_bytes": 127891,
+  "sha256": "3f65b93d6322774c8d24fcb18dbad7ed37f67a578879f7ca60e4bdd1f136ac7f",
   "mandatory": false
 }

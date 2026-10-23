@@ -17,10 +17,23 @@ sky_material = SubResource("ProceduralSkyMaterial_sky")
 background_mode = 2
 sky = SubResource("Sky_env")
 ambient_light_source = 3
-ambient_light_color = Color(0.25, 0.3, 0.42, 1)
-ambient_light_energy = 0.8
+ambient_light_color = Color(0.3, 0.35, 0.45, 1)
+ambient_light_energy = 0.85
+tonemap_mode = 3
+tonemap_exposure = 1.05
 glow_enabled = true
-glow_bloom = 0.25
+glow_normalized = true
+glow_intensity = 0.85
+glow_strength = 1.15
+glow_bloom = 0.32
+glow_blend_mode = 1
+ssao_enabled = true
+ssao_radius = 1.2
+ssao_intensity = 1.8
+fog_enabled = true
+fog_light_color = Color(0.2, 0.25, 0.35, 1)
+fog_density = 0.0035
+fog_aerial_perspective = 0.4
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.15, 0.17, 0.22, 1)

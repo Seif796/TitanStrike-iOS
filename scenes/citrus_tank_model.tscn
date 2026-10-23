@@ -1,0 +1,264 @@
+[gd_scene load_steps=24 format=3 uid="uid://ccitrustankmodel001"]
+
+[ext_resource type="Script" path="res://scripts/citrus_tank_model.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_CitrusOrange"]
+albedo_color = Color(1.0, 0.52, 0.05, 1)
+metallic = 0.7
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_GunmetalSteel"]
+albedo_color = Color(0.18, 0.2, 0.24, 1)
+metallic = 0.95
+roughness = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_GlowingAmber"]
+albedo_color = Color(1.0, 0.75, 0.1, 1)
+emission_enabled = true
+emission = Color(1.0, 0.72, 0.08, 1)
+emission_energy_multiplier = 5.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_HazardYellow"]
+albedo_color = Color(0.95, 0.85, 0.15, 1)
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="Mesh_Helm"]
+material = SubResource("Mat_CitrusOrange")
+size = Vector3(0.56, 0.48, 0.5)
+
+[sub_resource type="BoxMesh" id="Mesh_Visor"]
+material = SubResource("Mat_GlowingAmber")
+size = Vector3(0.48, 0.12, 0.12)
+
+[sub_resource type="BoxMesh" id="Mesh_Torso"]
+material = SubResource("Mat_GunmetalSteel")
+size = Vector3(0.72, 0.7, 0.52)
+
+[sub_resource type="BoxMesh" id="Mesh_ChestPlates"]
+material = SubResource("Mat_CitrusOrange")
+size = Vector3(0.66, 0.58, 0.16)
+
+[sub_resource type="CylinderMesh" id="Mesh_Reactor"]
+material = SubResource("Mat_GlowingAmber")
+top_radius = 0.14
+bottom_radius = 0.14
+height = 0.12
+
+[sub_resource type="CylinderMesh" id="Mesh_ExhaustStack"]
+material = SubResource("Mat_GunmetalSteel")
+top_radius = 0.06
+bottom_radius = 0.08
+height = 0.55
+
+[sub_resource type="SphereMesh" id="Mesh_Pauldron"]
+material = SubResource("Mat_CitrusOrange")
+radius = 0.22
+height = 0.36
+
+[sub_resource type="BoxMesh" id="Mesh_HeavyArm"]
+material = SubResource("Mat_GunmetalSteel")
+size = Vector3(0.24, 0.48, 0.24)
+
+[sub_resource type="BoxMesh" id="Mesh_HeavyGauntlet"]
+material = SubResource("Mat_CitrusOrange")
+size = Vector3(0.3, 0.28, 0.3)
+
+[sub_resource type="BoxMesh" id="Mesh_HeavyLeg"]
+material = SubResource("Mat_GunmetalSteel")
+size = Vector3(0.26, 0.54, 0.26)
+
+[sub_resource type="BoxMesh" id="Mesh_StompBoot"]
+material = SubResource("Mat_CitrusOrange")
+size = Vector3(0.32, 0.22, 0.42)
+
+[sub_resource type="Animation" id="Anim_Idle"]
+resource_name = "idle"
+length = 2.4
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.2, 2.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 0.04, 0), Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Model/Torso:scale")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1.2, 2.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(1.03, 1.02, 1.03), Vector3(1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Anim_Walk"]
+resource_name = "walk"
+length = 0.7
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Model/LeftLeg:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.35, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.45, 0, 0), Vector3(-0.45, 0, 0), Vector3(0.45, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Model/RightLeg:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.35, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.45, 0, 0), Vector3(0.45, 0, 0), Vector3(-0.45, 0, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Model/LeftArm:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.35, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.35, 0, 0), Vector3(0.35, 0, 0), Vector3(-0.35, 0, 0)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Model/RightArm:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.35, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.35, 0, 0), Vector3(-0.35, 0, 0), Vector3(0.35, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimLib_Main"]
+_data = {
+"idle": SubResource("Anim_Idle"),
+"jump": SubResource("Anim_Idle"),
+"run": SubResource("Anim_Walk"),
+"shoot": SubResource("Anim_Idle"),
+"walk": SubResource("Anim_Walk")
+}
+
+[node name="CitrusTankModel" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Head" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.28, 0)
+
+[node name="HelmMesh" type="MeshInstance3D" parent="Model/Head"]
+mesh = SubResource("Mesh_Helm")
+
+[node name="Visor" type="MeshInstance3D" parent="Model/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0.26)
+mesh = SubResource("Mesh_Visor")
+
+[node name="Torso" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76, 0)
+
+[node name="BodyMesh" type="MeshInstance3D" parent="Model/Torso"]
+mesh = SubResource("Mesh_Torso")
+
+[node name="ChestPlates" type="MeshInstance3D" parent="Model/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0.22)
+mesh = SubResource("Mesh_ChestPlates")
+
+[node name="CoreReactor" type="MeshInstance3D" parent="Model/Torso"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.06, 0.28)
+mesh = SubResource("Mesh_Reactor")
+
+[node name="CoreLight" type="OmniLight3D" parent="Model/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0.38)
+light_color = Color(1, 0.7, 0.1, 1)
+light_energy = 2.0
+omni_range = 2.5
+
+[node name="ExhaustL" type="MeshInstance3D" parent="Model/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26, 0.45, -0.24)
+mesh = SubResource("Mesh_ExhaustStack")
+
+[node name="ExhaustR" type="MeshInstance3D" parent="Model/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26, 0.45, -0.24)
+mesh = SubResource("Mesh_ExhaustStack")
+
+[node name="LeftArm" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48, 0.88, 0)
+
+[node name="Pauldron" type="MeshInstance3D" parent="Model/LeftArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0.08, 0)
+mesh = SubResource("Mesh_Pauldron")
+
+[node name="ArmMesh" type="MeshInstance3D" parent="Model/LeftArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("Mesh_HeavyArm")
+
+[node name="Gauntlet" type="MeshInstance3D" parent="Model/LeftArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.36, 0.02)
+mesh = SubResource("Mesh_HeavyGauntlet")
+
+[node name="RightArm" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.48, 0.88, 0)
+
+[node name="Pauldron" type="MeshInstance3D" parent="Model/RightArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06, 0.08, 0)
+mesh = SubResource("Mesh_Pauldron")
+
+[node name="ArmMesh" type="MeshInstance3D" parent="Model/RightArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("Mesh_HeavyArm")
+
+[node name="Gauntlet" type="MeshInstance3D" parent="Model/RightArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.36, 0.02)
+mesh = SubResource("Mesh_HeavyGauntlet")
+
+[node name="LeftLeg" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22, 0.45, 0)
+
+[node name="LegMesh" type="MeshInstance3D" parent="Model/LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
+mesh = SubResource("Mesh_HeavyLeg")
+
+[node name="Boot" type="MeshInstance3D" parent="Model/LeftLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0.06)
+mesh = SubResource("Mesh_StompBoot")
+
+[node name="RightLeg" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, 0.45, 0)
+
+[node name="LegMesh" type="MeshInstance3D" parent="Model/RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
+mesh = SubResource("Mesh_HeavyLeg")
+
+[node name="Boot" type="MeshInstance3D" parent="Model/RightLeg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0.06)
+mesh = SubResource("Mesh_StompBoot")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimLib_Main")
+}
+autoplay = "idle"

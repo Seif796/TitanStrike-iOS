@@ -9,7 +9,7 @@ signal settings_changed(music_vol: float, sfx_vol: float, is_muted: bool)
 var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
 
-var music_volume: float = 0.65 # 0.0 - 1.0
+var music_volume: float = 0.42 # 0.0 - 1.0
 var sfx_volume: float = 0.8    # 0.0 - 1.0
 var is_muted: bool = false
 
@@ -39,7 +39,7 @@ func _ready() -> void:
 func load_audio_settings() -> void:
 	var cfg = ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) == OK:
-		music_volume = cfg.get_value("audio", "music_volume", 0.65)
+		music_volume = cfg.get_value("audio", "music_volume", 0.42)
 		sfx_volume = cfg.get_value("audio", "sfx_volume", 0.8)
 		is_muted = cfg.get_value("audio", "is_muted", false)
 
@@ -99,26 +99,47 @@ func play_sfx(sfx_name: String) -> void:
 
 # Generate high-fidelity lush stereo cyber soundtrack (44.1 kHz, 16-bit Stereo)
 # Rich ambient pad harmony (Am - F - C - G) with warm sub-bass and crystal bells
+func toggle_mute() -> void:
+	set_muted(not is_muted)
+
+func toggle_bgm() -> void:
+	if music_player and music_player.playing:
+		stop_bgm()
+	else:
+		play_bgm()
+
+# ==============================================================================
+# BRAND NEW CYBERPUNK SYNTHWAVE SOUNDTRACK (8-Bar Epic Melodic Theme, 118 BPM)
+# Featuring warm analog sub-bass, lush stereo pads, heroic cyber lead, and rhythmic groove.
+# ==============================================================================
 func _generate_bgm_track() -> void:
 	var sample_rate: int = 44100
-	var bpm: float = 110.0
+	var bpm: float = 118.0
 	var beat_duration: float = 60.0 / bpm
-	var total_beats: float = 16.0 # 4 bars (4/4 time)
+	var total_beats: float = 32.0 # 8 full bars (4/4 time)
 	var duration: float = total_beats * beat_duration
 	var total_samples: int = int(duration * sample_rate)
 	
-	# Musical Tempered Frequencies (A3 = 220Hz, F3 = 174.61Hz, C4 = 261.63Hz, G3 = 196Hz)
+	# 8-Bar Chord Progression: Am -> Fmaj7 -> Dm7 -> Em / G
 	var chords = [
-		{"root": 220.00, "third": 261.63, "fifth": 329.63, "bass": 110.00}, # Am
-		{"root": 174.61, "third": 220.00, "fifth": 261.63, "bass": 87.31},  # F
-		{"root": 261.63, "third": 329.63, "fifth": 392.00, "bass": 130.81}, # C
-		{"root": 196.00, "third": 246.94, "fifth": 293.66, "bass": 98.00}   # G
+		{"root": 220.00, "third": 261.63, "fifth": 329.63, "bass": 55.00},  # Am (Bars 0-1)
+		{"root": 220.00, "third": 261.63, "fifth": 329.63, "bass": 55.00},
+		{"root": 174.61, "third": 220.00, "fifth": 261.63, "bass": 43.65},  # Fmaj (Bars 2-3)
+		{"root": 174.61, "third": 220.00, "fifth": 261.63, "bass": 43.65},
+		{"root": 146.83, "third": 174.61, "fifth": 220.00, "bass": 36.71},  # Dm (Bars 4-5)
+		{"root": 146.83, "third": 174.61, "fifth": 220.00, "bass": 36.71},
+		{"root": 196.00, "third": 246.94, "fifth": 293.66, "bass": 49.00},  # G / Em (Bars 6-7)
+		{"root": 164.81, "third": 196.00, "fifth": 246.94, "bass": 41.20}
 	]
 	
-	# Arpeggio steps (offsets in semitones: 0, 7, 12, 16, 12, 7, 12, 19)
-	var arp_semitones = [0, 7, 12, 16, 12, 7, 12, 19]
+	# 32-Beat Heroic Melodic Lead Theme (Semitone offsets relative to A4 = 440Hz)
+	var melody_notes = [
+		0,   0,   3,   5,   7,   7,   5,   3,  # Bar 0-1: Theme statement
+		0,  -2,   0,   3,   5,   5,   7,   8,  # Bar 2-3: Rising tension
+		7,   5,   3,   5,   7,  10,   8,   7,  # Bar 4-5: Heroic apex
+		5,   3,   2,   3,   5,   3,   2,   0   # Bar 6-7: Graceful cyber resolution
+	]
 	
-	# Stereo buffer (Left: int16, Right: int16 -> 4 bytes per sample frame)
 	var byte_array = PackedByteArray()
 	byte_array.resize(total_samples * 4)
 	
@@ -128,40 +149,48 @@ func _generate_bgm_track() -> void:
 		var bar_num = int(beat_num / 4.0) % chords.size()
 		var chord = chords[bar_num]
 		
-		# Smooth Bar Envelope (soft attack and gentle crossfade between chords)
-		var bar_time = fmod(beat_num, 4.0) / 4.0
-		var bar_env = sin(bar_time * PI)
-		bar_env = clampf(bar_env * 1.25, 0.0, 1.0)
+		# 1. Warm Analog Stereo Pad (Rich detuned saws smoothed with sine modulation)
+		var pad_osc1 = sin(2.0 * PI * chord["root"] * t) + 0.5 * sin(2.0 * PI * chord["third"] * t) + 0.4 * sin(2.0 * PI * chord["fifth"] * t)
+		var pad_osc2 = sin(2.0 * PI * (chord["root"] * 1.003) * t) + 0.5 * sin(2.0 * PI * (chord["third"] * 0.997) * t) + 0.4 * sin(2.0 * PI * (chord["fifth"] * 1.002) * t)
 		
-		# 1. Warm Analog Pad (Two detuned oscillators for lush stereo chorus)
-		var pad_l = (sin(2.0 * PI * chord["root"] * t) + 0.6 * sin(2.0 * PI * chord["third"] * t) + 0.5 * sin(2.0 * PI * chord["fifth"] * t)) * 0.22
-		var pad_r = (sin(2.0 * PI * (chord["root"] + 0.4) * t) + 0.6 * sin(2.0 * PI * (chord["third"] - 0.3) * t) + 0.5 * sin(2.0 * PI * (chord["fifth"] + 0.5) * t)) * 0.22
+		# Bar swell envelope for organic breathing
+		var bar_progress = fmod(beat_num, 4.0) / 4.0
+		var swell = 0.75 + 0.25 * sin(bar_progress * PI)
+		var pad_l = pad_osc1 * swell * 0.14
+		var pad_r = pad_osc2 * swell * 0.14
 		
-		# 2. Warm Filtered Sub-Bass (Soft, rounded tone)
-		var bass = sin(2.0 * PI * chord["bass"] * t) * 0.28
+		# 2. Driving 8th-Note Cyber Bassline (Rhythmic, warm, punchy)
+		var sub_step = fmod(beat_num * 2.0, 1.0)
+		var bass_env = exp(-sub_step * 5.0) # Tight rhythmic pluck
+		var bass_octave = 1.0 if fmod(floor(beat_num * 2.0), 2.0) == 0.0 else 2.0
+		var bass_freq = chord["bass"] * bass_octave
+		var bass = (sin(2.0 * PI * bass_freq * t) + 0.3 * sin(2.0 * PI * (bass_freq * 2.0) * t)) * bass_env * 0.24
 		
-		# 3. Crystal Cyber Arpeggio (Soft decaying bell chime on every half-beat)
-		var arp_index = int(beat_num * 2.0) % arp_semitones.size()
-		var semitone = arp_semitones[arp_index]
-		var note_freq = chord["root"] * pow(2.0, float(semitone) / 12.0)
+		# 3. Heroic Cyber Lead Melody (Lush vibrato & tape delay)
+		var mel_idx = int(beat_num) % melody_notes.size()
+		var mel_semi = melody_notes[mel_idx]
+		var mel_freq = 440.0 * pow(2.0, float(mel_semi) / 12.0)
 		
-		var arp_time = fmod(beat_num * 2.0, 1.0) * (beat_duration * 0.5)
-		var arp_env = exp(-arp_time * 6.5) # Natural gentle exponential decay
-		# Soft chime with pure fundamental and subtle 2nd harmonic
-		var arp_tone = (sin(2.0 * PI * note_freq * t) + 0.25 * sin(2.0 * PI * note_freq * 2.0 * t)) * arp_env * 0.16
+		var mel_step = fmod(beat_num, 1.0)
+		var mel_env = exp(-mel_step * 3.0) # Smooth flute-synth decay
+		var vibrato = 1.0 + 0.008 * sin(2.0 * PI * 5.5 * t)
+		var lead_tone = (sin(2.0 * PI * mel_freq * vibrato * t) + 0.25 * sin(2.0 * PI * (mel_freq * 2.0) * t)) * mel_env * 0.18
 		
-		# Panning the arpeggio slightly between left and right depending on note
-		var pan_factor = 0.5 + 0.3 * sin(float(arp_index) * 1.2)
-		var arp_l = arp_tone * pan_factor
-		var arp_r = arp_tone * (1.0 - pan_factor)
+		# Gentle ping-pong stereo delay for the lead
+		var lead_l = lead_tone * 0.65
+		var lead_r = lead_tone * 0.45
 		
-		# Combine channels
-		var out_l = (pad_l * bar_env) + (bass * 0.8) + arp_l
-		var out_r = (pad_r * bar_env) + (bass * 0.8) + arp_r
+		# 4. Subtle Electronic Sidechain Groove (Ducks slightly on the quarter beat for modern punch)
+		var beat_pulse = fmod(beat_num, 1.0)
+		var sidechain = 0.82 + 0.18 * smoothstep(0.0, 0.4, beat_pulse)
 		
-		# Master smooth soft-limiter
-		out_l = clampf(out_l * 0.65, -0.9, 0.9)
-		out_r = clampf(out_r * 0.65, -0.9, 0.9)
+		# Combine Left & Right Channels
+		var out_l = ((pad_l + bass) * sidechain) + lead_l
+		var out_r = ((pad_r + bass) * sidechain) + lead_r
+		
+		# Soft-clipping master limiter
+		out_l = clampf(out_l * 0.58, -0.85, 0.85)
+		out_r = clampf(out_r * 0.58, -0.85, 0.85)
 		
 		var sample_l = int(out_l * 32767.0)
 		var sample_r = int(out_r * 32767.0)

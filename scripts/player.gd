@@ -35,6 +35,8 @@ var is_firing: bool = false
 @onready var melon_model: Node3D = $Model/MelonModel
 @onready var admin_model: Node3D = $Model/AdminModel
 @onready var spider_model: Node3D = get_node_or_null("Model/SpiderModel")
+@onready var strawberry_model: Node3D = get_node_or_null("Model/StrawberryModel")
+@onready var citrus_model: Node3D = get_node_or_null("Model/CitrusModel")
 @onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
 @onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
 @onready var chest_plate: MeshInstance3D = $Model/BodyMesh/ChestPlate
@@ -125,39 +127,12 @@ func apply_class_stats(c_id: int) -> void:
 	current_hp = max_hp
 	move_speed = data["speed"]
 	
-	if class_id == 4:
-		# Dedicated 3D Chibi Spider-Hero Model (Oversized Hoodie, Spider Mask & Retro Sneakers)!
-		if spider_model: spider_model.visible = true
-		if admin_model: admin_model.visible = false
-		if melon_model: melon_model.visible = false
-		_set_legacy_rig_visible(false)
-	elif class_id == 3:
-		# Dedicated 3D Cyber Admin Model (Crown, Cyber Visor, Reactor Core & Gold Armor)!
-		if spider_model: spider_model.visible = false
-		if admin_model: admin_model.visible = true
-		if melon_model: melon_model.visible = false
-		_set_legacy_rig_visible(false)
-	elif class_id == 0:
-		if spider_model: spider_model.visible = false
-		if admin_model: admin_model.visible = false
-		if melon_model: melon_model.visible = true
-		_set_legacy_rig_visible(false)
-	else:
-		if spider_model: spider_model.visible = false
-		if admin_model: admin_model.visible = false
-		if melon_model: melon_model.visible = false
-		_set_legacy_rig_visible(true)
-		var target_tex = berry_tex if class_id == 1 else citrus_tex
-		var mat = StandardMaterial3D.new()
-		mat.albedo_texture = target_tex
-		mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
-		mat.roughness = 0.35
-		if head_mesh: head_mesh.material_override = mat
-		if chest_plate: chest_plate.material_override = mat
-		if leg_l: leg_l.material_override = mat
-		if leg_r: leg_r.material_override = mat
-		if arm_l: arm_l.material_override = mat
-		if arm_r: arm_r.material_override = mat
+	if spider_model: spider_model.visible = (class_id == 4)
+	if admin_model: admin_model.visible = (class_id == 3)
+	if citrus_model: citrus_model.visible = (class_id == 2)
+	if strawberry_model: strawberry_model.visible = (class_id == 1)
+	if melon_model: melon_model.visible = (class_id == 0)
+	_set_legacy_rig_visible(false)
 	
 	if leaf_sprout:
 		leaf_sprout.visible = (class_id == 0)
