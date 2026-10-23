@@ -202,55 +202,20 @@ def get_server_status_summary() -> str:
         return f"⚠️ تعذر جلب ملخص السيرفر: {e}"
 
 def execute_code_or_file_action(prompt: str) -> tuple[bool, str]:
-    """Allows Commander to modify code, config, heroes, or delete rooms/sessions directly from Telegram!"""
+    """Restricts AI strictly to answering questions and in-game actions only (no code/file modifications)."""
     p = prompt.strip().lower()
     
-    # 1. Modify Hero Stats / Config
-    if any(k in p for k in ["عدل", "تعديل", "غير", "زود", "نقص"]) and any(h in p for h in ["بطل", "شخصية", "شخصيه", "دم", "طاقة", "طاقه", "سرعة", "سرعه", "hp", "speed"]):
-        from update_server import load_game_config, save_game_config
-        cfg = load_game_config()
-        heroes = cfg.get("heroes", {})
-        
-        target_id = "0"
-        if "سبايدر" in p or "عنكبوت" in p or "4" in p: target_id = "4"
-        elif "ادمن" in p or "أدمن" in p or "3" in p: target_id = "3"
-        elif "برتقال" in p or "2" in p: target_id = "2"
-        elif "فراولة" in p or "فراوله" in p or "1" in p: target_id = "1"
-        elif "بطيخ" in p or "0" in p: target_id = "0"
+    # 1. Reject any code/system file modifications
+    if any(k in p for k in ["عدل الكود", "تعديل الكود", "غير الكود", "احذف كود", "شيل كود", "احذف ملف", "مسح ملف"]):
+        return True, "🛡️ تم حظر تعديل الأكواد والملفات بأمرك يا قائدنا! الذكاء الاصطناعي مخصص فقط للرد على أسئلتك وتنفيذ الأوامر داخل اللعبة (إنشاء غرف، إعلانات، إنذار، فحص السيرفر)."
 
-        # Check for numbers in prompt
-        import re
-        nums = [int(n) for n in re.findall(r'\d+', p) if int(n) > 10 and int(n) != 1]
-        if nums and target_id in heroes:
-            new_val = nums[0]
-            if "سرع" in p:
-                heroes[target_id]["speed"] = float(new_val)
-                save_game_config(cfg)
-                return True, f"✅ تم تعديل سرعة البطل ({heroes[target_id]['name']}) إلى: {new_val} m/s فوراً في الكود والسيرفر!"
-            else:
-                heroes[target_id]["hp"] = int(new_val)
-                save_game_config(cfg)
-                return True, f"✅ تم تعديل دم وطاقة البطل ({heroes[target_id]['name']}) إلى: {new_val} HP فوراً في الكود والسيرفر!"
-
-    # 2. Delete / Clear Actions
-    if any(k in p for k in ["احذف", "حذف", "امسح", "مسح", "شيل"]):
-        if any(r in p for r in ["روم", "غرفة", "غرفه", "الرومات", "الغرف"]):
-            from update_server import ROOMS, handle_rooms_terminate
-            count = len(ROOMS)
-            for code in list(ROOMS.keys()):
-                handle_rooms_terminate({"room_code": code})
-            return True, f"🗑️ تم حذف وقفل جميع الغرف النشطة ({count} غرفة) وطرد اللاعبين بنجاح بأمرك يا قائدنا!"
-        
-        if any(s in p for s in ["جلسة", "جلسات", "اللاعبين", "sessions"]):
-            from update_server import ACTIVE_SESSIONS
-            count = len(ACTIVE_SESSIONS)
-            ACTIVE_SESSIONS.clear()
-            return True, f"🗑️ تم مسح وتفريغ قائمة الجلسات النشطة ({count} جلسة) بنجاح!"
-
-        if any(e in p for e in ["اخطاء", "أخطاء", "لوج", "سجل", "console"]):
-            from update_server import CONSOLE_LOGS
-            CONSOLE_LOGS.clear()
-            return True, "🗑️ تم مسح وتنظيف سجل كونسول السيرفر بالكامل بنجاح!"
+    # 2. In-game room closing (safe in-game action)
+    if any(k in p for k in ["احذف", "حذف", "امسح", "مسح", "اقفل"]) and any(r in p for r in ["روم", "غرفة", "غرفه", "الرومات", "الغرف"]):
+        from update_server import ROOMS, handle_rooms_terminate
+        count = len(ROOMS)
+        for code in list(ROOMS.keys()):
+            handle_rooms_terminate({"room_code": code})
+        return True, f"🗑️ تم قفل وحذف جميع الغرف داخل اللعبة ({count} غرفة) بنجاح يا قائدنا!"
 
     return False, ""
 
@@ -266,7 +231,7 @@ def handle_user_command(chat_id: int, text: str) -> bool:
         welcome = (
             "👑 <b>أهلاً بك يا قائدنا سيف في بوت Titan Strike 3D الذكي!</b>\n\n"
             "🤖 أنا <b>CyberAI</b> مساعدك التنفيذي المباشر، شغال معاك 24 ساعة بدون توقف!\n"
-            "⚡ أرد عليك في أقل من ثانية واحدة، وتقدر تطلب مني أي تعديل على الكود أو حذف أو إضافات وسأنفذها فوراً!\n\n"
+            "⚡ أرد على كل أسئلتك، وأنَفّذ أوامرك داخل اللعبة فوراً!\n\n"
             "<b>الأوامر السريعة:</b>\n"
             "/status - فحص حالة السيرفر واللاعبين والموارد فوري\n"
             "/rooms - عرض الغرف النشطة في اللعبة\n"
@@ -394,10 +359,9 @@ def handle_user_command(chat_id: int, text: str) -> bool:
             "/alarm on - تشغيل صفارة الإنذار العامة باللعبة\n"
             "/alarm off - إيقاف صفارة الإنذار\n"
             "/announce [رسالة] - بث كلمة أو إعلان في منتصف شاشات اللاعبين\n\n"
-            "💡 <b>التحكم بالكود والذكاء الاصطناعي:</b>\n"
-            "• اكتب لي: <i>'عدل دم سبايدر هودي خليه 300'</i>\n"
-            "• اكتب لي: <i>'احذف جميع الرومات'</i>\n"
-            "• أو اسألني أي سؤال في اللعبة وسأجيبك فوراً!"
+            "💡 <b>المهام المخصصة:</b>\n"
+            "1. الإجابة على أي سؤال أو استفسار عن اللعبة والسيرفر والأبطال\n"
+            "2. تنفيذ أوامر اللعبة فوراً (إنشاء غرف 1v1، إعلانات، إنذار، فحص السيرفر)"
         )
         send_telegram_message(chat_id, help_msg)
         return True
