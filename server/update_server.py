@@ -26,8 +26,9 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-PORT = 8080
-GUEST_PORT = 8081
+PORT = int(os.environ.get("PORT", 8080))
+GUEST_PORT = int(os.environ.get("GUEST_PORT", 8081 if PORT != 8081 else 8082))
+IS_CLOUD = bool(os.environ.get("RENDER") or os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("DYNO") or (os.environ.get("PORT") and os.environ.get("PORT") != "8080"))
 BASE_DIR = Path(__file__).resolve().parent
 PUBLIC_DIR = BASE_DIR / "public"
 DOWNLOADS_DIR = PUBLIC_DIR / "downloads"
@@ -887,6 +888,8 @@ class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def check_router_access(self) -> bool:
         """Blocks access to the website & admin controls if client is not on the local router Wi-Fi/LAN."""
+        if IS_CLOUD or os.environ.get("DISABLE_ROUTER_CHECK", "").lower() in ("1", "true", "yes"):
+            return True
         client_ip = self.client_address[0]
         if not is_local_router_client(client_ip):
             self.send_response(403)
@@ -1743,6 +1746,39 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+
+def run_cloud_keep_alive() -> None:
+    """Keeps Render / cloud instance alive 24/7 by pinging it before the 15-minute idle sleep threshold."""
+    target_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip()
+    if not target_url:
+        target_url = os.environ.get("KEEP_ALIVE_URL", "").strip()
+    if not target_url and IS_CLOUD:
+        app_name = os.environ.get("RENDER_SERVICE_NAME", "titanstrike-server").strip()
+        target_url = f"https://{app_name}.onrender.com"
+
+    if not target_url:
+        return
+
+    target_url = target_url.rstrip("/") + "/api/server_status"
+    print(f"[KeepAlive] 🕒 Starting 24/7 Cloud Keep-Alive pinger to: {target_url}")
+    
+    time.sleep(25)
+    while True:
+        try:
+            req = urllib.request.Request(target_url, headers={"User-Agent": "TitanStrike-KeepAlive/1.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                if resp.status == 200:
+                    pass
+        except Exception:
+            pass
+        # Sleep for 9 minutes (540s) so Render's 15-minute sleep timer is never reached!
+        time.sleep(540)
+
+def start_keep_alive_thread() -> threading.Thread:
+    t = threading.Thread(target=run_cloud_keep_alive, daemon=True, name="KeepAliveAgent")
+    t.start()
+    return t
+
 def run_server():
     lan_ip = get_lan_ip()
     wan_ip = get_wan_ip()
@@ -1756,7 +1792,10 @@ def run_server():
         admin_httpd = None
 
     try:
-        guest_httpd = socketserver.ThreadingTCPServer(("0.0.0.0", GUEST_PORT), GuestRequestHandler)
+        if not IS_CLOUD:
+            guest_httpd = socketserver.ThreadingTCPServer(("0.0.0.0", GUEST_PORT), GuestRequestHandler)
+        else:
+            guest_httpd = None
     except Exception as e:
         print(f"[!] Warning: Could not bind Guest server on port {GUEST_PORT}: {e}")
         guest_httpd = None
@@ -1789,6 +1828,12 @@ def run_server():
         print("🤖 [Telegram Bot Agent] نشط ويعمل بنجاح لاستقبال الأوامر وإرسال تنبيهات الأخطاء!")
     except Exception as e:
         print(f"[!] Warning: Could not start Telegram Bot: {e}")
+
+    # Launch Cloud 24/7 Keep-Alive Thread (Prevents Render 15-min Sleep)
+    try:
+        start_keep_alive_thread()
+    except Exception as e:
+        print(f"[!] Warning: Could not start Keep-Alive thread: {e}")
 
     print("[*] All servers are running actively! Ready to serve clients.")
     print("[*] Press Ctrl+C anytime to stop.")

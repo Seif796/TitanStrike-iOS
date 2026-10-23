@@ -2,11 +2,13 @@ services:
   - type: web
     name: titanstrike-server
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python server/update_server.py
+    startCommand: python -u server/update_server.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         value: 8993921362:AAFglRSgWPIiNZOLPEh8JSgBrW8RWPfaQ9c
-      - key: PORT
-        value: 8080
-
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: RENDER
+        value: "true"

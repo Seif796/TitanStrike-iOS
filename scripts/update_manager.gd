@@ -50,6 +50,7 @@ func get_fallback_candidates() -> Array[String]:
 	list.append("http://192.168.1.17:8081")
 	list.append("http://196.131.243.244:8080")
 	list.append("http://196.131.243.244:8081")
+	list.append("https://titanstrike-server.onrender.com")
 	
 	if not is_pc:
 		list.append("http://127.0.0.1:8080")
