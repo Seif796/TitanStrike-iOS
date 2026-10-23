@@ -105,6 +105,48 @@ def send_telegram_message(chat_id: int | str, text: str, reply_markup: dict = No
             print(f"[TelegramBot] ⚠️ فشل إرسال الرسالة إلى {chat_id}: {e}")
             return False
 
+def send_telegram_photo(chat_id: int | str, photo_path: str, caption: str = "") -> bool:
+    """Sends a local photo file directly to Telegram chat via multipart/form-data."""
+    if not TELEGRAM_TOKEN or not os.path.exists(photo_path):
+        return False
+    import uuid
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    boundary = f"----WebKitFormBoundary{uuid.uuid4().hex}"
+    
+    with open(photo_path, "rb") as f:
+        file_bytes = f.read()
+
+    filename = os.path.basename(photo_path)
+    
+    body = bytearray()
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{chat_id}\r\n'.encode("utf-8"))
+    
+    if caption:
+        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+        body.extend(f'Content-Disposition: form-data; name="caption"\r\n\r\n{caption}\r\n'.encode("utf-8"))
+        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+        body.extend(f'Content-Disposition: form-data; name="parse_mode"\r\n\r\nHTML\r\n'.encode("utf-8"))
+        
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(f'Content-Disposition: form-data; name="photo"; filename="{filename}"\r\n'.encode("utf-8"))
+    body.extend(b"Content-Type: image/jpeg\r\n\r\n")
+    body.extend(file_bytes)
+    body.extend(b"\r\n")
+    body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=bytes(body),
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}", "User-Agent": "TitanStrikeBot/2.0"}
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return resp.status == 200
+    except Exception as e:
+        print(f"[TelegramBot] ⚠️ فشل إرسال الصورة: {e}")
+        return False
+
 def broadcast_to_admins(text: str) -> None:
     """Broadcasts an urgent notification to all registered commanders."""
     for chat_id in list(_admin_chat_ids):
@@ -246,6 +288,12 @@ def handle_user_command(chat_id: int, text: str) -> bool:
         return True
 
     # 2. Greetings & Check-ins ("عامل ايه", "الو", "ازيك", etc.)
+    if any(k in cmd_lower for k in ["صورتك", "صورتك ايه", "ابعت صورتك", "هات صورتك", "صورة البوت", "صورتك يا بوت"]):
+        avatar_path = BASE_DIR / "public" / "cyberai_avatar.jpg"
+        if avatar_path.exists():
+            send_telegram_photo(chat_id, str(avatar_path), "👑 <b>أنا CyberAI</b> - المساعد الذكي لقائد سيرفر Titan Strike 3D! ⚡")
+            return True
+
     greetings = ["عامل ايه", "عامل ايخ", "عامل إيه", "الو", "ألو", "هلا", "مرحبا", "سلام عليكم", "صباح الخير", "مساء الخير", "انت هنا", "فينك"]
     if any(cmd_lower == g or cmd_lower.startswith(g) for g in greetings):
         reply = (
