@@ -1,3 +1,13 @@
+---
+title: Titanstrike Server
+emoji: 🚀
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🛡️ CyberFort: Titan Strike 3D (حصن السايبر: صائد العمالقة)
 
 لعبة أكشن وبناء وتختيم جماعي ثلاثية الأبعاد (3D Co-op Fortress Building & Boss Hunt) تعمل بالعرض (Landscape) بالكامل، مصممة لهواتف **iPhone (iOS)** وأجهزة الكمبيوتر، مع دعم تصدير وبناء تلقائي لملف **IPA** عبر **GitHub Actions**.
