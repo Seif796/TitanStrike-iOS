@@ -30,7 +30,7 @@ PORT = int(os.environ.get("PORT", 8080))
 GUEST_PORT = int(os.environ.get("GUEST_PORT", 8081 if PORT != 8081 else 8082))
 IS_CLOUD = bool(os.environ.get("RENDER") or os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("DYNO") or (os.environ.get("PORT") and os.environ.get("PORT") != "8080"))
 BASE_DIR = Path(__file__).resolve().parent
-PUBLIC_DIR = BASE_DIR / "public"
+PUBLIC_DIR = BASE_DIR / "public" if (BASE_DIR / "public").exists() else (BASE_DIR / "server" / "public" if (BASE_DIR / "server" / "public").exists() else BASE_DIR)
 DOWNLOADS_DIR = PUBLIC_DIR / "downloads"
 VERSION_FILE = PUBLIC_DIR / "version.json"
 GAME_CONFIG_FILE = PUBLIC_DIR / "game_config.json"

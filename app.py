@@ -6,10 +6,12 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure root and server directory are on Python path
 BASE_DIR = Path(__file__).resolve().parent
+
+# Check both server/ directory and root directory
+if (BASE_DIR / "server").exists():
+    sys.path.insert(0, str(BASE_DIR / "server"))
 sys.path.insert(0, str(BASE_DIR))
-sys.path.insert(0, str(BASE_DIR / "server"))
 
 # Hugging Face Spaces listens on port 7860 by default
 if not os.environ.get("PORT"):
@@ -17,7 +19,11 @@ if not os.environ.get("PORT"):
 
 os.environ["HUGGINGFACE"] = "true"
 
-import update_server
+try:
+    import update_server
+except ImportError:
+    # Try importing from server folder explicitly
+    from server import update_server
 
 if __name__ == "__main__":
     print("=" * 70)
