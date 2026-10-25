@@ -1,15 +1,15 @@
 {
   "version": "1.1.0",
-  "version_code": 2,
+  "version_code": 3,
   "release_date": "2026-10-25",
-  "title": "تحديث جديد: تحسينات وإصلاحات شاملة",
+  "title": "تحديث شامل: نظام استبدال الملفات التلقائي وإصلاح الإرسال بالكامل",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 128497,
-  "sha256": "5d6a5dadfd94797c5690a8bce4574395a76de1ca3bc39d45d73f00435dcae4a1",
+  "file_size_bytes": 129033,
+  "sha256": "0b0ac62b435681d980a95f1bd3d2ef7edf5baba7f9c1a7e70400ba8cf42291e7",
   "mandatory": false
 }
