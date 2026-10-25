@@ -5,6 +5,9 @@ on:
     branches: [ master, main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Android APK
@@ -59,7 +62,6 @@ jobs:
           mkdir -p ~/.config/godot
           printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\nexport/android/debug_keystore = "%s/debug.keystore"\nexport/android/debug_keystore_user = "androiddebugkey"\nexport/android/debug_keystore_pass = "android"\n' "$ANDROID_HOME" "$JAVA_HOME" "$HOME" > ~/.config/godot/editor_settings-4.tres
           echo "Configured ~/.config/godot/editor_settings-4.tres"
-          cat ~/.config/godot/editor_settings-4.tres
 
       - name: Export Godot Project to Android APK
         run: |
@@ -75,3 +77,13 @@ jobs:
           name: TitanStrike-Android-APK
           path: build/android/TitanStrike.apk
           retention-days: 14
+
+      - name: Publish Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.3.0"
+          name: "Titan Strike 3D Mobile Release v1.3.0"
+          body: "Official Titan Strike 3D Android APK release."
+          files: build/android/TitanStrike.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
