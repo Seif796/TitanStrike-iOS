@@ -11,6 +11,9 @@ signal user_logged_in(username: String)
 signal user_logged_out()
 signal friends_updated(friends_list: Array)
 signal party_updated(party_members: Array)
+signal party_invite_received(inviter: String, invite_id: String)
+signal party_invite_accepted(inviter: String)
+signal party_invite_rejected(inviter: String)
 
 const ACCOUNTS_FILE: String = "user://accounts.json"
 
@@ -20,6 +23,9 @@ var accounts_data: Dictionary = {
 }
 
 var current_party: Array = []
+var pending_party_invites: Array = []
+var seen_invite_ids: Array = []
+var _party_poll_timer: Timer = null
 
 func _ready() -> void:
 	load_accounts()
@@ -27,6 +33,7 @@ func _ready() -> void:
 		current_party = [get_current_user()]
 	else:
 		current_party = []
+	_setup_party_polling()
 
 func load_accounts() -> void:
 	if not FileAccess.file_exists(ACCOUNTS_FILE):
@@ -178,6 +185,40 @@ func remove_friend(friend_name: String) -> void:
 		save_accounts()
 		friends_updated.emit(friends)
 
+
+func _setup_party_polling() -> void:
+	_party_poll_timer = Timer.new()
+	_party_poll_timer.wait_time = 2.5
+	_party_poll_timer.autostart = true
+	_party_poll_timer.timeout.connect(_poll_server_for_invites)
+	add_child(_party_poll_timer)
+
+func _poll_server_for_invites() -> void:
+	if not is_logged_in():
+		return
+	var cur = get_current_user().to_lower()
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
+		http.queue_free()
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				var invs: Array = json.data.get("invites", [])
+				pending_party_invites = invs
+				for inv in invs:
+					var inv_id = str(inv.get("id", ""))
+					var inviter = str(inv.get("from", ""))
+					if not seen_invite_ids.has(inv_id):
+						seen_invite_ids.append(inv_id)
+						party_invite_received.emit(inviter, inv_id)
+	)
+	var host = "127.0.0.1"
+	if NetworkManager and not NetworkManager.server_ip.is_empty():
+		host = NetworkManager.server_ip
+	var url = "http://" + host + ":8080/api/party/invites?user=" + cur
+	http.request(url)
+
 func invite_to_party(friend_name: String) -> Dictionary:
 	var cur = get_current_user()
 	if not is_logged_in():
@@ -189,9 +230,64 @@ func invite_to_party(friend_name: String) -> Dictionary:
 	if current_party.has(friend_name):
 		return {"success": false, "message": "ℹ️ %s موجود بالفعل في البارتي!" % friend_name}
 	
+	# Send invite request to server
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var host = "127.0.0.1"
+	if NetworkManager and not NetworkManager.server_ip.is_empty():
+		host = NetworkManager.server_ip
+	var url = "http://" + host + ":8080/api/party/invite"
+	var payload = {"from": cur, "to": friend_name}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+	
 	current_party.append(friend_name)
 	party_updated.emit(current_party)
-	return {"success": true, "message": "🎉 تم إرسال دعوة لـ %s وإضافته إلى البارتي الخاص بك!" % friend_name}
+	return {"success": true, "message": "🎉 تم إرسال دعوة انضمام للبارتي إلى: " + friend_name}
+
+func accept_party_invite(inviter: String, invite_id: String) -> void:
+	var cur = get_current_user()
+	if not current_party.has(cur):
+		current_party = [cur]
+	if not current_party.has(inviter):
+		current_party.append(inviter)
+	
+	# Notify server
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var host = "127.0.0.1"
+	if NetworkManager and not NetworkManager.server_ip.is_empty():
+		host = NetworkManager.server_ip
+	var url = "http://" + host + ":8080/api/party/respond"
+	var payload = {"user": cur, "from": inviter, "action": "accept", "invite_id": invite_id}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+	
+	# Remove from pending list
+	_remove_pending_invite(invite_id)
+	party_updated.emit(current_party)
+	party_invite_accepted.emit(inviter)
+
+func reject_party_invite(inviter: String, invite_id: String) -> void:
+	var cur = get_current_user()
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var host = "127.0.0.1"
+	if NetworkManager and not NetworkManager.server_ip.is_empty():
+		host = NetworkManager.server_ip
+	var url = "http://" + host + ":8080/api/party/respond"
+	var payload = {"user": cur, "from": inviter, "action": "reject", "invite_id": invite_id}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+	
+	_remove_pending_invite(invite_id)
+	party_invite_rejected.emit(inviter)
+
+func _remove_pending_invite(invite_id: String) -> void:
+	for i in range(pending_party_invites.size() - 1, -1, -1):
+		if str(pending_party_invites[i].get("id", "")) == invite_id:
+			pending_party_invites.remove_at(i)
+
 
 func leave_party() -> void:
 	var cur = get_current_user()

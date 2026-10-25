@@ -1073,6 +1073,49 @@ def auth_get_stats() -> dict:
         "leaderboard": leaderboard[:10]
     }
 
+
+# ==============================================================================
+# TITAN STRIKE 3D - LIVE PARTY INVITATIONS SYSTEM
+# ==============================================================================
+GLOBAL_PARTY_INVITES = {} # { "username": [ { "id": "...", "from": "...", "time": ... } ] }
+
+def handle_party_invite(data: dict) -> tuple[int, dict]:
+    from_u = str(data.get("from", "")).strip().lower()
+    to_u = str(data.get("to", "")).strip().lower()
+    if not from_u or not to_u:
+        return 400, {"success": False, "message": "بيانات الدعوة غير مكتملة!"}
+    
+    inv_id = secrets.token_hex(6)
+    inv_obj = {
+        "id": inv_id,
+        "from": from_u,
+        "to": to_u,
+        "time": time.time()
+    }
+    inv_list = GLOBAL_PARTY_INVITES.setdefault(to_u, [])
+    # Don't duplicate
+    if not any(i["from"] == from_u for i in inv_list):
+        inv_list.append(inv_obj)
+    
+    add_console_log("PARTY", f"💌 دعوة بارتي جديدة: من '{from_u}' إلى '{to_u}'", "INFO")
+    return 200, {"success": True, "message": f"🎉 تم إرسال دعوة البارتي إلى {to_u} بنجاح!", "invite_id": inv_id}
+
+def handle_party_respond(data: dict) -> tuple[int, dict]:
+    u = str(data.get("user", "")).strip().lower()
+    from_u = str(data.get("from", "")).strip().lower()
+    action = str(data.get("action", "reject")).strip().lower()
+    inv_id = str(data.get("invite_id", "")).strip()
+
+    if u in GLOBAL_PARTY_INVITES:
+        GLOBAL_PARTY_INVITES[u] = [i for i in GLOBAL_PARTY_INVITES[u] if i.get("id") != inv_id and i.get("from") != from_u]
+
+    if action == "accept":
+        add_console_log("PARTY", f"✅ قبل اللاعب '{u}' دعوة البارتي من '{from_u}' وانضم للبارتي!", "SUCCESS")
+        return 200, {"success": True, "action": "accept", "message": f"تم قبول دعوة {from_u} ودخول البارتي!"}
+    else:
+        add_console_log("PARTY", f"❌ رفض اللاعب '{u}' دعوة البارتي من '{from_u}'.", "INFO")
+        return 200, {"success": True, "action": "reject", "message": "تم رفض الدعوة."}
+
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
     handler.send_response(status_code)
@@ -1142,7 +1185,15 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             send_json_response(self, load_game_config())
             return
 
-                elif path == "/api/auth/stats":
+                        elif path == "/api/party/invites":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            now = time.time()
+            invs = [inv for inv in GLOBAL_PARTY_INVITES.get(u, []) if now - inv.get("time", 0) < 300]
+            GLOBAL_PARTY_INVITES[u] = invs
+            send_json_response(self, {"success": True, "invites": invs})
+            return
+
+        elif path == "/api/auth/stats":
             send_json_response(self, auth_get_stats())
             return
 
@@ -1444,7 +1495,51 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 self.send_error(500, f"Verify device error: {e}")
             return
 
-        elif path == "/api/auth/register":
+                elif path == "/api/party/invite":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_invite(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/party/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        el        elif path == "/api/party/invite":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_invite(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/party/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        if path == "/api/auth/register":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -1792,7 +1887,15 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        if path in ("/", "/index.html", "/guest", "/guest.html"):
+        if path == "/api/party/invites":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            now = time.time()
+            invs = [inv for inv in GLOBAL_PARTY_INVITES.get(u, []) if now - inv.get("time", 0) < 300]
+            GLOBAL_PARTY_INVITES[u] = invs
+            send_json_response(self, {"success": True, "invites": invs})
+            return
+
+        elf path in ("/", "/index.html", "/guest", "/guest.html"):
             guest_file = PUBLIC_DIR / "guest.html"
             if guest_file.is_file():
                 self.send_response(200)

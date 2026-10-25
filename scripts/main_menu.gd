@@ -547,6 +547,7 @@ func _setup_friends_view() -> void:
 	
 	AccountManager.friends_updated.connect(func(_fl): _refresh_friends_ui())
 	AccountManager.party_updated.connect(func(_pm): _refresh_friends_ui())
+	AccountManager.party_invite_received.connect(_on_party_invite_received)
 
 func _on_add_friend_pressed() -> void:
 	var f_name = friend_name_input.text
@@ -607,6 +608,46 @@ func _refresh_friends_ui() -> void:
 			
 			friends_list_vbox.add_child(row)
 	
+	# Show pending incoming invites if any
+	if AccountManager.pending_party_invites.size() > 0:
+		var inv_sep = Label.new()
+		inv_sep.text = "💌 دعوات انضمام للبارتي واردة:"
+		inv_sep.add_theme_color_override("font_color", Color(1.0, 0.4, 0.7))
+		inv_sep.add_theme_font_size_override("font_size", 14)
+		friends_list_vbox.add_child(inv_sep)
+		for inv in AccountManager.pending_party_invites:
+			var inv_row = HBoxContainer.new()
+			var inviter_name = str(inv.get("from", ""))
+			var inv_id = str(inv.get("id", ""))
+			var lbl = Label.new()
+			lbl.text = "🎉 دعوة من: " + inviter_name
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.add_theme_color_override("font_color", Color(0.2, 1.0, 0.6))
+			inv_row.add_child(lbl)
+			
+			var acc_btn = Button.new()
+			acc_btn.text = "✅ قبول ودخول"
+			acc_btn.custom_minimum_size = Vector2(120, 34)
+			acc_btn.pressed.connect(func():
+				AudioManager.play_sfx("success")
+				AccountManager.accept_party_invite(inviter_name, inv_id)
+				friends_status_label.text = "🎉 تم قبول دعوة " + inviter_name
+				friends_status_label.modulate = Color.GREEN
+				_refresh_friends_ui()
+			)
+			inv_row.add_child(acc_btn)
+			
+			var rej_btn = Button.new()
+			rej_btn.text = "❌ رفض"
+			rej_btn.custom_minimum_size = Vector2(80, 34)
+			rej_btn.pressed.connect(func():
+				AudioManager.play_sfx("click")
+				AccountManager.reject_party_invite(inviter_name, inv_id)
+				_refresh_friends_ui()
+			)
+			inv_row.add_child(rej_btn)
+			friends_list_vbox.add_child(inv_row)
+
 	# Update party
 	var p_members = AccountManager.current_party
 	party_members_label.text = "البارتي الحالي (%d): " % p_members.size() + ", ".join(p_members)
@@ -1333,3 +1374,119 @@ func _show_ai_duel_popup(msg: String, room_code: String) -> void:
 		if is_instance_valid(toast):
 			toast.queue_free()
 	)
+
+
+# ==============================================================================
+# LIVE PARTY INVITATIONS POPUP & RESPONSE
+# ==============================================================================
+func _on_party_invite_received(inviter: String, invite_id: String) -> void:
+	AudioManager.play_sfx("redeem")
+	_show_party_invite_popup(inviter, invite_id)
+
+func _show_party_invite_popup(inviter: String, invite_id: String) -> void:
+	var toast = CanvasLayer.new()
+	toast.layer = 150
+	
+	var overlay = ColorRect.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.75)
+	toast.add_child(overlay)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	toast.add_child(center)
+	
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(460, 260)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.12, 0.22, 0.98)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.0, 0.9, 1.0)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.shadow_color = Color(0.0, 0.8, 1.0, 0.4)
+	style.shadow_size = 25
+	card.add_theme_stylebox_override("panel", style)
+	center.add_child(card)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	card.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	margin.add_child(vbox)
+	
+	var icon_lbl = Label.new()
+	icon_lbl.text = "💌 دعوة انضمام إلى بارتي! (PARTY INVITE)"
+	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon_lbl.add_theme_font_size_override("font_size", 18)
+	icon_lbl.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	vbox.add_child(icon_lbl)
+	
+	var desc_lbl = Label.new()
+	desc_lbl.text = "اللاعب: %s\nيدعوك للانضمام إلى البارتي الخاص به للقتال معاً كفريق واحد!" % inviter
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.add_theme_font_size_override("font_size", 15)
+	desc_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	vbox.add_child(desc_lbl)
+	
+	var btns_hbox = HBoxContainer.new()
+	btns_hbox.add_theme_constant_override("separation", 16)
+	vbox.add_child(btns_hbox)
+	
+	# Accept button
+	var accept_btn = Button.new()
+	accept_btn.text = "✅ قبول ودخول البارتي"
+	accept_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	accept_btn.custom_minimum_size = Vector2(0, 48)
+	accept_btn.add_theme_font_size_override("font_size", 16)
+	var accept_style = StyleBoxFlat.new()
+	accept_style.bg_color = Color(0.1, 0.7, 0.35)
+	accept_style.corner_radius_top_left = 10
+	accept_style.corner_radius_top_right = 10
+	accept_style.corner_radius_bottom_left = 10
+	accept_style.corner_radius_bottom_right = 10
+	accept_btn.add_theme_stylebox_override("normal", accept_style)
+	accept_btn.pressed.connect(func():
+		AudioManager.play_sfx("success")
+		AccountManager.accept_party_invite(inviter, invite_id)
+		toast.queue_free()
+		_switch_view(view_friends)
+		if friends_status_label:
+			friends_status_label.text = "🎉 تم الانضمام بنجاح إلى بارتي %s!" % inviter
+			friends_status_label.modulate = Color.GREEN
+		_refresh_friends_ui()
+	)
+	btns_hbox.add_child(accept_btn)
+	
+	# Reject button
+	var reject_btn = Button.new()
+	reject_btn.text = "❌ رفض الدعوة"
+	reject_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reject_btn.custom_minimum_size = Vector2(0, 48)
+	reject_btn.add_theme_font_size_override("font_size", 16)
+	var reject_style = StyleBoxFlat.new()
+	reject_style.bg_color = Color(0.7, 0.15, 0.25)
+	reject_style.corner_radius_top_left = 10
+	reject_style.corner_radius_top_right = 10
+	reject_style.corner_radius_bottom_left = 10
+	reject_style.corner_radius_bottom_right = 10
+	reject_btn.add_theme_stylebox_override("normal", reject_style)
+	reject_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		AccountManager.reject_party_invite(inviter, invite_id)
+		toast.queue_free()
+		_refresh_friends_ui()
+	)
+	btns_hbox.add_child(reject_btn)
+	
+	add_child(toast)
