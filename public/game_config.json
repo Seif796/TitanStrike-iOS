@@ -51,30 +51,12 @@
     "whitelist_enabled": true,
     "allowed_devices": [
       {
-        "id": "{88b5ac79-2a3a-11eb-b696-806e6f6e6963}",
-        "name": "HP 255 G8 Notebook PC 👑 (كامل الصلاحيات)",
-        "status": "APPROVED",
-        "role": "FULL_ACCESS",
-        "approved_at": "2026-10-20 23:16"
-      }
-    ],
-    "pending_devices": [
-      {
-        "id": "754F4775-AA1B-458A-898D-24CEC5A72696",
-        "name": "iPhone12,1",
-        "os": "iOS",
-        "username": "seif1",
-        "ip": "192.168.1.10",
-        "requested_at": "2026-10-20"
-      },
-      {
         "id": "7cc427e61f546585",
         "name": "RMX3269",
-        "os": "Android",
-        "username": "",
-        "ip": "192.168.1.15",
-        "requested_at": "2026-10-20"
+        "status": "APPROVED",
+        "approved_at": "2026-10-19"
       }
-    ]
+    ],
+    "pending_devices": []
   }
 }

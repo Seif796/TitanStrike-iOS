@@ -1,15 +1,15 @@
 {
   "version": "1.1.0",
-  "version_code": 4,
+  "version_code": 5,
   "release_date": "2026-10-25",
-  "title": "نظام طلبات الصداقة والبارتي المباشر (Live Requests Tab & Server Sync)",
+  "title": "إضافة زر REQUESTS للشاشة الرئيسية ونظام الطلبات الشامل",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 130900,
-  "sha256": "c29b19428fda6d41cf907427ff399e7bd638b49254ffefe0a66075802aede476",
+  "file_size_bytes": 130998,
+  "sha256": "54b0af85ac0a067c67214e9f1d006f3dafb56ceeba3bfdc7c1ab9501480dfa65",
   "mandatory": false
 }

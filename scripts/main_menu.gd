@@ -20,6 +20,7 @@ extends Control
 @onready var start_btn: Button = $ViewHome/HomeCenterBox/StartBtn
 @onready var settings_btn: Button = $ViewHome/HomeCenterBox/SettingsBtn
 @onready var friends_btn: Button = $ViewHome/HomeCenterBox/FriendsBtn
+@onready var requests_btn: Button = $ViewHome/HomeCenterBox/RequestsBtn
 @onready var exit_btn: Button = $ViewHome/HomeCenterBox/ExitBtn
 
 # --- Mode Select Views & Controls ---
@@ -1434,15 +1435,23 @@ func _on_requests_updated() -> void:
 	var f_count = AccountManager.pending_friend_requests.size()
 	var p_count = AccountManager.pending_party_invites.size()
 	var total = f_count + p_count
-	if total > 0:
-		tab_requests_btn.text = "📩 الطلبات الواردة (Requests - %d)" % total
-		tab_requests_btn.modulate = Color(1.0, 0.35, 0.6)
-	else:
-		tab_requests_btn.text = "📩 الطلبات الواردة (Requests)"
-		if is_requests_tab:
-			tab_requests_btn.modulate = Color(0, 0.9, 1.0)
+	if requests_btn:
+		if total > 0:
+			requests_btn.text = "📩 REQUESTS (الطلبات - %d) 🔥" % total
+			requests_btn.modulate = Color(1.0, 0.35, 0.6)
 		else:
-			tab_requests_btn.modulate = Color.WHITE
+			requests_btn.text = "📩 REQUESTS (الطلبات الواردة)"
+			requests_btn.modulate = Color.WHITE
+	if tab_requests_btn:
+		if total > 0:
+			tab_requests_btn.text = "📩 الطلبات الواردة (Requests - %d)" % total
+			tab_requests_btn.modulate = Color(1.0, 0.35, 0.6)
+		else:
+			tab_requests_btn.text = "📩 الطلبات الواردة (Requests)"
+			if is_requests_tab:
+				tab_requests_btn.modulate = Color(0, 0.9, 1.0)
+			else:
+				tab_requests_btn.modulate = Color.WHITE
 	if is_requests_tab:
 		_refresh_requests_ui()
 
