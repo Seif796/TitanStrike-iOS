@@ -25,8 +25,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Android Environment & Accept Licenses
+        run: |
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+          yes | sdkmanager --licenses || true
 
       - name: Set up Godot 4.3 & Android Export Templates
         run: |
@@ -46,17 +50,27 @@ jobs:
           mkdir -p "$TEMPLATES_DIR"
           mv templates/* "$TEMPLATES_DIR/"
           echo "Templates installed to $TEMPLATES_DIR"
+          ls -la "$TEMPLATES_DIR"
 
-      - name: Generate Android Debug Keystore
+      - name: Generate Debug Keystore
         run: |
           keytool -genkey -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=TitanStrike,C=US"
           echo "Generated debug keystore at $HOME/debug.keystore"
 
-      - name: Configure Android Export Preset
+      - name: Configure Godot Android Editor Settings
         run: |
-          KEYSTORE_PATH="$HOME/debug.keystore"
-          # Update debug keystore path in preset
-          sed -i "s|keystore/debug=\".*\"|keystore/debug=\"$KEYSTORE_PATH\"|g" export_presets.cfg || true
+          mkdir -p ~/.config/godot
+          cat <<EOF > ~/.config/godot/editor_settings-4.tres
+[gd_resource type="EditorSettings" format=3]
+
+[resource]
+export/android/android_sdk_path = "$ANDROID_HOME"
+export/android/java_sdk_path = "$JAVA_HOME"
+export/android/debug_keystore = "$HOME/debug.keystore"
+export/android/debug_keystore_user = "androiddebugkey"
+export/android/debug_keystore_pass = "android"
+EOF
+          echo "Configured ~/.config/godot/editor_settings-4.tres"
 
       - name: Export Godot Project to Android APK
         run: |
