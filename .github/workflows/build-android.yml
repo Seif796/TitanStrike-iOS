@@ -3,8 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [ master, main ]
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -50,7 +48,6 @@ jobs:
           mkdir -p "$TEMPLATES_DIR"
           mv templates/* "$TEMPLATES_DIR/"
           echo "Templates installed to $TEMPLATES_DIR"
-          ls -la "$TEMPLATES_DIR"
 
       - name: Generate Debug Keystore
         run: |
@@ -60,17 +57,9 @@ jobs:
       - name: Configure Godot Android Editor Settings
         run: |
           mkdir -p ~/.config/godot
-          cat <<EOF > ~/.config/godot/editor_settings-4.tres
-[gd_resource type="EditorSettings" format=3]
-
-[resource]
-export/android/android_sdk_path = "$ANDROID_HOME"
-export/android/java_sdk_path = "$JAVA_HOME"
-export/android/debug_keystore = "$HOME/debug.keystore"
-export/android/debug_keystore_user = "androiddebugkey"
-export/android/debug_keystore_pass = "android"
-EOF
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\nexport/android/debug_keystore = "%s/debug.keystore"\nexport/android/debug_keystore_user = "androiddebugkey"\nexport/android/debug_keystore_pass = "android"\n' "$ANDROID_HOME" "$JAVA_HOME" "$HOME" > ~/.config/godot/editor_settings-4.tres
           echo "Configured ~/.config/godot/editor_settings-4.tres"
+          cat ~/.config/godot/editor_settings-4.tres
 
       - name: Export Godot Project to Android APK
         run: |
@@ -86,11 +75,3 @@ EOF
           name: TitanStrike-Android-APK
           path: build/android/TitanStrike.apk
           retention-days: 14
-
-      - name: Create or Update GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: build/android/TitanStrike.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
