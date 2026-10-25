@@ -1115,6 +1115,78 @@ def handle_party_respond(data: dict) -> tuple[int, dict]:
         add_console_log("PARTY", f"❌ رفض اللاعب '{u}' دعوة البارتي من '{from_u}'.", "INFO")
         return 200, {"success": True, "action": "reject", "message": "تم رفض الدعوة."}
 
+
+# ==============================================================================
+# TITAN STRIKE 3D - LIVE FRIEND REQUESTS SYSTEM
+# ==============================================================================
+GLOBAL_FRIEND_REQUESTS = {} # { "username": [ { "id": "...", "from": "...", "time": ... } ] }
+
+def handle_friend_request(data: dict) -> tuple[int, dict]:
+    from_u = str(data.get("from", "")).strip().lower()
+    to_u = str(data.get("to", "")).strip().lower()
+    if not from_u or not to_u:
+        return 400, {"success": False, "message": "بيانات طلب الصداقة غير مكتملة!"}
+    if from_u == to_u:
+        return 400, {"success": False, "message": "لا يمكنك إرسال طلب صداقة لنفسك!"}
+    
+    db = load_accounts_db()
+    users = db.get("users", {})
+    from_record = users.get(from_u, {})
+    if to_u in from_record.get("friends", []):
+        return 200, {"success": True, "message": f"ℹ️ {to_u} موجود بالفعل في قائمة أصدقائك!"}
+
+    req_id = secrets.token_hex(6)
+    req_obj = {
+        "id": req_id,
+        "from": from_u,
+        "to": to_u,
+        "time": time.time()
+    }
+    req_list = GLOBAL_FRIEND_REQUESTS.setdefault(to_u, [])
+    if not any(i["from"] == from_u for i in req_list):
+        req_list.append(req_obj)
+
+    add_console_log("FRIENDS", f"👥 طلب صداقة جديد: من '{from_u}' إلى '{to_u}'", "INFO")
+    return 200, {"success": True, "message": f"🎉 تم إرسال طلب الصداقة إلى {to_u} بنجاح!", "request_id": req_id}
+
+def handle_friend_respond(data: dict) -> tuple[int, dict]:
+    u = str(data.get("user", "")).strip().lower()
+    from_u = str(data.get("from", "")).strip().lower()
+    action = str(data.get("action", "reject")).strip().lower()
+    req_id = str(data.get("request_id", "")).strip()
+
+    if u in GLOBAL_FRIEND_REQUESTS:
+        GLOBAL_FRIEND_REQUESTS[u] = [i for i in GLOBAL_FRIEND_REQUESTS[u] if i.get("id") != req_id and i.get("from") != from_u]
+
+    if action == "accept":
+        db = load_accounts_db()
+        users = db.setdefault("users", {})
+        if u not in users:
+            users[u] = {"friends": []}
+        if from_u not in users:
+            users[from_u] = {"friends": []}
+        
+        u_friends = users[u].setdefault("friends", [])
+        if from_u not in u_friends:
+            u_friends.append(from_u)
+            
+        from_friends = users[from_u].setdefault("friends", [])
+        if u not in from_friends:
+            from_friends.append(u)
+            
+        save_accounts_db(db)
+        add_console_log("FRIENDS", f"✅ قبل اللاعب '{u}' طلب صداقة '{from_u}' وأصبحا أصدقاء!", "SUCCESS")
+        return 200, {"success": True, "action": "accept", "message": f"تم قبول صداقة {from_u} بنجاح!"}
+    else:
+        add_console_log("FRIENDS", f"❌ رفض اللاعب '{u}' طلب صداقة '{from_u}'.", "INFO")
+        return 200, {"success": True, "action": "reject", "message": "تم رفض طلب الصداقة."}
+
+def handle_friend_list(username: str) -> dict:
+    u = username.strip().lower()
+    db = load_accounts_db()
+    friends = db.get("users", {}).get(u, {}).get("friends", [])
+    return {"success": True, "friends": friends}
+
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
     handler.send_response(status_code)
@@ -1190,6 +1262,19 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             invs = [inv for inv in GLOBAL_PARTY_INVITES.get(u, []) if now - inv.get("time", 0) < 300]
             GLOBAL_PARTY_INVITES[u] = invs
             send_json_response(self, {"success": True, "invites": invs})
+            return
+
+        elif path == "/api/friends/requests":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            now = time.time()
+            reqs = [r for r in GLOBAL_FRIEND_REQUESTS.get(u, []) if now - r.get("time", 0) < 600]
+            GLOBAL_FRIEND_REQUESTS[u] = reqs
+            send_json_response(self, {"success": True, "requests": reqs})
+            return
+
+        elif path == "/api/friends/list":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            send_json_response(self, handle_friend_list(u))
             return
 
         elif path == "/api/auth/stats":
@@ -1503,12 +1588,56 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
             return
 
+        elif path == "/api/friends/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_request(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/friends/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
         elif path == "/api/party/respond":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, res = handle_party_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/friends/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_request(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/friends/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_respond(data)
                 send_json_response(self, res, status_code=code)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
@@ -1869,6 +1998,19 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             send_json_response(self, {"success": True, "invites": invs})
             return
 
+        elif path == "/api/friends/requests":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            now = time.time()
+            reqs = [r for r in GLOBAL_FRIEND_REQUESTS.get(u, []) if now - r.get("time", 0) < 600]
+            GLOBAL_FRIEND_REQUESTS[u] = reqs
+            send_json_response(self, {"success": True, "requests": reqs})
+            return
+
+        elif path == "/api/friends/list":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            send_json_response(self, handle_friend_list(u))
+            return
+
         elif path in ("/", "/index.html", "/guest", "/guest.html"):
             guest_file = PUBLIC_DIR / "guest.html"
             if guest_file.is_file():
@@ -1989,12 +2131,56 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
             return
 
+        elif path == "/api/friends/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_request(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/friends/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
         elif path == "/api/party/respond":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, res = handle_party_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/friends/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_request(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/friends/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_friend_respond(data)
                 send_json_response(self, res, status_code=code)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)

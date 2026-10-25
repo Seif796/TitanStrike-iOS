@@ -84,13 +84,22 @@ extends Control
 
 # --- Friends & Party Controls ---
 @onready var friends_back_btn: Button = $ViewFriends/FriendsNavBar/FriendsBackBtn
+@onready var tab_friends_btn: Button = $ViewFriends/FriendsCard/VBox/FriendsTabsHBox/TabFriendsBtn
+@onready var tab_requests_btn: Button = $ViewFriends/FriendsCard/VBox/FriendsTabsHBox/TabRequestsBtn
+@onready var add_friend_hbox: Control = $ViewFriends/FriendsCard/VBox/AddFriendHBox
 @onready var friend_name_input: LineEdit = $ViewFriends/FriendsCard/VBox/AddFriendHBox/FriendNameInput
-@onready var add_friend_btn: Button = $ViewFriends/FriendsCard/VBox/AddFriendHBox/AddFriendBtn
 @onready var friends_status_label: Label = $ViewFriends/FriendsCard/VBox/FriendsStatusLabel
+@onready var friends_list_scroll: Control = $ViewFriends/FriendsCard/VBox/FriendsListScroll
 @onready var friends_list_vbox: VBoxContainer = $ViewFriends/FriendsCard/VBox/FriendsListScroll/FriendsListVBox
+@onready var party_section: Control = $ViewFriends/FriendsCard/VBox/PartySection
 @onready var party_members_label: Label = $ViewFriends/FriendsCard/VBox/PartySection/PartyVBox/PartyMembersLabel
 @onready var start_with_party_btn: Button = $ViewFriends/FriendsCard/VBox/PartySection/PartyVBox/PartyActionsHBox/StartWithPartyBtn
 @onready var leave_party_btn: Button = $ViewFriends/FriendsCard/VBox/PartySection/PartyVBox/PartyActionsHBox/LeavePartyBtn
+@onready var requests_container: Control = $ViewFriends/FriendsCard/VBox/RequestsContainer
+@onready var requests_status_label: Label = $ViewFriends/FriendsCard/VBox/RequestsContainer/RequestsStatusLabel
+@onready var requests_vbox: VBoxContainer = $ViewFriends/FriendsCard/VBox/RequestsContainer/RequestsScroll/RequestsVBox
+
+var is_requests_tab: bool = false
 
 var selected_class: int = 0
 var is_signup_mode: bool = false
@@ -530,6 +539,17 @@ func _on_auth_submit() -> void:
 # 3. FRIENDS & PARTY SYSTEM
 # ==============================================================================
 func _setup_friends_view() -> void:
+	tab_friends_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		is_requests_tab = false
+		_update_friends_tabs()
+	)
+	tab_requests_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		is_requests_tab = true
+		_update_friends_tabs()
+	)
+
 	add_friend_btn.pressed.connect(_on_add_friend_pressed)
 	friend_name_input.text_submitted.connect(func(_t): _on_add_friend_pressed())
 	
@@ -548,6 +568,9 @@ func _setup_friends_view() -> void:
 	AccountManager.friends_updated.connect(func(_fl): _refresh_friends_ui())
 	AccountManager.party_updated.connect(func(_pm): _refresh_friends_ui())
 	AccountManager.party_invite_received.connect(_on_party_invite_received)
+	AccountManager.friend_request_received.connect(_on_friend_request_received)
+	AccountManager.requests_updated.connect(_on_requests_updated)
+	_update_friends_tabs()
 
 func _on_add_friend_pressed() -> void:
 	var f_name = friend_name_input.text
@@ -1385,6 +1408,150 @@ func _show_ai_duel_popup(msg: String, room_code: String) -> void:
 func _on_party_invite_received(inviter: String, invite_id: String) -> void:
 	AudioManager.play_sfx("redeem")
 	_show_party_invite_popup(inviter, invite_id)
+
+
+func _update_friends_tabs() -> void:
+	if is_requests_tab:
+		add_friend_hbox.visible = false
+		friends_status_label.visible = false
+		friends_list_scroll.visible = false
+		party_section.visible = false
+		requests_container.visible = true
+		tab_requests_btn.modulate = Color(0, 0.9, 1.0)
+		tab_friends_btn.modulate = Color.WHITE
+		_refresh_requests_ui()
+	else:
+		add_friend_hbox.visible = true
+		friends_status_label.visible = true
+		friends_list_scroll.visible = true
+		party_section.visible = true
+		requests_container.visible = false
+		tab_friends_btn.modulate = Color(0.2, 0.95, 0.6)
+		tab_requests_btn.modulate = Color.WHITE
+		_refresh_friends_ui()
+
+func _on_requests_updated() -> void:
+	var f_count = AccountManager.pending_friend_requests.size()
+	var p_count = AccountManager.pending_party_invites.size()
+	var total = f_count + p_count
+	if total > 0:
+		tab_requests_btn.text = "📩 الطلبات الواردة (Requests - %d)" % total
+		tab_requests_btn.modulate = Color(1.0, 0.35, 0.6)
+	else:
+		tab_requests_btn.text = "📩 الطلبات الواردة (Requests)"
+		if is_requests_tab:
+			tab_requests_btn.modulate = Color(0, 0.9, 1.0)
+		else:
+			tab_requests_btn.modulate = Color.WHITE
+	if is_requests_tab:
+		_refresh_requests_ui()
+
+func _on_friend_request_received(from_u: String, _req_id: String) -> void:
+	AudioManager.play_sfx("redeem")
+	_show_update_toast("👥 استلمت طلب صداقة جديد من '%s'! افتح قائمة الطلبات (Requests)." % from_u)
+	_on_requests_updated()
+
+func _refresh_requests_ui() -> void:
+	for child in requests_vbox.get_children():
+		child.queue_free()
+	
+	var f_reqs = AccountManager.pending_friend_requests
+	var p_invs = AccountManager.pending_party_invites
+	
+	if f_reqs.is_empty() and p_invs.is_empty():
+		var empty_lbl = Label.new()
+		empty_lbl.text = "لا توجد طلبات صداقة أو بارتي واردة حالياً (No pending requests)."
+		empty_lbl.modulate = Color(0.7, 0.75, 0.85)
+		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		requests_vbox.add_child(empty_lbl)
+		return
+
+	# 1. Incoming Friend Requests
+	if not f_reqs.is_empty():
+		var f_head = Label.new()
+		f_head.text = "👥 طلبات الصداقة الواردة (%d):" % f_reqs.size()
+		f_head.add_theme_color_override("font_color", Color(0, 0.9, 1.0))
+		f_head.add_theme_font_size_override("font_size", 15)
+		requests_vbox.add_child(f_head)
+		
+		for req_item in f_reqs:
+			var from_name = str(req_item.get("from", ""))
+			var req_id = str(req_item.get("id", ""))
+			var row = HBoxContainer.new()
+			row.custom_minimum_size = Vector2(0, 42)
+			
+			var name_lbl = Label.new()
+			name_lbl.text = "👤 طلب صداقة من: " + from_name
+			name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			name_lbl.add_theme_color_override("font_color", Color.WHITE)
+			row.add_child(name_lbl)
+			
+			var acc_btn = Button.new()
+			acc_btn.text = "✅ قبول الصداقة"
+			acc_btn.custom_minimum_size = Vector2(130, 36)
+			acc_btn.pressed.connect(func():
+				AudioManager.play_sfx("success")
+				AccountManager.accept_friend_request(from_name, req_id)
+				_show_update_toast("🎉 أصبحت الآن صديقاً لـ: " + from_name)
+				_refresh_requests_ui()
+			)
+			row.add_child(acc_btn)
+			
+			var rej_btn = Button.new()
+			rej_btn.text = "❌ رفض"
+			rej_btn.custom_minimum_size = Vector2(80, 36)
+			rej_btn.pressed.connect(func():
+				AudioManager.play_sfx("click")
+				AccountManager.reject_friend_request(from_name, req_id)
+				_show_update_toast("تم رفض طلب الصداقة من: " + from_name)
+				_refresh_requests_ui()
+			)
+			row.add_child(rej_btn)
+			requests_vbox.add_child(row)
+
+	# 2. Incoming Party Invites
+	if not p_invs.is_empty():
+		var p_head = Label.new()
+		p_head.text = "💌 طلبات انضمام للبارتي الواردة (%d):" % p_invs.size()
+		p_head.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		p_head.add_theme_font_size_override("font_size", 15)
+		requests_vbox.add_child(p_head)
+		
+		for inv in p_invs:
+			var inviter_name = str(inv.get("from", ""))
+			var inv_id = str(inv.get("id", ""))
+			var row = HBoxContainer.new()
+			row.custom_minimum_size = Vector2(0, 42)
+			
+			var name_lbl = Label.new()
+			name_lbl.text = "🎉 دعوة بارتي من: " + inviter_name
+			name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			name_lbl.add_theme_color_override("font_color", Color(0.2, 1.0, 0.6))
+			row.add_child(name_lbl)
+			
+			var acc_btn = Button.new()
+			acc_btn.text = "✅ قبول ودخول"
+			acc_btn.custom_minimum_size = Vector2(130, 36)
+			acc_btn.pressed.connect(func():
+				AudioManager.play_sfx("success")
+				AccountManager.accept_party_invite(inviter_name, inv_id)
+				_show_update_toast("🎉 تم قبول دعوة " + inviter_name + " ودخول البارتي!")
+				_refresh_requests_ui()
+			)
+			row.add_child(acc_btn)
+			
+			var rej_btn = Button.new()
+			rej_btn.text = "❌ رفض"
+			rej_btn.custom_minimum_size = Vector2(80, 36)
+			rej_btn.pressed.connect(func():
+				AudioManager.play_sfx("click")
+				AccountManager.reject_party_invite(inviter_name, inv_id)
+				_refresh_requests_ui()
+			)
+			row.add_child(rej_btn)
+			requests_vbox.add_child(row)
 
 func _show_party_invite_popup(inviter: String, invite_id: String) -> void:
 	var toast = CanvasLayer.new()

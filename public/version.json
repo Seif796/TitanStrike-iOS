@@ -1,15 +1,15 @@
 {
   "version": "1.1.0",
-  "version_code": 3,
+  "version_code": 4,
   "release_date": "2026-10-25",
-  "title": "تحديث شامل: نظام استبدال الملفات التلقائي وإصلاح الإرسال بالكامل",
+  "title": "نظام طلبات الصداقة والبارتي المباشر (Live Requests Tab & Server Sync)",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 129033,
-  "sha256": "0b0ac62b435681d980a95f1bd3d2ef7edf5baba7f9c1a7e70400ba8cf42291e7",
+  "file_size_bytes": 130900,
+  "sha256": "c29b19428fda6d41cf907427ff399e7bd638b49254ffefe0a66075802aede476",
   "mandatory": false
 }

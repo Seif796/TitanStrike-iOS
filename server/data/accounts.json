@@ -16,6 +16,16 @@
         3,
         4
       ]
+    },
+    "hero77": {
+      "friends": [
+        "seif"
+      ]
+    },
+    "seif": {
+      "friends": [
+        "hero77"
+      ]
     }
   },
   "sessions": {}

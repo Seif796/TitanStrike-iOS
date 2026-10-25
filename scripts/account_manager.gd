@@ -14,6 +14,10 @@ signal party_updated(party_members: Array)
 signal party_invite_received(inviter: String, invite_id: String)
 signal party_invite_accepted(inviter: String)
 signal party_invite_rejected(inviter: String)
+signal friend_request_received(from_user: String, request_id: String)
+signal friend_request_accepted(from_user: String)
+signal friend_request_rejected(from_user: String)
+signal requests_updated()
 
 const ACCOUNTS_FILE: String = "user://accounts.json"
 
@@ -25,6 +29,8 @@ var accounts_data: Dictionary = {
 var current_party: Array = []
 var pending_party_invites: Array = []
 var seen_invite_ids: Array = []
+var pending_friend_requests: Array = []
+var seen_friend_request_ids: Array = []
 var _party_poll_timer: Timer = null
 
 func _ready() -> void:
@@ -169,18 +175,22 @@ func add_friend(friend_name: String) -> Dictionary:
 	var f = friend_name.strip_edges()
 	if f.is_empty():
 		return {"success": false, "message": "⚠️ اكتب اسم الصديق (Username) أولاً!"}
-	if f == cur:
-		return {"success": false, "message": "⚠️ لا يمكنك إضافة نفسك كصديق!"}
+	if f.to_lower() == cur.to_lower():
+		return {"success": false, "message": "⚠️ لا يمكنك إرسال طلب صداقة لنفسك!"}
 	
 	var friends = get_friends()
 	if friends.has(f):
 		return {"success": false, "message": "ℹ️ %s موجود بالفعل في قائمة أصدقائك!" % f}
 	
-	friends.append(f)
-	accounts_data["users"][cur]["friends"] = friends
-	save_accounts()
-	friends_updated.emit(friends)
-	return {"success": true, "message": "✅ تمت إضافة %s إلى قائمة أصدقائك بنجاح!" % f}
+	# Send friend request directly to live server
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var url = get_api_base_url() + "/api/friends/request"
+	var payload = {"from": cur, "to": f}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+	
+	return {"success": true, "message": "📩 تم إرسال طلب الصداقة إلى: %s بنجاح! بانتظار موافقته في قائمة Requests." % f}
 
 func remove_friend(friend_name: String) -> void:
 	var cur = get_current_user()
@@ -205,10 +215,12 @@ func _poll_server_for_invites() -> void:
 	if not is_logged_in():
 		return
 	var cur = get_current_user().to_lower()
-	var http = HTTPRequest.new()
-	add_child(http)
-	http.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
-		http.queue_free()
+	
+	# 1. Poll party invites
+	var http_party = HTTPRequest.new()
+	add_child(http_party)
+	http_party.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
+		http_party.queue_free()
 		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 			var json = JSON.new()
 			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
@@ -220,9 +232,47 @@ func _poll_server_for_invites() -> void:
 					if not seen_invite_ids.has(inv_id):
 						seen_invite_ids.append(inv_id)
 						party_invite_received.emit(inviter, inv_id)
+				requests_updated.emit()
 	)
-	var url = get_api_base_url() + "/api/party/invites?user=" + cur
-	http.request(url)
+	http_party.request(get_api_base_url() + "/api/party/invites?user=" + cur)
+
+	# 2. Poll friend requests
+	var http_friends = HTTPRequest.new()
+	add_child(http_friends)
+	http_friends.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
+		http_friends.queue_free()
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				var reqs: Array = json.data.get("requests", [])
+				pending_friend_requests = reqs
+				for req_item in reqs:
+					var req_id = str(req_item.get("id", ""))
+					var from_u = str(req_item.get("from", ""))
+					if not seen_friend_request_ids.has(req_id):
+						seen_friend_request_ids.append(req_id)
+						friend_request_received.emit(from_u, req_id)
+				requests_updated.emit()
+	)
+	http_friends.request(get_api_base_url() + "/api/friends/requests?user=" + cur)
+
+	# 3. Synchronize friends list from server database
+	var http_list = HTTPRequest.new()
+	add_child(http_list)
+	http_list.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
+		http_list.queue_free()
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				var srv_friends: Array = json.data.get("friends", [])
+				if typeof(srv_friends) == TYPE_ARRAY and not srv_friends.is_empty():
+					var cur_u = get_current_user()
+					if accounts_data["users"].has(cur_u):
+						accounts_data["users"][cur_u]["friends"] = srv_friends
+						save_accounts()
+						friends_updated.emit(srv_friends)
+	)
+	http_list.request(get_api_base_url() + "/api/friends/list?user=" + cur)
 
 func invite_to_party(friend_name: String) -> Dictionary:
 	var cur = get_current_user()
@@ -278,6 +328,46 @@ func reject_party_invite(inviter: String, invite_id: String) -> void:
 	
 	_remove_pending_invite(invite_id)
 	party_invite_rejected.emit(inviter)
+
+func accept_friend_request(from_user: String, request_id: String) -> void:
+	var cur = get_current_user()
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var url = get_api_base_url() + "/api/friends/respond"
+	var payload = {"user": cur, "from": from_user, "action": "accept", "request_id": request_id}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+	# Add to local friends
+	var friends = get_friends()
+	if not friends.has(from_user):
+		friends.append(from_user)
+		if accounts_data["users"].has(cur):
+			accounts_data["users"][cur]["friends"] = friends
+			save_accounts()
+	
+	_remove_pending_friend_request(request_id)
+	friends_updated.emit(friends)
+	requests_updated.emit()
+	friend_request_accepted.emit(from_user)
+
+func reject_friend_request(from_user: String, request_id: String) -> void:
+	var cur = get_current_user()
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var url = get_api_base_url() + "/api/friends/respond"
+	var payload = {"user": cur, "from": from_user, "action": "reject", "request_id": request_id}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+	_remove_pending_friend_request(request_id)
+	requests_updated.emit()
+	friend_request_rejected.emit(from_user)
+
+func _remove_pending_friend_request(request_id: String) -> void:
+	for i in range(pending_friend_requests.size() - 1, -1, -1):
+		if str(pending_friend_requests[i].get("id", "")) == request_id:
+			pending_friend_requests.remove_at(i)
 
 func _remove_pending_invite(invite_id: String) -> void:
 	for i in range(pending_party_invites.size() - 1, -1, -1):
