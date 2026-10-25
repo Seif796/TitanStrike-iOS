@@ -896,10 +896,11 @@ func start_download_update() -> void:
 	else:
 		full_url = server_url.trim_suffix("/") + "/" + dl_path.trim_prefix("/")
 	
-	if FileAccess.file_exists(UPDATE_PACKAGE_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH))
+	var target_path = "user://patch.pck" if dl_path.ends_with(".pck") else UPDATE_PACKAGE_PATH
+	if FileAccess.file_exists(target_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(target_path))
 	
-	_download_http.download_file = UPDATE_PACKAGE_PATH
+	_download_http.download_file = target_path
 	is_downloading = true
 	var err = _download_http.request(full_url)
 	if err != OK:
@@ -916,6 +917,18 @@ func _on_download_request_completed(result: int, response_code: int, _headers: P
 	apply_update()
 
 func apply_update() -> bool:
+	var dl_path = latest_server_info.get("download_url", "")
+	if dl_path.ends_with(".pck") or FileAccess.file_exists("user://patch.pck"):
+		var pck_real = ProjectSettings.globalize_path("user://patch.pck")
+		var pck_loaded = ProjectSettings.load_resource_pack(pck_real, true)
+		if not pck_loaded:
+			pck_loaded = ProjectSettings.load_resource_pack("user://patch.pck", true)
+		if pck_loaded:
+			print("[UpdateManager] Successfully applied PCK update directly!")
+			_save_installed_state(latest_server_info)
+			update_installed.emit()
+			return true
+
 	if not FileAccess.file_exists(UPDATE_PACKAGE_PATH):
 		download_failed.emit("ملف التحديث غير موجود في مسار اللعبة.")
 		return false

@@ -15,6 +15,10 @@ extends Control
 # --- Top Header ---
 @onready var account_pill_btn: Button = $TopHeader/HeaderHBox/AccountPillBtn
 @onready var friends_pill_btn: Button = $TopHeader/HeaderHBox/FriendsPillBtn
+@onready var requests_pill_btn: Button = $TopHeader/HeaderHBox/RequestsPillBtn
+@onready var telegram_pill_btn: Button = $TopHeader/HeaderHBox/TelegramPillBtn
+@onready var mode_requests_btn: Button = $ViewModeSelect/ModeNavBar/ModeRequestsBtn
+@onready var mode_telegram_btn: Button = $ViewModeSelect/ModeNavBar/ModeTelegramBtn
 
 # --- Home Buttons ---
 @onready var start_btn: Button = $ViewHome/HomeCenterBox/StartBtn
@@ -133,8 +137,21 @@ func _ready() -> void:
 	)
 	friends_pill_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
+		is_requests_tab = false
 		_switch_view(view_friends)
 	)
+	requests_pill_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		is_requests_tab = true
+		_switch_view(view_friends)
+	)
+	mode_requests_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		is_requests_tab = true
+		_switch_view(view_friends)
+	)
+	telegram_pill_btn.pressed.connect(_on_telegram_btn_pressed)
+	mode_telegram_btn.pressed.connect(_on_telegram_btn_pressed)
 	
 	mode_back_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
@@ -443,8 +460,12 @@ func _on_update_installed() -> void:
 	_update_version_badge()
 	_show_update_toast("🎉 تم تثبيت التحديث بنجاح وتحديث كافة ملفات اللعبة!")
 	
-	get_tree().create_timer(1.2).timeout.connect(func():
-		get_tree().reload_current_scene()
+	get_tree().create_timer(0.8).timeout.connect(func():
+		var new_scene = ResourceLoader.load("res://scenes/main_menu.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REPLACE)
+		if new_scene:
+			get_tree().change_scene_to_packed(new_scene)
+		else:
+			get_tree().reload_current_scene()
 	)
 
 # ==============================================================================
@@ -530,9 +551,9 @@ func _on_auth_submit() -> void:
 		auth_password_input.text = ""
 		_refresh_top_pills()
 		_refresh_account_ui()
-		# Immediately transition directly to Start screen (Mode Select) as requested!
+		# Immediately transition to Home menu where all options are visible!
 		get_tree().create_timer(0.4).timeout.connect(func():
-			_switch_view(view_mode_select)
+			_switch_view(view_home)
 		)
 	else:
 		AudioManager.play_sfx("error")
@@ -1445,6 +1466,20 @@ func _on_requests_updated() -> void:
 		else:
 			requests_btn.text = "📩 REQUESTS (الطلبات الواردة)"
 			requests_btn.modulate = Color.WHITE
+	if requests_pill_btn:
+		if total > 0:
+			requests_pill_btn.text = "📩 الطلبات (%d) 🔥" % total
+			requests_pill_btn.modulate = Color(1.0, 0.35, 0.6)
+		else:
+			requests_pill_btn.text = "📩 الطلبات (0)"
+			requests_pill_btn.modulate = Color.WHITE
+	if mode_requests_btn:
+		if total > 0:
+			mode_requests_btn.text = "📩 الطلبات (%d) 🔥" % total
+			mode_requests_btn.modulate = Color(1.0, 0.35, 0.6)
+		else:
+			mode_requests_btn.text = "📩 الطلبات (0)"
+			mode_requests_btn.modulate = Color.WHITE
 	if tab_requests_btn:
 		if total > 0:
 			tab_requests_btn.text = "📩 الطلبات الواردة (Requests - %d)" % total
@@ -1575,6 +1610,8 @@ var _support_poll_timer: Timer = null
 func _setup_telegram_support() -> void:
 	if FileAccess.file_exists(TELEGRAM_REJECTED_CACHE):
 		telegram_btn.visible = false
+	if telegram_pill_btn: telegram_pill_btn.visible = false
+	if mode_telegram_btn: mode_telegram_btn.visible = false
 		return
 	telegram_btn.pressed.connect(_on_telegram_btn_pressed)
 
@@ -1586,6 +1623,8 @@ func _on_telegram_btn_pressed() -> void:
 	
 	telegram_btn.disabled = true
 	telegram_btn.text = "⏳ جاري إرسال الطلب للأدمن..."
+	if telegram_pill_btn: telegram_pill_btn.disabled = true
+	if mode_telegram_btn: mode_telegram_btn.disabled = true
 	
 	var http = HTTPRequest.new()
 	add_child(http)
@@ -1654,6 +1693,8 @@ func _handle_telegram_rejection() -> void:
 	AudioManager.play_sfx("error")
 	_show_update_toast("❌ تم رفض طلب المحادثة من قبل الأدمن.")
 	telegram_btn.visible = false
+	if telegram_pill_btn: telegram_pill_btn.visible = false
+	if mode_telegram_btn: mode_telegram_btn.visible = false
 	var f = FileAccess.open(TELEGRAM_REJECTED_CACHE, FileAccess.WRITE)
 	if f:
 		f.store_string("REJECTED")

@@ -211,6 +211,20 @@ theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_back")
 text = "👥 الأصدقاء (0)"
 
+[node name="RequestsPillBtn" type="Button" parent="TopHeader/HeaderHBox"]
+custom_minimum_size = Vector2(140, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_requests")
+text = "📩 الطلبات (0)"
+
+[node name="TelegramPillBtn" type="Button" parent="TopHeader/HeaderHBox"]
+custom_minimum_size = Vector2(150, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_telegram")
+text = "💬 تيليجرام بوت"
+
 [node name="ViewHome" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -325,8 +339,22 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "اختر نمط اللعب - SELECT GAME MODE (Singleplayer or Multiplayer)"
+text = "اختر نمط اللعب - SELECT GAME MODE"
 vertical_alignment = 1
+
+[node name="ModeRequestsBtn" type="Button" parent="ViewModeSelect/ModeNavBar"]
+custom_minimum_size = Vector2(130, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_requests")
+text = "📩 الطلبات (0)"
+
+[node name="ModeTelegramBtn" type="Button" parent="ViewModeSelect/ModeNavBar"]
+custom_minimum_size = Vector2(140, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_telegram")
+text = "💬 تيليجرام بوت"
 
 [node name="HBox" type="HBoxContainer" parent="ViewModeSelect"]
 layout_mode = 1
