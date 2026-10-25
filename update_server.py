@@ -913,7 +913,6 @@ def handle_rooms_check(code: str) -> tuple[int, dict]:
             "broadcast_id": b_id
         }
     if code in ROOMS:
-        import time
         ROOMS[code]["last_seen"] = time.time()
         room = ROOMS[code]
         r_msg = room.get("broadcast_message", "") or b_msg
@@ -1271,7 +1270,6 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             return
 
         elif path == "/api/rooms":
-            import time
             now_ts = time.time()
             stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 180]
             for k in stale_keys:
@@ -1473,7 +1471,6 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 return
             send_json_response(self, {"success": True, "message": "Server process is stopping..."})
             def kill_soon():
-                import time
                 time.sleep(0.5)
                 os._exit(0)
             threading.Thread(target=kill_soon, daemon=True).start()
@@ -1774,7 +1771,6 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
-                import time
                 data = json.loads(body.decode("utf-8")) if body else {}
                 active = bool(data.get("active", True))
                 msg = str(data.get("message", "🚨 إنذار طارئ من قائد السيرفر!")).strip()
@@ -1904,12 +1900,28 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             send_json_response(self, load_game_config())
             return
 
+        elif path == "/api/auth/stats":
+            send_json_response(self, auth_get_stats())
+            return
+
+        elif path == "/api/auth/me":
+            token = urllib.parse.parse_qs(parsed.query).get("token", [""])[0]
+            if not token:
+                auth_hdr = self.headers.get("Authorization", "")
+                if auth_hdr.startswith("Bearer "):
+                    token = auth_hdr.split("Bearer ")[-1].strip()
+            user_data = auth_get_user(token)
+            if user_data:
+                send_json_response(self, {"success": True, "user": user_data})
+            else:
+                send_json_response(self, {"success": False, "message": "غير مسجل"}, status_code=401)
+            return
+
         elif path == "/api/version":
             send_json_response(self, load_version_info())
             return
 
         elif path == "/api/rooms":
-            import time
             now_ts = time.time()
             stale_keys = [k for k, v in ACTIVE_SESSIONS.items() if (now_ts - v.get("last_seen", 0)) > 180]
             for k in stale_keys:
@@ -1966,7 +1978,58 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        if path == "/api/request_device":
+        if path == "/api/party/invite":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_invite(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/party/respond":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/auth/register":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                u = data.get("username", "")
+                p = data.get("password", "")
+                nick = data.get("nickname", "")
+                dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
+                ok, msg, res_data = auth_register(u, p, nick, dev)
+                send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
+            return
+
+        elif path == "/api/auth/login":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                u = data.get("username", "")
+                p = data.get("password", "")
+                dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
+                ok, msg, res_data = auth_login(u, p, dev)
+                send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
+            return
+
+        elif path == "/api/request_device":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
