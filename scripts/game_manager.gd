@@ -35,10 +35,13 @@ const GAME_MODES: Dictionary = {
 }
 
 var selected_game_mode: GameMode = GameMode.COOP_WAVES
+@warning_ignore("unused_signal")
 signal game_mode_changed(new_mode: GameMode)
 
 signal state_changed(new_state: GameState)
+@warning_ignore("unused_signal")
 signal boss_health_updated(current_hp: float, max_hp: float, boss_name: String)
+@warning_ignore("unused_signal")
 signal wave_updated(current_wave: int, max_waves: int, enemies_left: int)
 signal game_over_triggered(is_victory: bool)
 signal retry_stage_requested()
@@ -262,11 +265,15 @@ func check_all_players_down() -> void:
 	if selected_game_mode == GameMode.TRAINING:
 		return
 	
+	if not multiplayer.is_server():
+		return
+	
+	var players = get_tree().get_nodes_in_group("players")
+	if players.is_empty():
+		return
+	
 	if selected_game_mode == GameMode.PVP_DUEL:
 		# In 1v1 PvP, if any player is downed, the other player wins!
-		if not multiplayer.is_server():
-			return
-		var players = get_tree().get_nodes_in_group("players")
 		var alive_players = []
 		var dead_players = []
 		for p in players:
@@ -283,10 +290,8 @@ func check_all_players_down() -> void:
 				ap.rpc("notify_pvp_result", true)
 		return
 	
-	if not multiplayer.is_server():
-		return
-	
-	var players = get_tree().get_nodes_in_group("players")
+	var any_alive = false
+	for p in players:
 	if players.is_empty():
 		return
 	
