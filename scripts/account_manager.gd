@@ -89,7 +89,7 @@ func sign_up(user_name: String, pass_word: String) -> Dictionary:
 	accounts_data["current_user"] = u
 	current_party = [u]
 	save_accounts()
-	
+	_sync_auth_with_server("register", u, p)
 	user_logged_in.emit(u)
 	friends_updated.emit(get_friends())
 	party_updated.emit(current_party)
@@ -109,11 +109,28 @@ func sign_in(user_name: String, pass_word: String) -> Dictionary:
 	accounts_data["current_user"] = u
 	current_party = [u]
 	save_accounts()
-	
+	_sync_auth_with_server("login", u, p)
 	user_logged_in.emit(u)
 	friends_updated.emit(get_friends())
 	party_updated.emit(current_party)
 	return {"success": true, "message": "✅ مرحباً بك مجدداً، " + u + "!"}
+
+
+func _sync_auth_with_server(action: String, u: String, p: String) -> void:
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var host = "127.0.0.1"
+	if NetworkManager and not NetworkManager.server_ip.is_empty():
+		host = NetworkManager.server_ip
+	var url = "http://" + host + ":8080/api/auth/" + action
+	var payload = {
+		"username": u,
+		"password": p,
+		"device": OS.get_name()
+	}
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
 
 func sign_out() -> void:
 	accounts_data["current_user"] = ""

@@ -132,20 +132,7 @@ func apply_class_stats(c_id: int) -> void:
 	if citrus_model: citrus_model.visible = (class_id == 2)
 	if strawberry_model: strawberry_model.visible = (class_id == 1)
 	if melon_model: melon_model.visible = (class_id == 0)
-	_set_legacy_rig_visible(false)
-	
-	if leaf_sprout:
-		leaf_sprout.visible = (class_id == 0)
-	
 	health_changed.emit(current_hp, max_hp)
-
-func _set_legacy_rig_visible(v: bool) -> void:
-	if head_mesh and head_mesh.get_parent(): head_mesh.get_parent().visible = v
-	if chest_plate and chest_plate.get_parent(): chest_plate.get_parent().visible = v
-	if leg_l and leg_l.get_parent(): leg_l.get_parent().visible = v
-	if leg_r and leg_r.get_parent(): leg_r.get_parent().visible = v
-	if arm_l and arm_l.get_parent(): arm_l.get_parent().visible = v
-	if arm_r and arm_r.get_parent(): arm_r.get_parent().visible = v
 
 func _setup_weapons() -> void:
 	var weapons = weapons_container.get_children()

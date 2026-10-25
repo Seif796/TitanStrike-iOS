@@ -20,7 +20,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 
-# Local secrets & configs
+# Local sPecrets & configs
 server/ai_config.json
 .env
 

@@ -474,6 +474,82 @@ def detect_user_intent_action(prompt: str, context_type: str = "general") -> dic
 
     return None
 
+
+def generate_smart_cyberai_response(prompt: str, is_admin: bool) -> str:
+    p = prompt.strip().lower()
+    
+    # 1. Greetings
+    if any(w in p for w in ["سلام", "مرحبا", "ازيك", "صباح", "مساء", "مين انت", "عرفني", "hello", "hi"]):
+        if is_admin:
+            return "يا مرحب يا قائدنا سيف! 👑 أنا CyberAI المساعد الذكي الخاص بك لسيرفر ولعبة Titan Strike 3D. كل الأنظمة تحت أمرك، تحب نفتح مبارزة 1v1، ولا نعدل إعدادات السيرفر أو نطلق إنذار؟"
+        return "أهلاً بك يا بطل في Titan Strike 3D! 🍉⚔️ أنا CyberAI مساعدك الذكي في اللعبة. اسألني عن أي بطل، المابات، أزرار التحكم على الموبايل، أو تحداني في مبارزة 1v1!"
+
+    # 2. Heroes / Characters
+    if any(w in p for w in ["ابطال", "بطل", "شخصيات", "شخصيه", "الشخصية", "شخصيات اللعبة", "heroes", "hero", "فارس البطيخ", "ستروبري", "تانك", "سبايدر", "ادمن"]):
+        return (
+            "🍉 **دليل أبطال Titan Strike 3D المعتمدين:**\n\n"
+            "1. 🍉 **Melon Knight (فارس البطيخ):** المحارب الزمردي المتوازن! صحة 130، سرعة 7.5، ورشاش بذور سريع.\n"
+            "2. 🍓 **Berry Striker (صقر الفراولة):** أسرع مهاجم قناص! سرعة فائقة 9.2، صحة 90، ومحركات نفاثة خلفية.\n"
+            "3. 🍊 **Citrus Tank (العملاق الحمضي):** المدرعة الثقيلة! صحة 220، سرعة 5.8، ومدفع عصير متفجر يهدم الأعداء.\n"
+            "4. 👑 **Admin Overlord (القائد الأعلى):** بطل سري خارق! دروع ذهبية ملكية وصحة 300 لا تقهر (يُفتح عند هزيمة الزعيم).\n"
+            "5. 🕷️ **Spider Hero (سبايدر هودي):** خفة حركة ورشاقة خارقة مستوحاة من سبايدرمان!"
+        )
+
+    # 3. Maps / Arenas
+    if any(w in p for w in ["ماب", "مابات", "ساحة", "الخرائط", "خريطة", "map", "maps"]):
+        return (
+            "🗺️ **الساحات والمابات السبعة المتاحة:**\n\n"
+            "1. 🍉 **Fruit Kingdom Arena:** الساحة الملكية الخضراء بحصون البطيخ.\n"
+            "2. 🏙️ **Cyber Stadium 2077:** ستاد المستقبل المليء بإضاءات النيون والأبراج الليزرية.\n"
+            "3. 🏜️ **Desert Titan Canyon:** وادي الصحراء الرملية الحارقة.\n"
+            "4. 🌋 **Volcanic Magma Core:** قلب البركان الناري مع حمم متوهجة.\n"
+            "5. ❄️ **Frozen Ice Glacier:** جليد متجمد وضباب قطبي أزرق كريستالي.\n"
+            "6. 🌌 **Cosmic Galaxy Void:** الفضاء الكوني المظلم والنجوم البنفسجية.\n"
+            "7. 🌆 **Neon Citadel:** مدينة المستقبل السايبربانك ذات الألوان الساحرة!"
+        )
+
+    # 4. Missions / Difficulty
+    if any(w in p for w in ["مهمات", "مهمة", "اصعب", "صعب", "كابوس", "nightmare", "صعوبة", "الموجات", "الوحوش"]):
+        return (
+            "⚔️ **نظام المهمات الفائقة والصعوبة (Titan Nightmare Mode):**\n\n"
+            "• **المرحلة 1:** 3 موجات متتالية من الروبوتات السريعة، تليها معركة الزعيم الآلي Blazing Titan!\n"
+            "• **المرحلة 2 (الكابوس):** 5 موجات قتالية وحشية مع روبوتات متفجرة ومتحركة بسرعة مضاعفة!\n"
+            "• **نصائح للفوز بالمهمات الصعبة:** استغل منصة الشحن التكتيكية، وابنِ حوائط البطيخ للاحتماء، ونسق بين المهاجم والمدرع!"
+        )
+
+    # 5. Mobile & Android APK
+    if any(w in p for w in ["اندرويد", "موبايل", "apk", "android", "تلفون", "تحميل", "تنزيل", "download"]):
+        return (
+            "📱 **تشغيل اللعبة على أندرويد (Android APK):**\n\n"
+            "اللعبة تدعم نظام أندرويد بالكامل مع تحكم Multi-Touch سلس (جويستيك حركة افتراضي، زر إطلاق النار، زر القفز، وبناء الحوائط).\n"
+            "يمكنك تحميل ملف الـ APK مباشرة من زر 'تحميل APK للأندرويد' في الموقع أو من الرابط: /downloads/TitanStrike.apk وتثبيته فوراً على أي هاتف!"
+        )
+
+    # 6. Accounts / Sign in & Sign up
+    if any(w in p for w in ["تسجيل", "حساب", "دخول", "sign in", "sign up", "register", "login", "password"]):
+        return (
+            "🔐 **نظام الحسابات وقاعدة البيانات:**\n\n"
+            "• يمكنك إنشاء حسابك الجديد وتسجيل الدخول بسهولة من شاشة اللعبة الرئيسية أو من الموقع مباشرة.\n"
+            "• قاعدة البيانات تحفظ تقدمك ومستواك وسجل انتصاراتك تلقائياً.\n"
+            "• بمجرد التسجيل باسم مستخدم وكلمة مرور، يمكنك فتح حسابك من أي موبايل أو كمبيوتر ومزامنة تقدمك فوراً!"
+        )
+
+    # 7. Training / Dummies
+    if any(w in p for w in ["تدريب", "روبوت التدريب", "dummy", "تمارين", "تدرب"]):
+        return (
+            "🎯 **حلبة التدريب المتطورة (Training Grounds):**\n\n"
+            "تم تحديث حلبة التدريب بالكامل وإصلاح تصادم الرصاص:\n"
+            "1. 🎯 **الروبوت القياسي:** لقياس معدل الضرر الحقيقي بالثانية (DPS).\n"
+            "2. 🛡️ **الهدف المدرع الثقيل:** صحة 3500 HP لتجربة الأسلحة الثقيلة وإطلاق النار المتواصل.\n"
+            "3. 🛸 **الهدف الطائر المتحرك:** يتحرك أفقياً لتمرين دقة التصويب على الأهداف السريعة.\n"
+            "4. ⚡ **منصة الشحن:** تعيد ملء صحتك وذخيرتك 100% فور الوقوف عليها!"
+        )
+
+    # Default fallback
+    if is_admin:
+        return f"أمرك يا قائدنا سيف! تلقيت رسالتك: '{prompt}'. أنا متابع كل تفاصيل السيرفر واللعبة وجاهز لأي أمر أو تشغيل فوري!"
+    return f"مرحباً بك يا بطل! سؤالك بخصوص '{prompt}' مهم جداً. يمكنك تجربة الأبطال ومحاربة الروبوتات في طور Co-op أو التدريب في Training Grounds لتحطيم أعلى DPS!"
+
 def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int, dict]:
     """Generates intelligent game responses using Google Gemini 3.5 Flash with full executive action control."""
     user_prompt = str(user_prompt).strip()
@@ -541,11 +617,7 @@ def call_gemini_ai(user_prompt: str, context_type: str = "general") -> tuple[int
             continue
 
     if not reply_text:
-        # Fallback offline smart response
-        if is_admin:
-            reply_text = "أمرك يا قائدنا! تم استلام طلبك وجاري تطبيقه في السيرفر فوراً."
-        else:
-            reply_text = "أهلاً بك يا بطل! أنا جاهز لمساعدتك في أي استفسار أو التحدي في الساحة!"
+        reply_text = generate_smart_cyberai_response(user_prompt, is_admin)
 
     # Parse and execute actions
     action_info = None
@@ -870,6 +942,137 @@ def handle_rooms_check(code: str) -> tuple[int, dict]:
         "broadcast_id": b_id
     }
 
+
+# ==============================================================================
+# TITAN STRIKE 3D - USER DATABASE & MOBILE AUTH SYSTEM (SQLite/JSON Engine)
+# ==============================================================================
+import secrets
+import hashlib
+
+DATA_DIR = BASE_DIR / "data" if (BASE_DIR / "data").exists() else (BASE_DIR / "server" / "data" if (BASE_DIR / "server" / "data").exists() else BASE_DIR / "server" / "data")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+ACCOUNTS_DB_FILE = DATA_DIR / "accounts.json"
+
+def load_accounts_db() -> dict:
+    if not ACCOUNTS_DB_FILE.exists():
+        default_db = {
+            "users": {
+                "admin": {
+                    "username": "admin",
+                    "password_hash": hashlib.sha256("admin2026".encode()).hexdigest(),
+                    "display_name": "👑 Commander Seif",
+                    "role": "admin",
+                    "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "level": 20,
+                    "coins": 99999,
+                    "wins": 99,
+                    "kills": 500,
+                    "unlocked_heroes": [0, 1, 2, 3, 4],
+                    "device": "Command Center"
+                }
+            },
+            "sessions": {}
+        }
+        save_accounts_db(default_db)
+        return default_db
+    try:
+        with open(ACCOUNTS_DB_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[!] Error loading accounts db: {e}")
+        return {"users": {}, "sessions": {}}
+
+def save_accounts_db(db: dict) -> None:
+    try:
+        with open(ACCOUNTS_DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(db, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[!] Error saving accounts db: {e}")
+
+def auth_register(username: str, password: str, nickname: str = "", device: str = "") -> tuple[bool, str, dict]:
+    u = str(username).strip().lower()
+    p = str(password).strip()
+    if len(u) < 2:
+        return False, "⚠️ اسم المستخدم يجب أن يكون حرفين على الأقل!", {}
+    if len(p) < 3:
+        return False, "⚠️ كلمة المرور يجب أن تكون 3 أحرف على الأقل!", {}
+    
+    db = load_accounts_db()
+    if u in db.get("users", {}):
+        return False, "⚠️ هذا الحساب مسجل بالفعل! جرب تسجيل الدخول.", {}
+    
+    token = secrets.token_hex(16)
+    user_record = {
+        "username": u,
+        "password_hash": hashlib.sha256(p.encode()).hexdigest(),
+        "display_name": nickname if nickname else u,
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "last_login": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "role": "player",
+        "level": 1,
+        "coins": 500,
+        "wins": 0,
+        "kills": 0,
+        "unlocked_heroes": [0, 1],
+        "device": device if device else "Mobile/Browser"
+    }
+    db.setdefault("users", {})[u] = user_record
+    db.setdefault("sessions", {})[token] = u
+    save_accounts_db(db)
+    add_console_log("AUTH", f"🎉 تسجيل لاعب جديد بنجاح: '{u}' من جهاز '{device}'", "SUCCESS")
+    return True, f"🎉 تم إنشاء الحساب بنجاح! مرحباً بك يا {u}", {"token": token, "username": u, "user": user_record}
+
+def auth_login(username: str, password: str, device: str = "") -> tuple[bool, str, dict]:
+    u = str(username).strip().lower()
+    p = str(password).strip()
+    db = load_accounts_db()
+    users = db.get("users", {})
+    if u not in users:
+        return False, "⚠️ اسم المستخدم غير مسجل! اضغط على 'إنشاء حساب جديد'.", {}
+    
+    p_hash = hashlib.sha256(p.encode()).hexdigest()
+    user_record = users[u]
+    if user_record.get("password_hash") != p_hash:
+        return False, "⚠️ كلمة المرور غير صحيحة!", {}
+    
+    token = secrets.token_hex(16)
+    db.setdefault("sessions", {})[token] = u
+    user_record["last_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    if device:
+        user_record["device"] = device
+    save_accounts_db(db)
+    add_console_log("AUTH", f"🔑 تسجيل دخول ناجح للاعب: '{u}'", "INFO")
+    return True, f"🔑 تم تسجيل الدخول بنجاح! مرحباً بعودتك يا {u}", {"token": token, "username": u, "user": user_record}
+
+def auth_get_user(token: str) -> dict:
+    if not token:
+        return None
+    db = load_accounts_db()
+    u = db.get("sessions", {}).get(token)
+    if u and u in db.get("users", {}):
+        return db["users"][u]
+    return None
+
+def auth_get_stats() -> dict:
+    db = load_accounts_db()
+    users = db.get("users", {})
+    leaderboard = []
+    for uname, udata in users.items():
+        leaderboard.append({
+            "username": uname,
+            "display_name": udata.get("display_name", uname),
+            "level": udata.get("level", 1),
+            "wins": udata.get("wins", 0),
+            "kills": udata.get("kills", 0),
+            "role": udata.get("role", "player")
+        })
+    leaderboard.sort(key=lambda x: (x["wins"], x["level"]), reverse=True)
+    return {
+        "total_registered_players": len(users),
+        "active_sessions": len(db.get("sessions", {})),
+        "leaderboard": leaderboard[:10]
+    }
+
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
     handler.send_response(status_code)
@@ -937,6 +1140,23 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
 
         elif path == "/api/game_config":
             send_json_response(self, load_game_config())
+            return
+
+                elif path == "/api/auth/stats":
+            send_json_response(self, auth_get_stats())
+            return
+
+        elif path == "/api/auth/me":
+            token = urllib.parse.parse_qs(parsed.query).get("token", [""])[0]
+            if not token:
+                auth_hdr = self.headers.get("Authorization", "")
+                if auth_hdr.startswith("Bearer "):
+                    token = auth_hdr.split("Bearer ")[-1].strip()
+            user_data = auth_get_user(token)
+            if user_data:
+                send_json_response(self, {"success": True, "user": user_data})
+            else:
+                send_json_response(self, {"success": False, "message": "غير مسجل"}, status_code=401)
             return
 
         elif path == "/api/server_status":
@@ -1224,7 +1444,36 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 self.send_error(500, f"Verify device error: {e}")
             return
 
-        elif path == "/api/request_device":
+        elif path == "/api/auth/register":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                u = data.get("username", "")
+                p = data.get("password", "")
+                nick = data.get("nickname", "")
+                dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
+                ok, msg, res_data = auth_register(u, p, nick, dev)
+                send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
+            return
+
+        elif path == "/api/auth/login":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                u = data.get("username", "")
+                p = data.get("password", "")
+                dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
+                ok, msg, res_data = auth_login(u, p, dev)
+                send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
+            return
+
+        elf path == "/api/request_device":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:

@@ -1,0 +1,63 @@
+{
+  "heroes": {
+    "0": {
+      "name": "🍉 Melon Knight (فارس البطيخ)",
+      "enabled": true,
+      "hp": 130,
+      "speed": 10,
+      "role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls."
+    },
+    "1": {
+      "name": "🍓 Berry Striker (بطلة الفراولة)",
+      "enabled": true,
+      "hp": 100,
+      "speed": 8.5,
+      "role": "Super fast berry ranger with high critical seed shots and tactical speed ramps."
+    },
+    "2": {
+      "name": "🍊 Citrus Tank (البرتقال المدرّع)",
+      "enabled": true,
+      "hp": 240,
+      "speed": 5.6,
+      "role": "Heavy armored citrus juggernaut with explosive melon cannons and auto-turrets."
+    },
+    "3": {
+      "name": "👑 Admin (الأدمن الخارق)",
+      "enabled": true,
+      "hp": 500,
+      "speed": 20,
+      "role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor."
+    },
+    "4": {
+      "name": "🕷️ Spider Hero (سبايدر هودي)",
+      "enabled": true,
+      "hp": 220,
+      "speed": 9.2,
+      "role": "The newly added 3D Chibi Spider-Hero! Wearing an oversized hoodie, denim cutoffs, and retro high-top sneakers. Highly agile with web attacks!"
+    }
+  },
+  "active_maps": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "server_announcement": "🔥 تم إطلاق إصدار جديد (v1.2.13)! يرجى تنزيل ملف الـ IPA الجديد من الموقع لتثبيت أحدث الميزات.",
+  "server_status": "OPEN",
+  "device_security": {
+    "whitelist_enabled": true,
+    "allowed_devices": [
+      {
+        "id": "{88b5ac79-2a3a-11eb-b696-806e6f6e6963}",
+        "name": "HP 255 G8 Notebook PC 👑 (كامل الصلاحيات)",
+        "status": "APPROVED",
+        "role": "FULL_ACCESS",
+        "approved_at": "2026-10-20 23:16"
+      }
+    ],
+    "pending_devices": []
+  }
+}

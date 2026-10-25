@@ -73,9 +73,7 @@ func _physics_process(delta: float) -> void:
 	elif citrus_node and citrus_node.visible:
 		_animate_admin_model(delta, speed, citrus_node)
 	elif melon_boy_mesh and melon_boy_mesh.visible:
-		_animate_melon_boy(delta, speed)
-	elif melon_boy_mesh and not melon_boy_mesh.visible:
-		_animate_legacy_rig(delta, speed)
+		_animate_admin_model(delta, speed, melon_boy_mesh)
 
 func _animate_admin_model(delta: float, speed: float, m: Node3D) -> void:
 	if m.has_method("play_anim"):
@@ -146,46 +144,3 @@ func _animate_melon_boy(delta: float, speed: float) -> void:
 			melon_boy_mesh.rotation.x = lerp_angle(melon_boy_mesh.rotation.x, 0.0, 8.0 * delta)
 			melon_boy_mesh.rotation.z = lerp_angle(melon_boy_mesh.rotation.z, target_tilt_z, 8.0 * delta)
 
-func _animate_legacy_rig(delta: float, speed: float) -> void:
-	if leaf_sprout:
-		var leaf_wiggle = sin(walk_cycle * 2.5) * deg_to_rad(15) if is_moving else sin(walk_cycle) * deg_to_rad(5)
-		leaf_sprout.rotation.z = leaf_wiggle
-		leaf_sprout.rotation.x = cos(walk_cycle * 2.0) * deg_to_rad(8)
-	
-	if is_moving and player.is_on_floor():
-		walk_cycle += delta * speed * 2.5
-		var leg_angle = sin(walk_cycle) * deg_to_rad(38)
-		
-		if left_leg: left_leg.rotation.x = leg_angle
-		if right_leg: right_leg.rotation.x = -leg_angle
-		
-		# Tactical 2-handed weapon holding while running:
-		if right_arm:
-			var fire_kick = randf_range(-0.04, 0.04) if player.is_firing else 0.0
-			right_arm.rotation.x = deg_to_rad(-60) + sin(walk_cycle) * 0.04 + fire_kick
-			right_arm.rotation.y = deg_to_rad(-12)
-		if left_arm:
-			left_arm.rotation.x = deg_to_rad(-45) + sin(walk_cycle) * 0.03
-			left_arm.rotation.y = deg_to_rad(28)
-		if body_mesh:
-			body_mesh.position.y = 0.75 + abs(sin(walk_cycle)) * 0.07
-	else:
-		walk_cycle += delta * 2.2
-		if left_leg: left_leg.rotation.x = lerp_angle(left_leg.rotation.x, 0, 10.0 * delta)
-		if right_leg: right_leg.rotation.x = lerp_angle(right_leg.rotation.x, 0, 10.0 * delta)
-		
-		# Firm tactical weapon grip while standing idle:
-		if right_arm:
-			var fire_kick = randf_range(-0.04, 0.04) if player.is_firing else 0.0
-			right_arm.rotation.x = lerp_angle(right_arm.rotation.x, deg_to_rad(-60) + fire_kick, 10.0 * delta)
-			right_arm.rotation.y = lerp_angle(right_arm.rotation.y, deg_to_rad(-12), 10.0 * delta)
-		if left_arm:
-			left_arm.rotation.x = lerp_angle(left_arm.rotation.x, deg_to_rad(-45), 10.0 * delta)
-			left_arm.rotation.y = lerp_angle(left_arm.rotation.y, deg_to_rad(28), 10.0 * delta)
-		if body_mesh:
-			body_mesh.position.y = lerp(body_mesh.position.y, 0.75 + sin(walk_cycle) * 0.02, 10.0 * delta)
-	
-	if not player.is_on_floor():
-		if left_leg: left_leg.rotation.x = deg_to_rad(-26)
-		if right_leg: right_leg.rotation.x = deg_to_rad(22)
-		if body_mesh: body_mesh.position.y = 0.88

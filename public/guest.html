@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberFort: Titan Strike 3D | بوابة اللاعبين والزوار (Guest Portal)</title>
+    <link rel="icon" type="image/png" href="/images/app_icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #070a13;
+            --bg-card: rgba(15, 23, 42, 0.90);
+            --bg-card-border: rgba(0, 240, 255, 0.22);
+            --neon-cyan: #00f0ff;
+            --neon-green: #10b981;
+            --neon-amber: #f59e0b;
+            --neon-purple: #8b5cf6;
+            --neon-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 20% 15%, rgba(0, 240, 255, 0.07) 0%, transparent 45%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 45%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- NAVBAR --- */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(7, 10, 19, 0.95);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--bg-card-border);
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
+            border: 1.5px solid rgba(0, 240, 255, 0.6);
+        }
+
+        .brand-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            background: linear-gradient(135deg, #00f0ff, #38bdf8, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .guest-badge {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--neon-cyan);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .pill-open {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1.5px solid #10b981;
+            color: #34d399;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .pill-closed {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1.5px solid #ef4444;
+            color: #f87171;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .status-pulse {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulseAnim 1.8s infinite;
+        }
+
+        @keyframes pulseAnim {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+        }
+
+        /* --- HERO BANNER --- */
+        .hero {
+            padding: 50px 20px 40px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-icon-wrapper {
+            margin-bottom: 22px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero-app-icon {
+            width: 130px;
+            height: 130px;
+            border-radius: 30px;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.45);
+            border: 3px solid rgba(0, 240, 255, 0.7);
+            transition: transform 0.3s ease;
+        }
+
+        .hero-app-icon:hover {
+            transform: scale(1.06);
+        }
+
+        .hero-tag {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            margin-bottom: 10px;
+        }
+
+        .hero h1 {
+            font-size: clamp(26px, 5vw, 42px);
+            font-weight: 900;
+            line-height: 1.3;
+            margin-bottom: 14px;
+            background: linear-gradient(135deg, #ffffff, #e2e8f0, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: var(--text-muted);
+            max-width: 680px;
+            margin: 0 auto 24px;
+        }
+
+        /* SERVER STATUS NOTICE BANNER */
+        .server-status-banner {
+            border-radius: 18px;
+            padding: 22px 28px;
+            margin-bottom: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .banner-open {
+            background: rgba(16, 185, 129, 0.12);
+            border: 2px solid rgba(16, 185, 129, 0.45);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+        }
+
+        .banner-closed {
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid rgba(239, 68, 68, 0.55);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            text-align: right;
+        }
+
+        .status-big-icon {
+            font-size: 40px;
+            width: 65px;
+            height: 65px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- CONTAINER & GRIDS --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 40px 0 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 22px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 22px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 240, 255, 0.5);
+            box-shadow: 0 10px 35px rgba(0, 240, 255, 0.15);
+        }
+
+        /* HERO CARD */
+        .hero-card {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .hero-img-box {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #030712;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .hero-img-box:hover img {
+            transform: scale(1.05);
+        }
+
+        .hero-img-download-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(3, 7, 18, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.6);
+            color: #00f0ff;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .hero-img-download-btn:hover {
+            background: #00f0ff;
+            color: #030712;
+        }
+
+        .hero-stats-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 8px 12px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .stat-val {
+            font-size: 15px;
+            font-weight: 800;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00f0ff, #0284c7);
+            color: #030712;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .btn-outline:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.6);
+        }
+
+        /* DOWNLOAD ITEM */
+        .download-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: rgba(3, 7, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .download-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .download-icon {
+            font-size: 28px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* FORM ELEMENTS */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(3, 7, 18, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 11px 14px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+        }
+
+        /* TOAST */
+        .alert-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(7, 10, 19, 0.95);
+            border: 2px solid #10b981;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 15px;
+            z-index: 9999;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav>
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <a href="/" class="brand">
+                <img src="/images/app_icon.png" alt="CyberFort Icon" class="brand-icon">
+                <span class="brand-name">CYBERFORT 3D</span>
+            </a>
+            <span class="guest-badge">👤 بوابة الزوار (Guest Portal)</span>
+        </div>
+
+        <div class="nav-links">
+            <button onclick="openAuthModal()" class="btn btn-outline" id="nav-auth-btn" style="padding: 5px 14px; font-size: 13px; border-radius: 20px; border-color: #38bdf8; color: #38bdf8; cursor: pointer;">
+                🔐 تسجيل الدخول / حساب جديد
+            </button>
+
+            <a href="#status" class="nav-link">📡 حالة السيرفر</a>
+            <a href="#downloads" class="nav-link">📥 التنزيلات</a>
+            <a href="#heroes" class="nav-link">🍉 قائمة الأبطال</a>
+            <a href="#cyber-ai-section" class="nav-link" style="color: #fb7185; font-weight: 800;">🤖 CyberAI (Gemini 3.5)</a>
+            <a href="#request-access" class="nav-link">🛡️ طلب تصريح جهاز</a>
+            <a href="https://t.me/cyberfort3d_bot" target="_blank" class="nav-link" style="color: #38bdf8; font-weight: 800; background: rgba(56, 189, 248, 0.12); padding: 4px 12px; border-radius: 20px; border: 1px solid #38bdf8; display: inline-flex; align-items: center; gap: 6px;">
+                <img src="/cyberai_avatar.jpg" style="width: 18px; height: 18px; border-radius: 50%; object-fit: cover;">
+                <span>بوت التيليجرام ↗</span>
+            </a>
+        </div>
+
+        <div class="status-pill pill-open" id="nav-server-pill">
+            <div class="status-pulse"></div>
+            <span id="nav-server-text">Server: Open 🟢</span>
+        </div>
+    </nav>
+
+    <!-- HERO HEADER -->
+    <header class="hero">
+        <div class="hero-icon-wrapper">
+            <img src="/images/app_icon.png" alt="CyberFort 3D App Icon" class="hero-app-icon">
+            <div style="margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                <a href="/images/app_icon.png" download="CyberFort_App_Icon.png" class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;">
+                    <span>⬇️ أيقونة اللعبة (PNG HD)</span>
+                </a>
+                <a href="/images/app_icon.svg" download="CyberFort_App_Icon.svg" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px;">
+                    <span>⬇️ صيغة الفيكتور (SVG)</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="hero-tag">⚡ OFFICIAL PLAYER & GUEST HUB</div>
+        <h1>بوابة لاعبي سايبر فورت: تايتن سترايك 3D</h1>
+        <p>
+            تابع حالة السيرفر المباشرة، وتعرف على قدرات وطاقات الأبطال، وقم بتنزيل أحدث ملفات اللعبة والتحديثات للأجهزة المحمولة والكمبيوتر مباشرة!
+        </p>
+
+        <!-- LIVE SERVER MONITOR BANNER -->
+        <div id="status" class="server-status-banner banner-open">
+            <div class="status-left">
+                <div class="status-big-icon" id="banner-big-icon">🟢</div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 style="font-size: 20px; font-weight: 900;" id="banner-title">السيرفر مفتوح ومتاح للعب (Server: OPEN)</h2>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;" id="banner-desc">
+                        جميع خدمات اللعبة والتحديثات متصلة وتعمل بكفاءة. يمكنك تسجيل الدخول والبدء باللعب الآن!
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 12px; color: var(--text-muted);">تحديث تلقائي مستمر ⏱️</span>
+                <button type="button" onclick="refreshServerStatus()" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                    🔄 تحديث الآن
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- NEW IPA ALERT BANNER -->
+        <div id="new-ipa-alert" class="card" style="margin-bottom: 24px; border: 2px solid #00f0ff; background: rgba(0, 240, 255, 0.08); box-shadow: 0 0 25px rgba(0, 240, 255, 0.25); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 32px;">🔥</span>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: #00f0ff;" id="new-ipa-title">تحديث جديد متوفر: يرجى تحميل ملف الـ IPA الجديد للايفون</h3>
+                    <p style="color: #cbd5e1; font-size: 13px; margin-top: 3px;" id="new-ipa-desc">
+                        تم إصدار نسخة كاملة جديدة من اللعبة (TitanStrike.ipa). قم بتنزيلها الآن وتثبيتها عبر Sideloadly للاستمتاع بجميع الإضافات الجديدة!
+                    </p>
+                </div>
+            </div>
+            <div>
+                <a href="/downloads/TitanStrike-unsigned.ipa" download="TitanStrike-unsigned.ipa" class="btn btn-primary" style="font-size: 14px; padding: 12px 24px;">
+                    <span>⬇️ تحميل الـ IPA الجديد (TitanStrike.ipa)</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- LIVE ANNOUNCEMENT -->
+        <div class="card" style="margin-bottom: 28px; border-color: rgba(0, 240, 255, 0.4); background: rgba(8, 20, 36, 0.95);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 26px;">📢</span>
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800; color: #38bdf8;">إعلان إدارة السيرفر المباشر:</h3>
+                    <p style="color: #cbd5e1; font-size: 14px; margin-top: 3px;" id="server-announcement-text">
+                        مرحباً بكم في سيرفر سايبر فورت! جميع الأبطال متاحون للقتال.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOWNLOADS HUB -->
+        <div class="section-header" id="downloads">
+            <div class="section-title">
+                <span>📥</span>
+                <span>مركز تنزيل ملفات اللعبة والتحديثات</span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 13px;">ملفات رسمية آمنة ومباشرة</span>
+        </div>
+
+        <div class="grid-2">
+            <!-- iOS IPA Download -->
+            <div class="card">
+                <div class="download-item" style="border: none; background: transparent; padding: 0; margin-bottom: 16px;">
+                    <div class="download-info">
+                        <div class="download-icon" style="background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.4);">
+                            🍏
+                        </div>
+                        <div>
+                            <h3 style="font-size: 17px; font-weight: 800;">ملف اللعبة للايفون (iOS IPA)</h3>
+                            <p style="color: var(--text-muted); font-size: 13px;">نسخة Titan Strike 3D لجميع أجهزة iPhone و iPad</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 16px; line-height: 1.6;">
+                    يمكنك تثبيت الملف مباشرة عبر برنامج <b>Sideloadly</b> أو <b>AltStore</b> أو <b>Scarlet</b> بكل سهولة.
+                </p>
+                <a href="/downloads/TitanStrike-unsigned.ipa" download="TitanStrike-unsigned.ipa" class="btn btn-primary" style="width: 100%;">
+                    <span>⬇️ تحميل ملف اللعبة (TitanStrike.ipa - 23.7 MB)</span>
+                </a>
+            </div>
+
+            
+            <!-- Android APK Download -->
+            <div class="card" style="border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);">
+                <div class="download-item" style="border: none; background: transparent; padding: 0; margin-bottom: 16px;">
+                    <div class="download-info">
+                        <div class="download-icon" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.5); font-size: 24px;">
+                            🤖
+                        </div>
+                        <div>
+                            <h3 style="font-size: 17px; font-weight: 800; color: #34d399;">لعبة أندرويد الرسمية (Android APK)</h3>
+                            <p style="color: var(--text-muted); font-size: 13px;">الإصدار الكامل لهواتف الأندرويد | تثبيت مباشر</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 16px; line-height: 1.6;">
+                    ملف APK الرسمي المخصص لجميع هواتف أندرويد (سامسونج، شاومي، أوبو، ريلمي، وغيرها) مع دعم كامل للمس المتعدد واللعب الجماعي.
+                </p>
+                <a href="/downloads/TitanStrike.apk" download="TitanStrike.apk" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+                    <span>🤖 تحميل ملف APK للأندرويد (Download APK)</span>
+                </a>
+            </div>
+
+<!-- OTA Patch Download -->
+            <div class="card">
+                <div class="download-item" style="border: none; background: transparent; padding: 0; margin-bottom: 16px;">
+                    <div class="download-info">
+                        <div class="download-icon" style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.4);">
+                            📦
+                        </div>
+                        <div>
+                            <h3 style="font-size: 17px; font-weight: 800;">حزمة التحديثات المباشرة (Patch Package)</h3>
+                            <p style="color: var(--text-muted); font-size: 13px;" id="patch-version-text">الإصدار: v1.1.8 | أحدث باتش متاح</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 16px; line-height: 1.6;">
+                    حزمة التحديث التلقائي التي تقوم اللعبة بتنزيلها عبر السيرفر بدون الحاجة لإعادة تثبيت التطبيق بالكامل.
+                </p>
+                <a href="/downloads/update.zip" download="CyberFort_Update.zip" class="btn btn-purple" style="width: 100%;">
+                    <span>⬇️ تحميل باتش التحديث (update.zip)</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- HERO ROSTER SHOWCASE -->
+        <div class="section-header" id="heroes">
+            <div class="section-title">
+                <span>🍉</span>
+                <span>معرض الأبطال والشخصيات القتالية (Hero Roster)</span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 13px;">طاقات وخصائص الشخصيات المعتمدة</span>
+        </div>
+
+        <div class="grid-3" id="heroes-container">
+            <!-- Dynamic Hero Cards will be rendered here -->
+            <div class="card hero-card" id="card-hero-0">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <h3 style="font-size: 18px; font-weight: 900;">🍉 Melon Knight (فارس البطيخ)</h3>
+                    <span class="stat-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4); padding: 4px 10px; font-size: 12px;">🟢 متاح للقتال</span>
+                </div>
+                <div class="hero-img-box">
+                    <img src="/images/melon_boy.jpg" alt="Melon Boy">
+                    <a href="/images/melon_boy.jpg" download="Melon_Boy.jpg" class="hero-img-download-btn">⬇️ حفظ الصورة</a>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted);">
+                    المحارب الزمردي الأساسي المزود بقلب سايبر روبيني! يطلق بذور البطيخ الرشاشة ويبني حواجز البطيخ الصلبة.
+                </p>
+                <div class="hero-stats-row">
+                    <div class="stat-badge">
+                        <div class="stat-label">❤️ الصحة (HP)</div>
+                        <div class="stat-val" id="hero-hp-0">130</div>
+                    </div>
+                    <div class="stat-badge">
+                        <div class="stat-label">⚡ السرعة (Speed)</div>
+                        <div class="stat-val" id="hero-speed-0">7.5</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hero-card" id="card-hero-4">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <h3 style="font-size: 18px; font-weight: 900;">🕷️ Spider Hero (سبايدر هودي)</h3>
+                    <span class="stat-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4); padding: 4px 10px; font-size: 12px;">🟢 متاح للقتال</span>
+                </div>
+                <div class="hero-img-box">
+                    <img src="/images/spider_hero.jpg" alt="Spider Hero">
+                    <a href="/images/spider_hero.jpg" download="Spider_Hero.jpg" class="hero-img-download-btn">⬇️ حفظ الصورة</a>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted);">
+                    بطل العناكب ثلاثي الأبعاد بهودي أسود كول وأحذية رياضية كلاسيكية! رشيق للغاية ويسدد خيوط العنكبوت بسرعة فائقة.
+                </p>
+                <div class="hero-stats-row">
+                    <div class="stat-badge">
+                        <div class="stat-label">❤️ الصحة (HP)</div>
+                        <div class="stat-val" id="hero-hp-4">220</div>
+                    </div>
+                    <div class="stat-badge">
+                        <div class="stat-label">⚡ السرعة (Speed)</div>
+                        <div class="stat-val" id="hero-speed-4">9.2</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hero-card" id="card-hero-1">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <h3 style="font-size: 18px; font-weight: 900;">🍓 Berry Striker (بطلة الفراولة)</h3>
+                    <span class="stat-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4); padding: 4px 10px; font-size: 12px;">🟢 متاح للقتال</span>
+                </div>
+                <div class="hero-img-box">
+                    <img src="/images/app_icon.png" alt="Berry Striker" style="object-fit: contain; padding: 20px;">
+                    <a href="/images/app_icon.png" download="Berry_Striker.png" class="hero-img-download-btn">⬇️ حفظ الصورة</a>
+                </div>
+                <p style="font-size: 13px; color: var(--text-muted);">
+                    رامية الفراولة الخاطفة ذات الضربات الحرجة وبناء مسارات السرعة التكتيكية.
+                </p>
+                <div class="hero-stats-row">
+                    <div class="stat-badge">
+                        <div class="stat-label">❤️ الصحة (HP)</div>
+                        <div class="stat-val" id="hero-hp-1">100</div>
+                    </div>
+                    <div class="stat-badge">
+                        <div class="stat-label">⚡ السرعة (Speed)</div>
+                        <div class="stat-val" id="hero-speed-1">8.5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CYBER AI ASSISTANT (POWERED BY GEMINI 3.5 FLASH) -->
+        <div class="section-header" id="cyber-ai-section">
+            <div class="section-title">
+                <span>🤖</span>
+                <span>مساعد الذكاء الاصطناعي للاعبين (CyberAI Assistant)</span>
+            </div>
+            <span style="background: linear-gradient(135deg, #f43f5e, #fb7185); color: white; font-size: 11px; font-weight: 800; padding: 3px 12px; border-radius: 12px;">⚡ مدعوم بـ GEMINI 3.5 FLASH (استجابة فورية ⚡)</span>
+        </div>
+
+        <div class="card" style="margin-bottom: 35px; border: 2px solid rgba(244, 63, 94, 0.45); background: rgba(18, 10, 24, 0.95); box-shadow: 0 0 30px rgba(244, 63, 94, 0.2);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+                <div style="width: 58px; height: 58px; border-radius: 16px; border: 2px solid #f43f5e; box-shadow: 0 0 25px rgba(244, 63, 94, 0.5); overflow: hidden; flex-shrink: 0;">
+                    <img src="/cyberai_avatar.jpg" alt="CyberAI 3D Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: white; margin: 0;">اسأل CyberAI عن أسرار اللعبة والأبطال</h3>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 3px 0 0;">مساعدك الذكي للإجابة عن تكتيكات القتال، أسرار الأبطال، ونصائح الفوز برومات 1v1!</p>
+                </div>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+                <button type="button" onclick="askAiGuestQuick('خش اللعبة واعمل غرفة 1v1 واديني الكود عشان ألعب معاك')" class="btn btn-primary" style="background: linear-gradient(135deg, #f43f5e, #fb7185); font-size: 12px; padding: 6px 14px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);">
+                    ⚔️ خش اللعبة واعمل غرفة 1v1 واديني الكود
+                </button>
+                <button type="button" onclick="askAiGuestQuick('ما هي أفضل طريقة للعب ببطل Melon Knight وهزيمة الأعداء بالبذور والجدران؟')" class="btn btn-outline" style="border-color: #34d399; color: #34d399; font-size: 12px; padding: 6px 14px;">
+                    🍉 نصائح احتراف بطل البطيخ
+                </button>
+                <button type="button" onclick="askAiGuestQuick('كيف أستغل سرعة وخيوط Spider Hero للهروب والمباغتة في المعارك؟')" class="btn btn-outline" style="border-color: #38bdf8; color: #38bdf8; font-size: 12px; padding: 6px 14px;">
+                    🕷️ أسرار بطل سبايدر هودي
+                </button>
+                <button type="button" onclick="askAiGuestQuick('ما هي أهم استراتيجية للفوز في مباريات 1v1 ضد لاعبين محترفين؟')" class="btn btn-outline" style="border-color: #fb7185; color: #fb7185; font-size: 12px; padding: 6px 14px;">
+                    ⚔️ استراتيجيات الفوز بـ 1v1
+                </button>
+                <button type="button" onclick="askAiGuestQuick('كيف أفتح باقي الأبطال السريين وما هي قدرة بطل الأدمن الخارق؟')" class="btn btn-outline" style="border-color: #facc15; color: #facc15; font-size: 12px; padding: 6px 14px;">
+                    🔓 أسرار فتح الأبطال السريين
+                </button>
+            </div>
+
+            <!-- Chat Window -->
+            <div id="ai-guest-chat-box" style="height: 260px; overflow-y: auto; background: rgba(3, 7, 18, 0.85); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 12px; padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: flex-start;">
+                    <div style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🤖</div>
+                    <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #f1f5f9; max-width: 85%;">
+                        أهلاً بك يا مقاتل في سايبر فورت! 🎮 أنا <b>CyberAI</b> مدعوم بنموذج <b>Gemini 3.5 Flash</b>. اسألني عن أفضل تكتيكات اللعب، أو استفسر عن أي بطل ترغب في احترافه!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Box -->
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="ai-guest-prompt" placeholder="اكتب سؤالك لـ Gemini 3.5 Flash هنا..." style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid rgba(244, 63, 94, 0.4); border-radius: 10px; color: white; padding: 10px 16px; font-size: 13px; flex: 1; outline: none;" onkeydown="if(event.key==='Enter') sendAiGuestMessage()">
+                <button type="button" id="ai-guest-send-btn" onclick="sendAiGuestMessage()" class="btn btn-primary" style="background: linear-gradient(135deg, #f43f5e, #fb7185); border: none; padding: 10px 22px; font-size: 13px; font-weight: 800; white-space: nowrap; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);">
+                    🚀 إرسال
+                </button>
+            </div>
+        </div>
+
+        <!-- REQUEST DEVICE ACCESS -->
+        <div class="section-header" id="request-access">
+            <div class="section-title">
+                <span>🛡️</span>
+                <span>طلب تصريح دخول جهاز جديد (Device Authorization Request)</span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 13px;">للأجهزة الجديدة للانضمام للسيرفر</span>
+        </div>
+
+        <div class="card" style="max-width: 650px; margin: 0 auto; border-color: rgba(139, 92, 246, 0.4);">
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 18px;">
+                إذا كان نظام حماية السيرفر مفعلاً ولا تستطيع الدخول للعبة من هاتفك، يمكنك كتابة اسم جهازك هنا وإرسال طلب للأدمن للموافقة عليه فورياً:
+            </p>
+
+            <form id="device-req-form" onsubmit="submitDeviceRequest(event)">
+                <div class="form-group">
+                    <label class="form-label">📱 اسم ونوع جهازك (مثال: iPhone 13 - أحمد)</label>
+                    <input type="text" id="req-dev-name" class="form-input" placeholder="اكتب اسم جهازك هنا..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🔑 معرف الجهاز (Device ID - اختياري أو يترك فارغاً):</label>
+                    <input type="text" id="req-dev-id" class="form-input" placeholder="يتم توليده تلقائياً إن ترك فارغاً">
+                </div>
+                <button type="submit" class="btn btn-purple" style="width: 100%; font-size: 15px; padding: 12px;">
+                    <span>📤 إرسال طلب التصريح لمدير السيرفر</span>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="alert-toast"></div>
+
+    <!-- FOOTER -->
+    <footer>
+        <div style="margin-bottom: 8px;">
+            <b>CyberFort: Titan Strike 3D</b> — بوابة الزوار الرسمية (Guest Portal)
+        </div>
+        <div style="font-size: 12px; opacity: 0.8;">
+            جميع الصلاحيات الإدارية محفوظة لصاحب السيرفر. الموقع يتم تحديثه تلقائياً كل 3 ثوانٍ.
+        </div>
+    </footer>
+
+    <script>
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => {
+                t.style.display = 'none';
+            }, 3500);
+        }
+
+        async function refreshServerStatus() {
+            try {
+                const res = await fetch('/api/server_status');
+                if (res.ok) {
+                    const data = await res.json();
+                    const isOpen = (data.status === 'OPEN' || data.is_open === true);
+                    updateStatusUI(isOpen);
+                }
+            } catch (err) {
+                console.warn('Status check warning:', err);
+                // If fetch fails completely, show closed/offline
+                updateStatusUI(false);
+            }
+        }
+
+        function updateStatusUI(isOpen) {
+            const navPill = document.getElementById('nav-server-pill');
+            const navText = document.getElementById('nav-server-text');
+            const banner = document.getElementById('status');
+            const bIcon = document.getElementById('banner-big-icon');
+            const bTitle = document.getElementById('banner-title');
+            const bDesc = document.getElementById('banner-desc');
+
+            if (isOpen) {
+                navPill.className = 'status-pill pill-open';
+                navText.innerText = 'Server: Open 🟢';
+                banner.className = 'server-status-banner banner-open';
+                bIcon.innerText = '🟢';
+                bTitle.innerText = 'السيرفر مفتوح ومتاح للعب (Server: OPEN)';
+                bDesc.innerText = 'جميع خدمات اللعبة والتحديثات متصلة وتعمل بكفاءة. يمكنك تسجيل الدخول والبدء باللعب الآن!';
+            } else {
+                navPill.className = 'status-pill pill-closed';
+                navText.innerText = 'Server: Close 🔴';
+                banner.className = 'server-status-banner banner-closed';
+                bIcon.innerText = '🔴';
+                bTitle.innerText = 'السيرفر متوقف حالياً للصيانة (Server: CLOSED)';
+                bDesc.innerText = 'قام مدير السيرفر بإيقاف الخادم مؤقتاً للصيانة أو التحديث. يرجى الانتظار لحين إعادة فتحه.';
+            }
+        }
+
+        async function loadConfigData() {
+            try {
+                const res = await fetch('/api/game_config');
+                if (res.ok) {
+                    const cfg = await res.json();
+                    if (cfg.server_announcement) {
+                        const annEl = document.getElementById('server-announcement-text');
+                        if (annEl) annEl.innerText = cfg.server_announcement;
+                    }
+
+                    if (cfg.heroes) {
+                        for (const [id, hero] of Object.entries(cfg.heroes)) {
+                            const hpEl = document.getElementById(`hero-hp-${id}`);
+                            const spdEl = document.getElementById(`hero-speed-${id}`);
+                            if (hpEl) hpEl.innerText = hero.hp || '100';
+                            if (spdEl) spdEl.innerText = hero.speed || '7.0';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Config load warning:', e);
+            }
+        }
+
+        async function submitDeviceRequest(e) {
+            e.preventDefault();
+            const devName = document.getElementById('req-dev-name').value.trim();
+            let devId = document.getElementById('req-dev-id').value.trim();
+            if (!devId) {
+                devId = 'guest-' + Math.random().toString(36).substring(2, 10);
+            }
+
+            try {
+                const res = await fetch('/api/request_device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_name: devName,
+                        device_id: devId,
+                        notes: 'طلب دخول من بوابة الزوار'
+                    })
+                });
+
+                if (res.ok) {
+                    showToast('✅ تم إرسال طلب التصريح لمدير السيرفر بنجاح!');
+                    document.getElementById('device-req-form').reset();
+                } else {
+                    showToast('✅ تم إرسال الطلب (أو الجهاز مسجل بالفعل)');
+                }
+            } catch (err) {
+                showToast('✅ تم إرسال طلبك للإدارة للمراجعة');
+            }
+        }
+
+        async function loadVersionData() {
+            try {
+                const res = await fetch('/api/version');
+                if (res.ok) {
+                    const v = await res.json();
+                    const alertEl = document.getElementById('new-ipa-alert');
+                    if (v.has_new_ipa || v.requires_ipa) {
+                        if (alertEl) alertEl.style.display = 'flex';
+                        const titleEl = document.getElementById('new-ipa-title');
+                        const descEl = document.getElementById('new-ipa-desc');
+                        if (titleEl) titleEl.innerText = `🔥 يتوفر تحديث جديد (v${v.version || '1.2.0'}): نزل الـ IPA الجديد للايفون`;
+                        if (descEl && v.changelog) {
+                            descEl.innerText = Array.isArray(v.changelog) ? v.changelog.join(' • ') : v.changelog;
+                        }
+                    } else {
+                        if (alertEl) alertEl.style.display = 'none';
+                    }
+                    const patchVerEl = document.getElementById('patch-version-text');
+                    if (patchVerEl) patchVerEl.innerText = `الإصدار: v${v.version || '1.2.0'} | أحدث باتش متاح`;
+                }
+            } catch (e) {
+                console.warn('Version load warning:', e);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function askAiGuestQuick(question) {
+            const input = document.getElementById('ai-guest-prompt');
+            if (input) {
+                input.value = question;
+                sendAiGuestMessage();
+            }
+        }
+
+        async function sendAiGuestMessage() {
+            const input = document.getElementById('ai-guest-prompt');
+            if (!input) return;
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            input.value = '';
+            input.disabled = true;
+            const sendBtn = document.getElementById('ai-guest-send-btn');
+            if (sendBtn) sendBtn.disabled = true;
+
+            const chatBox = document.getElementById('ai-guest-chat-box');
+            if (chatBox) {
+                chatBox.innerHTML += `
+                    <div style="display: flex; gap: 10px; align-items: flex-start; justify-content: flex-end;">
+                        <div style="background: rgba(244, 63, 94, 0.25); border: 1px solid rgba(244, 63, 94, 0.45); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #ffe4e6; max-width: 80%;">
+                            ${escapeHtml(prompt)}
+                        </div>
+                        <div style="background: rgba(244, 63, 94, 0.3); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">👤</div>
+                    </div>
+                    <div id="ai-guest-loading" style="display: flex; gap: 10px; align-items: center; color: #94a3b8; font-size: 12px;">
+                        <span>⏳ جاري التفكير والرد بواسطة Gemini 3.5 Flash...</span>
+                    </div>
+                `;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, context: 'guest_portal' })
+                });
+                const data = await res.json();
+                
+                const loader = document.getElementById('ai-guest-loading');
+                if (loader) loader.remove();
+
+                if (chatBox) {
+                    if (data.success && data.reply) {
+                        const formattedReply = data.reply.replace(/\n/g, '<br>');
+                        let actionBadgeHtml = '';
+                        if (data.action_result) {
+                            actionBadgeHtml = `
+                                <div style="margin-top: 8px; background: rgba(16, 185, 129, 0.18); border: 1.5px solid #10b981; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 800; color: #34d399; display: flex; align-items: center; gap: 6px;">
+                                    <span>⚡ النتيجة:</span>
+                                    <span>${escapeHtml(data.action_result)}</span>
+                                </div>
+                            `;
+                        }
+
+                        chatBox.innerHTML += `
+                            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                <div style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🤖</div>
+                                <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #f1f5f9; max-width: 85%;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <div style="font-size: 10px; color: #fb7185; font-weight: 800;">⚡ CYBER AI (${data.model || 'Gemini 3.5 Flash'})</div>
+                                        <span style="font-size: 10px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 1px 8px; border-radius: 10px;">👤 موجه للاعب</span>
+                                    </div>
+                                    <div>${formattedReply}</div>
+                                    ${actionBadgeHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        chatBox.innerHTML += `
+                            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">⚠️</div>
+                                <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #ef4444; border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #fca5a5; max-width: 85%;">
+                                    ${data.error || 'عذراً، حدث خطأ أثناء الاتصال بالنموذج.'}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } catch (e) {
+                const loader = document.getElementById('ai-guest-loading');
+                if (loader) loader.remove();
+                if (chatBox) {
+                    chatBox.innerHTML += `
+                        <div style="color: #ef4444; font-size: 12px;">❌ تعذر الاتصال بسيرفر الذكاء الاصطناعي!</div>
+                    `;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } finally {
+                input.disabled = false;
+                if (sendBtn) sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        // Initialize and setup live polling every 3 seconds
+        refreshServerStatus();
+        loadConfigData();
+        loadVersionData();
+        setInterval(refreshServerStatus, 3000);
+        setInterval(loadConfigData, 10000);
+        setInterval(loadVersionData, 8000);
+    </script>
+
+    <!-- MOBILE AUTH MODAL -->
+    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:rgba(15,23,42,0.95); border:1.5px solid #00f0ff; box-shadow:0 0 35px rgba(0,240,255,0.4); border-radius:18px; width:92%; max-width:440px; padding:28px; position:relative; color:white; direction:rtl;">
+            <button onclick="closeAuthModal()" style="position:absolute; top:16px; left:16px; background:transparent; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✖</button>
+            
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:38px;">🔐</div>
+                <h2 style="font-family:'Orbitron',sans-serif; color:#00f0ff; margin-top:8px; font-size:20px;">بوابة اللاعبين وقاعدة البيانات</h2>
+                <p style="font-size:12px; color:#94a3b8;">سجل حسابك لحفظ تقدمك واللعب من أي موبايل أو كمبيوتر</p>
+            </div>
+
+            <div id="auth-logged-in-view" style="display:none; text-align:center;">
+                <div style="background:rgba(0,240,255,0.1); border:1px solid #00f0ff; border-radius:12px; padding:16px; margin-bottom:16px;">
+                    <div style="font-size:13px; color:#38bdf8;">أنت مسجل حالياً كـ:</div>
+                    <div id="auth-user-name" style="font-size:22px; font-weight:800; color:#34d399; margin:6px 0;"></div>
+                    <div id="auth-user-role" style="font-size:12px; color:#f59e0b;"></div>
+                    <div id="auth-user-stats" style="font-size:12px; color:#94a3b8; margin-top:8px;"></div>
+                </div>
+                <button onclick="logoutUser()" class="btn btn-outline" style="width:100%; color:#f43f5e; border-color:#f43f5e;">تسجيل الخروج</button>
+            </div>
+
+            <div id="auth-form-view">
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px;">اسم المستخدم (Username):</label>
+                    <input type="text" id="auth-username" placeholder="مثال: seif796" style="width:100%; padding:12px 14px; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:white; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px;">كلمة المرور (Password):</label>
+                    <input type="password" id="auth-password" placeholder="3 أحرف أو أرقام على الأقل" style="width:100%; padding:12px 14px; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:white; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+
+                <div id="auth-alert" style="display:none; padding:10px; border-radius:8px; font-size:13px; margin-bottom:14px; text-align:center;"></div>
+
+                <div style="display:flex; gap:10px;">
+                    <button onclick="submitAuth('login')" class="btn btn-primary" style="flex:1;">🔑 دخول</button>
+                    <button onclick="submitAuth('register')" class="btn btn-purple" style="flex:1;">🎉 حساب جديد</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openAuthModal() {
+        document.getElementById('auth-modal').style.display = 'flex';
+        checkCurrentLoginStatus();
+    }
+    function closeAuthModal() {
+        document.getElementById('auth-modal').style.display = 'none';
+    }
+    function checkCurrentLoginStatus() {
+        const token = localStorage.getItem('titan_auth_token');
+        if (!token) {
+            document.getElementById('auth-logged-in-view').style.display = 'none';
+            document.getElementById('auth-form-view').style.display = 'block';
+            return;
+        }
+        fetch('/api/auth/me?token=' + encodeURIComponent(token))
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    document.getElementById('auth-logged-in-view').style.display = 'block';
+                    document.getElementById('auth-form-view').style.display = 'none';
+                    document.getElementById('auth-user-name').innerText = data.user.display_name || data.user.username;
+                    document.getElementById('auth-user-role').innerText = 'الرتبة: ' + (data.user.role === 'admin' ? '👑 القائد الأعلى' : '⚔️ مقاتل سايبر');
+                    document.getElementById('auth-user-stats').innerText = 'المستوى: ' + (data.user.level || 1) + ' | العملات: ' + (data.user.coins || 500) + ' 🪙 | الانتصارات: ' + (data.user.wins || 0);
+                    document.getElementById('nav-auth-btn').innerText = '👤 ' + (data.user.display_name || data.user.username);
+                } else {
+                    localStorage.removeItem('titan_auth_token');
+                    document.getElementById('auth-logged-in-view').style.display = 'none';
+                    document.getElementById('auth-form-view').style.display = 'block';
+                }
+            }).catch(() => {});
+    }
+    function submitAuth(action) {
+        const u = document.getElementById('auth-username').value.trim();
+        const p = document.getElementById('auth-password').value.trim();
+        const alertBox = document.getElementById('auth-alert');
+        if (!u || !p) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'rgba(239,68,68,0.2)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerText = 'يرجى كتابة اسم المستخدم وكلمة المرور!';
+            return;
+        }
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'rgba(56,189,248,0.2)';
+        alertBox.style.color = '#38bdf8';
+        alertBox.innerText = 'جاري المعالجة...';
+
+        fetch('/api/auth/' + action, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: u, password: p, device: navigator.userAgent})
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                alertBox.style.background = 'rgba(16,185,129,0.2)';
+                alertBox.style.color = '#34d399';
+                alertBox.innerText = res.message;
+                if (res.data && res.data.token) {
+                    localStorage.setItem('titan_auth_token', res.data.token);
+                }
+                setTimeout(() => {
+                    checkCurrentLoginStatus();
+                }, 800);
+            } else {
+                alertBox.style.background = 'rgba(239,68,68,0.2)';
+                alertBox.style.color = '#f87171';
+                alertBox.innerText = res.message || 'حدث خطأ!';
+            }
+        })
+        .catch(err => {
+            alertBox.style.background = 'rgba(239,68,68,0.2)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerText = 'تعذر الاتصال بالسيرفر!';
+        });
+    }
+    function logoutUser() {
+        localStorage.removeItem('titan_auth_token');
+        document.getElementById('nav-auth-btn').innerText = '🔐 تسجيل الدخول / حساب جديد';
+        checkCurrentLoginStatus();
+    }
+    window.addEventListener('DOMContentLoaded', checkCurrentLoginStatus);
+    </script>
+
+</body>
+</html>
+

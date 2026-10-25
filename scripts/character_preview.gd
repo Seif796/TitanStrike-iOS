@@ -9,13 +9,6 @@ class_name CharacterPreview
 @onready var spider_model: Node3D = get_node_or_null("Model/SpiderModel")
 @onready var strawberry_model: Node3D = get_node_or_null("Model/StrawberryModel")
 @onready var citrus_model: Node3D = get_node_or_null("Model/CitrusModel")
-@onready var head_mesh: MeshInstance3D = $Model/Head/HeadMesh
-@onready var chest_mesh: MeshInstance3D = $Model/ChestPlate
-@onready var leg_l: MeshInstance3D = $Model/LeftLeg
-@onready var leg_r: MeshInstance3D = $Model/RightLeg
-@onready var arm_l: MeshInstance3D = $Model/LeftArm
-@onready var arm_r: MeshInstance3D = $Model/RightArm
-@onready var leaf_sprout: Node3D = $Model/Head/LeafSprout
 @onready var rim_light: OmniLight3D = get_node_or_null("RimLight")
 
 var melon_tex = preload("res://assets/watermelon_pattern.svg")
@@ -42,29 +35,8 @@ func update_class_visual(class_id: int) -> void:
 	if citrus_model: citrus_model.visible = (class_id == 2)
 	if strawberry_model: strawberry_model.visible = (class_id == 1)
 	if melon_model: melon_model.visible = (class_id == 0)
-	_set_legacy_preview_visible(false)
-	return
-	
-	var target_tex: Texture2D = berry_tex if class_id == 1 else citrus_tex
-	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = target_tex
-	mat.uv1_scale = Vector3(2.5, 2.5, 2.5)
-	mat.roughness = 0.35
-	
-	if head_mesh: head_mesh.material_override = mat
-	if chest_mesh: chest_mesh.material_override = mat
-	if leg_l: leg_l.material_override = mat
-	if leg_r: leg_r.material_override = mat
-	if arm_l: arm_l.material_override = mat
-	if arm_r: arm_r.material_override = mat
-	
-	if leaf_sprout:
-		leaf_sprout.visible = (class_id == 0)
-
-func _set_legacy_preview_visible(v: bool) -> void:
-	if head_mesh and head_mesh.get_parent(): head_mesh.get_parent().visible = v
-	if chest_mesh: chest_mesh.visible = v
-	if leg_l: leg_l.visible = v
-	if leg_r: leg_r.visible = v
-	if arm_l: arm_l.visible = v
-	if arm_r: arm_r.visible = v
+	# Clean hero display
+	# Ensure playing idle anim
+	var active_m = [melon_model, strawberry_model, citrus_model, admin_model, spider_model][class_id] if class_id < 5 else melon_model
+	if active_m and active_m.has_method('play_anim'):
+		active_m.play_anim('idle')

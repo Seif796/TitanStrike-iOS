@@ -535,6 +535,10 @@
         </div>
 
         <div class="nav-links">
+            <button onclick="openAuthModal()" class="btn btn-outline" id="nav-auth-btn" style="padding: 5px 14px; font-size: 13px; border-radius: 20px; border-color: #38bdf8; color: #38bdf8; cursor: pointer;">
+                🔐 تسجيل الدخول / حساب جديد
+            </button>
+
             <a href="#status" class="nav-link">📡 حالة السيرفر</a>
             <a href="#downloads" class="nav-link">📥 التنزيلات</a>
             <a href="#heroes" class="nav-link">🍉 قائمة الأبطال</a>
@@ -658,7 +662,29 @@
                 </a>
             </div>
 
-            <!-- OTA Patch Download -->
+            
+            <!-- Android APK Download -->
+            <div class="card" style="border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);">
+                <div class="download-item" style="border: none; background: transparent; padding: 0; margin-bottom: 16px;">
+                    <div class="download-info">
+                        <div class="download-icon" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.5); font-size: 24px;">
+                            🤖
+                        </div>
+                        <div>
+                            <h3 style="font-size: 17px; font-weight: 800; color: #34d399;">لعبة أندرويد الرسمية (Android APK)</h3>
+                            <p style="color: var(--text-muted); font-size: 13px;">الإصدار الكامل لهواتف الأندرويد | تثبيت مباشر</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 16px; line-height: 1.6;">
+                    ملف APK الرسمي المخصص لجميع هواتف أندرويد (سامسونج، شاومي، أوبو، ريلمي، وغيرها) مع دعم كامل للمس المتعدد واللعب الجماعي.
+                </p>
+                <a href="/downloads/TitanStrike.apk" download="TitanStrike.apk" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+                    <span>🤖 تحميل ملف APK للأندرويد (Download APK)</span>
+                </a>
+            </div>
+
+<!-- OTA Patch Download -->
             <div class="card">
                 <div class="download-item" style="border: none; background: transparent; padding: 0; margin-bottom: 16px;">
                     <div class="download-info">
@@ -1109,6 +1135,134 @@
         setInterval(loadConfigData, 10000);
         setInterval(loadVersionData, 8000);
     </script>
+
+    <!-- MOBILE AUTH MODAL -->
+    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:rgba(15,23,42,0.95); border:1.5px solid #00f0ff; box-shadow:0 0 35px rgba(0,240,255,0.4); border-radius:18px; width:92%; max-width:440px; padding:28px; position:relative; color:white; direction:rtl;">
+            <button onclick="closeAuthModal()" style="position:absolute; top:16px; left:16px; background:transparent; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✖</button>
+            
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:38px;">🔐</div>
+                <h2 style="font-family:'Orbitron',sans-serif; color:#00f0ff; margin-top:8px; font-size:20px;">بوابة اللاعبين وقاعدة البيانات</h2>
+                <p style="font-size:12px; color:#94a3b8;">سجل حسابك لحفظ تقدمك واللعب من أي موبايل أو كمبيوتر</p>
+            </div>
+
+            <div id="auth-logged-in-view" style="display:none; text-align:center;">
+                <div style="background:rgba(0,240,255,0.1); border:1px solid #00f0ff; border-radius:12px; padding:16px; margin-bottom:16px;">
+                    <div style="font-size:13px; color:#38bdf8;">أنت مسجل حالياً كـ:</div>
+                    <div id="auth-user-name" style="font-size:22px; font-weight:800; color:#34d399; margin:6px 0;"></div>
+                    <div id="auth-user-role" style="font-size:12px; color:#f59e0b;"></div>
+                    <div id="auth-user-stats" style="font-size:12px; color:#94a3b8; margin-top:8px;"></div>
+                </div>
+                <button onclick="logoutUser()" class="btn btn-outline" style="width:100%; color:#f43f5e; border-color:#f43f5e;">تسجيل الخروج</button>
+            </div>
+
+            <div id="auth-form-view">
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px;">اسم المستخدم (Username):</label>
+                    <input type="text" id="auth-username" placeholder="مثال: seif796" style="width:100%; padding:12px 14px; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:white; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px;">كلمة المرور (Password):</label>
+                    <input type="password" id="auth-password" placeholder="3 أحرف أو أرقام على الأقل" style="width:100%; padding:12px 14px; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:white; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+
+                <div id="auth-alert" style="display:none; padding:10px; border-radius:8px; font-size:13px; margin-bottom:14px; text-align:center;"></div>
+
+                <div style="display:flex; gap:10px;">
+                    <button onclick="submitAuth('login')" class="btn btn-primary" style="flex:1;">🔑 دخول</button>
+                    <button onclick="submitAuth('register')" class="btn btn-purple" style="flex:1;">🎉 حساب جديد</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openAuthModal() {
+        document.getElementById('auth-modal').style.display = 'flex';
+        checkCurrentLoginStatus();
+    }
+    function closeAuthModal() {
+        document.getElementById('auth-modal').style.display = 'none';
+    }
+    function checkCurrentLoginStatus() {
+        const token = localStorage.getItem('titan_auth_token');
+        if (!token) {
+            document.getElementById('auth-logged-in-view').style.display = 'none';
+            document.getElementById('auth-form-view').style.display = 'block';
+            return;
+        }
+        fetch('/api/auth/me?token=' + encodeURIComponent(token))
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    document.getElementById('auth-logged-in-view').style.display = 'block';
+                    document.getElementById('auth-form-view').style.display = 'none';
+                    document.getElementById('auth-user-name').innerText = data.user.display_name || data.user.username;
+                    document.getElementById('auth-user-role').innerText = 'الرتبة: ' + (data.user.role === 'admin' ? '👑 القائد الأعلى' : '⚔️ مقاتل سايبر');
+                    document.getElementById('auth-user-stats').innerText = 'المستوى: ' + (data.user.level || 1) + ' | العملات: ' + (data.user.coins || 500) + ' 🪙 | الانتصارات: ' + (data.user.wins || 0);
+                    document.getElementById('nav-auth-btn').innerText = '👤 ' + (data.user.display_name || data.user.username);
+                } else {
+                    localStorage.removeItem('titan_auth_token');
+                    document.getElementById('auth-logged-in-view').style.display = 'none';
+                    document.getElementById('auth-form-view').style.display = 'block';
+                }
+            }).catch(() => {});
+    }
+    function submitAuth(action) {
+        const u = document.getElementById('auth-username').value.trim();
+        const p = document.getElementById('auth-password').value.trim();
+        const alertBox = document.getElementById('auth-alert');
+        if (!u || !p) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'rgba(239,68,68,0.2)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerText = 'يرجى كتابة اسم المستخدم وكلمة المرور!';
+            return;
+        }
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'rgba(56,189,248,0.2)';
+        alertBox.style.color = '#38bdf8';
+        alertBox.innerText = 'جاري المعالجة...';
+
+        fetch('/api/auth/' + action, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: u, password: p, device: navigator.userAgent})
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                alertBox.style.background = 'rgba(16,185,129,0.2)';
+                alertBox.style.color = '#34d399';
+                alertBox.innerText = res.message;
+                if (res.data && res.data.token) {
+                    localStorage.setItem('titan_auth_token', res.data.token);
+                }
+                setTimeout(() => {
+                    checkCurrentLoginStatus();
+                }, 800);
+            } else {
+                alertBox.style.background = 'rgba(239,68,68,0.2)';
+                alertBox.style.color = '#f87171';
+                alertBox.innerText = res.message || 'حدث خطأ!';
+            }
+        })
+        .catch(err => {
+            alertBox.style.background = 'rgba(239,68,68,0.2)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerText = 'تعذر الاتصال بالسيرفر!';
+        });
+    }
+    function logoutUser() {
+        localStorage.removeItem('titan_auth_token');
+        document.getElementById('nav-auth-btn').innerText = '🔐 تسجيل الدخول / حساب جديد';
+        checkCurrentLoginStatus();
+    }
+    window.addEventListener('DOMContentLoaded', checkCurrentLoginStatus);
+    </script>
+
 </body>
 </html>
 

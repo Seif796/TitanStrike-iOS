@@ -74,7 +74,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.002
 			if sun_light:
 				sun_light.light_color = Color(1.0, 0.96, 0.88)
-				sun_light.light_energy = 1.5
+				sun_light.light_energy = 0.95
 
 		1: # Cyber Stadium 2077 (ساحة السايبر المستقبلية)
 			floor_mat.albedo_color = Color(0.06, 0.08, 0.14)
@@ -91,7 +91,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.004
 			if sun_light:
 				sun_light.light_color = Color(0.4, 0.85, 1.0)
-				sun_light.light_energy = 1.25
+				sun_light.light_energy = 0.85
 
 		2: # Desert Titan Canyon (وادي العمالقة الصحراوي)
 			floor_mat.albedo_color = Color(0.86, 0.62, 0.32) # Golden desert dunes
@@ -107,7 +107,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.003
 			if sun_light:
 				sun_light.light_color = Color(1.0, 0.68, 0.42)
-				sun_light.light_energy = 1.65
+				sun_light.light_energy = 1.05
 
 		3: # Volcanic Magma Core (قلب البركان المشتعل)
 			floor_mat.albedo_color = Color(0.1, 0.07, 0.08) # Obsidian rock
@@ -116,7 +116,7 @@ func _apply_map_theme(map_id: int) -> void:
 			pillar_mat.albedo_color = Color(0.3, 0.05, 0.05)
 			pillar_mat.emission_enabled = true
 			pillar_mat.emission = Color(1.0, 0.2, 0.0) # Fiery lava glow
-			pillar_mat.emission_energy_multiplier = 4.5
+			pillar_mat.emission_energy_multiplier = 1.6
 			sky_mat.sky_top_color = Color(0.12, 0.02, 0.03)
 			sky_mat.sky_horizon_color = Color(0.85, 0.2, 0.05)
 			sky_mat.ground_bottom_color = Color(0.2, 0.04, 0.02)
@@ -124,7 +124,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.0045
 			if sun_light:
 				sun_light.light_color = Color(1.0, 0.35, 0.12)
-				sun_light.light_energy = 1.55
+				sun_light.light_energy = 0.955
 
 		4: # Frozen Ice Glacier (جليد القطب المتجمد)
 			floor_mat.albedo_color = Color(0.7, 0.9, 0.98) # Smooth polar ice
@@ -141,7 +141,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.003
 			if sun_light:
 				sun_light.light_color = Color(0.8, 0.94, 1.0)
-				sun_light.light_energy = 1.4
+				sun_light.light_energy = 0.90
 
 		5: # Cosmic Galaxy Station (محطة المجرة الفضائية)
 			floor_mat.albedo_color = Color(0.12, 0.06, 0.2) # Deep space deck
@@ -158,7 +158,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.0038
 			if sun_light:
 				sun_light.light_color = Color(0.75, 0.55, 1.0)
-				sun_light.light_energy = 1.3
+				sun_light.light_energy = 0.88
 
 		6: # Neon Castle Citadel (قلعة النيون المظلمة)
 			floor_mat.albedo_color = Color(0.08, 0.08, 0.1) # Dark synth rock
@@ -167,7 +167,7 @@ func _apply_map_theme(map_id: int) -> void:
 			pillar_mat.albedo_color = Color(0.25, 0.08, 0.22)
 			pillar_mat.emission_enabled = true
 			pillar_mat.emission = Color(1.0, 0.1, 0.65) # Hot magenta neon
-			pillar_mat.emission_energy_multiplier = 4.5
+			pillar_mat.emission_energy_multiplier = 1.6
 			sky_mat.sky_top_color = Color(0.08, 0.02, 0.1)
 			sky_mat.sky_horizon_color = Color(0.85, 0.12, 0.55)
 			sky_mat.ground_bottom_color = Color(0.05, 0.02, 0.06)
@@ -175,7 +175,7 @@ func _apply_map_theme(map_id: int) -> void:
 			fog_dens = 0.004
 			if sun_light:
 				sun_light.light_color = Color(0.95, 0.45, 0.75)
-				sun_light.light_energy = 1.35
+				sun_light.light_energy = 0.885
 
 	if world_env and world_env.environment:
 		var sky_res = Sky.new()
@@ -228,7 +228,7 @@ func _add_arena_corner_beacons(beacon_col: Color) -> void:
 		
 		var omni = OmniLight3D.new()
 		omni.light_color = beacon_col
-		omni.light_energy = 2.5
+		omni.light_energy = 1.1
 		omni.omni_range = 16.0
 		omni.position = pos + Vector3(0, 9.5, 0)
 		container.add_child(omni)
@@ -309,7 +309,7 @@ func _setup_training_recharge_pad(pos: Vector3) -> void:
 	
 	var pad_light = OmniLight3D.new()
 	pad_light.light_color = Color(0.2, 1.0, 0.5)
-	pad_light.light_energy = 2.0
+	pad_light.light_energy = 0.9
 	pad_light.omni_range = 6.0
 	pad_light.position = Vector3(0, 1.0, 0)
 	pad_area.add_child(pad_light)
@@ -575,11 +575,15 @@ func _spawn_minion() -> void:
 	var offset = Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
 	enemies_container.add_child(minion, true)
 	minion.global_position = rand_spawn.global_position + offset
-	# Scale difficulty with wave and stage
-	minion.wave_level = GameManager.current_wave + (3 if current_stage == 2 else 0)
-	minion.max_hp = 85.0 + (GameManager.current_wave * 15.0) + (60.0 if current_stage == 2 else 0.0)
+	# Hardcore Mission Difficulty Scaling (Nightmare waves & Elite Berserkers)
+	var is_elite = (randf() < 0.28)
+	minion.wave_level = GameManager.current_wave + (4 if current_stage == 2 else 0)
+	var elite_mult = 1.65 if is_elite else 1.0
+	minion.max_hp = (110.0 + (GameManager.current_wave * 25.0) + (80.0 if current_stage == 2 else 0.0)) * elite_mult
 	minion.current_hp = minion.max_hp
-	minion.move_speed = 5.2 + (GameManager.current_wave * 0.3) + (1.8 if current_stage == 2 else 0.0)
+	minion.move_speed = (6.0 + (GameManager.current_wave * 0.45) + (2.0 if current_stage == 2 else 0.0)) * (1.15 if is_elite else 1.0)
+	if is_elite:
+		minion.scale = Vector3(1.3, 1.3, 1.3)
 	minion.rpc("_sync_minion_hp", minion.current_hp, minion.max_hp)
 
 var current_boss_phase: int = 0

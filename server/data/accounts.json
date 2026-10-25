@@ -1,0 +1,22 @@
+{
+  "users": {
+    "admin": {
+      "username": "admin",
+      "password_hash": "6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6",
+      "display_name": "Commander Seif",
+      "role": "admin",
+      "created_at": "2026-10-25 20:00:00",
+      "level": 20,
+      "coins": 99999,
+      "wins": 99,
+      "unlocked_heroes": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "sessions": {}
+}

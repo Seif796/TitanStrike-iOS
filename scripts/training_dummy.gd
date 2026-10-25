@@ -77,6 +77,10 @@ func take_damage(amount: float, _shooter_id: int = 1) -> void:
 		damage_popup.modulate = Color(1.0, 0.85, 0.2) if amount < 50 else Color(1.0, 0.2, 0.4)
 		popup_timer = 1.2
 	
+	# Sound & visual hit feedback
+	if AudioManager:
+		AudioManager.play_sfx("hit")
+	
 	# Small hit flash & wobble
 	if model_mesh:
 		var tw = create_tween()

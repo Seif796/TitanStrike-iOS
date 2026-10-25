@@ -393,98 +393,6 @@ visible = false
 [node name="SpiderModel" parent="Model" instance=ExtResource("11_spider_model")]
 visible = false
 
-[node name="BodyMesh" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
-
-[node name="ChestPlate" type="MeshInstance3D" parent="Model/BodyMesh"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
-mesh = SubResource("BoxMesh_torso")
-
-[node name="Shirt" type="MeshInstance3D" parent="Model/BodyMesh/ChestPlate"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.17)
-mesh = SubResource("BoxMesh_shirt")
-
-[node name="Head" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
-
-[node name="HeadMesh" type="MeshInstance3D" parent="Model/Head"]
-mesh = SubResource("SphereMesh_head")
-
-[node name="LeafSprout" type="Node3D" parent="Model/Head"]
-transform = Transform3D(0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0, 1, 0.12, 0.42, 0)
-
-[node name="LeafMesh" type="MeshInstance3D" parent="Model/Head/LeafSprout"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
-mesh = SubResource("PrismMesh_leaf")
-
-[node name="HairBang" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, -0.258819, 0.965926, 0, -0.965926, -0.258819, 0, 0.35, -0.25)
-mesh = SubResource("PrismMesh_hair_bang")
-
-[node name="EyeLeft" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.05, -0.32)
-mesh = SubResource("SphereMesh_eye_white")
-
-[node name="Pupil" type="MeshInstance3D" parent="Model/Head/EyeLeft"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
-mesh = SubResource("SphereMesh_pupil")
-
-[node name="EyeRight" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.05, -0.32)
-mesh = SubResource("SphereMesh_eye_white")
-
-[node name="Pupil" type="MeshInstance3D" parent="Model/Head/EyeRight"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.05)
-mesh = SubResource("SphereMesh_pupil")
-
-[node name="Nose" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, -0.37)
-mesh = SubResource("SphereMesh_nose")
-
-[node name="EarLeft" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.38, 0, 0)
-mesh = SubResource("SphereMesh_nose")
-
-[node name="EarRight" type="MeshInstance3D" parent="Model/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0, 0)
-mesh = SubResource("SphereMesh_nose")
-
-[node name="LeftLeg" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.65, 0)
-
-[node name="LegMesh" type="MeshInstance3D" parent="Model/LeftLeg"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
-mesh = SubResource("CylinderMesh_leg")
-
-[node name="Shoe" type="MeshInstance3D" parent="Model/LeftLeg"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.52, -0.05)
-mesh = SubResource("BoxMesh_shoe")
-
-[node name="RightLeg" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.65, 0)
-
-[node name="LegMesh" type="MeshInstance3D" parent="Model/RightLeg"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
-mesh = SubResource("CylinderMesh_leg")
-
-[node name="Shoe" type="MeshInstance3D" parent="Model/RightLeg"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.52, -0.05)
-mesh = SubResource("BoxMesh_shoe")
-
-[node name="LeftArm" type="Node3D" parent="Model"]
-transform = Transform3D(0.882948, 0, 0.469472, -0.331948, 0.707107, 0.624344, -0.331948, -0.707107, 0.624344, -0.35, 1.25, 0)
-
-[node name="ArmMesh" type="MeshInstance3D" parent="Model/LeftArm"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
-mesh = SubResource("CylinderMesh_arm")
-
-[node name="RightArm" type="Node3D" parent="Model"]
-transform = Transform3D(0.978148, -0.103956, -0.179802, 0.147986, 0.949755, 0.275637, 0.147986, -0.296222, 0.943606, 0.35, 1.25, 0)
-
-[node name="ArmMesh" type="MeshInstance3D" parent="Model/RightArm"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22, 0)
-mesh = SubResource("CylinderMesh_arm")
-
 [node name="Weapons" type="Node3D" parent="Model"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26, 1.02, -0.26)
 
@@ -542,13 +450,6 @@ script = ExtResource("3_anim")
 player = NodePath("..")
 model_root = NodePath("../Model")
 melon_boy_mesh = NodePath("../Model/MelonModel")
-left_leg = NodePath("../Model/LeftLeg")
-right_leg = NodePath("../Model/RightLeg")
-left_arm = NodePath("../Model/LeftArm")
-right_arm = NodePath("../Model/RightArm")
-head = NodePath("../Model/Head")
-leaf_sprout = NodePath("../Model/Head/LeafSprout")
-body_mesh = NodePath("../Model/BodyMesh")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
