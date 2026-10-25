@@ -1185,7 +1185,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             send_json_response(self, load_game_config())
             return
 
-                        elif path == "/api/party/invites":
+        elif path == "/api/party/invites":
             u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
             now = time.time()
             invs = [inv for inv in GLOBAL_PARTY_INVITES.get(u, []) if now - inv.get("time", 0) < 300]
@@ -1495,29 +1495,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 self.send_error(500, f"Verify device error: {e}")
             return
 
-                elif path == "/api/party/invite":
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length)
-            try:
-                data = json.loads(body.decode("utf-8")) if body else {}
-                code, res = handle_party_invite(data)
-                send_json_response(self, res, status_code=code)
-            except Exception as e:
-                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
-            return
-
-        elif path == "/api/party/respond":
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length)
-            try:
-                data = json.loads(body.decode("utf-8")) if body else {}
-                code, res = handle_party_respond(data)
-                send_json_response(self, res, status_code=code)
-            except Exception as e:
-                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
-            return
-
-        el        elif path == "/api/party/invite":
+        elif path == "/api/party/invite":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -1568,7 +1546,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
             return
 
-        elf path == "/api/request_device":
+        elif path == "/api/request_device":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             try:
@@ -1895,7 +1873,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             send_json_response(self, {"success": True, "invites": invs})
             return
 
-        elf path in ("/", "/index.html", "/guest", "/guest.html"):
+        elif path in ("/", "/index.html", "/guest", "/guest.html"):
             guest_file = PUBLIC_DIR / "guest.html"
             if guest_file.is_file():
                 self.send_response(200)
