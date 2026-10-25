@@ -1,15 +1,15 @@
 {
-  "version": "1.2.2",
-  "version_code": 5,
+  "version": "1.3.0",
+  "version_code": 6,
   "release_date": "2026-10-26",
-  "title": "تحديث شامل: إصلاح توافق المحرك وإصلاح كود GameManager وعرض شاشات الطلبات والدعم",
+  "title": "🚀 تجربة التحديث المباشر: تفعيل واجهة السيرفر v1.3.0",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 8541287,
-  "sha256": "34d39d60d0bff29f391588660641009a12207e69c73f4232aed649b00aca3861",
+  "file_size_bytes": 8541985,
+  "sha256": "88c700560696a203f6008dc24f4a2f71981b8a4083f8fc2de7119a9e850d23df",
   "mandatory": true
 }

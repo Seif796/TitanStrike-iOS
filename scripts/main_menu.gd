@@ -172,6 +172,11 @@ func _ready() -> void:
 		_switch_view(view_home)
 	)
 	
+	# Live OTA Test Toast
+	get_tree().create_timer(1.2).timeout.connect(func():
+		_show_update_toast("🎉 تجربة التحديث ناجحة 100%! اللعبة تعمل بإصدار السيرفر المباشر v1.3.0")
+	)
+	
 	_setup_settings_view()
 	_setup_update_system()
 	_setup_account_view()

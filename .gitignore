@@ -24,3 +24,8 @@ __pycache__/
 server/ai_config.json
 .env
 
+# Local Godot binaries & temp zips
+Godot_v*
+godot*.zip
+
+
