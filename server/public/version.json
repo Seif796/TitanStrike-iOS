@@ -1,15 +1,15 @@
 {
-  "version": "1.2.1",
-  "version_code": 4,
+  "version": "1.2.2",
+  "version_code": 5,
   "release_date": "2026-10-26",
-  "title": "تحديث شامل: إصلاح حزمة الباتشات وعرض قائمة الطلبات وبوت التيليجرام",
+  "title": "تحديث شامل: إصلاح توافق المحرك وإصلاح كود GameManager وعرض شاشات الطلبات والدعم",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 8661548,
-  "sha256": "d6b302df3a717df4195faf925220851d5eeeff76dc3a43deec8825a88ea3fdfc",
+  "file_size_bytes": 8541287,
+  "sha256": "34d39d60d0bff29f391588660641009a12207e69c73f4232aed649b00aca3861",
   "mandatory": true
 }

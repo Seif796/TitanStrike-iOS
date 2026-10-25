@@ -94,6 +94,7 @@ extends Control
 @onready var tab_requests_btn: Button = $ViewFriends/FriendsCard/VBox/FriendsTabsHBox/TabRequestsBtn
 @onready var add_friend_hbox: Control = $ViewFriends/FriendsCard/VBox/AddFriendHBox
 @onready var friend_name_input: LineEdit = $ViewFriends/FriendsCard/VBox/AddFriendHBox/FriendNameInput
+@onready var add_friend_btn: Button = $ViewFriends/FriendsCard/VBox/AddFriendHBox/AddFriendBtn
 @onready var friends_status_label: Label = $ViewFriends/FriendsCard/VBox/FriendsStatusLabel
 @onready var friends_list_scroll: Control = $ViewFriends/FriendsCard/VBox/FriendsListScroll
 @onready var friends_list_vbox: VBoxContainer = $ViewFriends/FriendsCard/VBox/FriendsListScroll/FriendsListVBox
@@ -1610,8 +1611,8 @@ var _support_poll_timer: Timer = null
 func _setup_telegram_support() -> void:
 	if FileAccess.file_exists(TELEGRAM_REJECTED_CACHE):
 		telegram_btn.visible = false
-	if telegram_pill_btn: telegram_pill_btn.visible = false
-	if mode_telegram_btn: mode_telegram_btn.visible = false
+		if telegram_pill_btn: telegram_pill_btn.visible = false
+		if mode_telegram_btn: mode_telegram_btn.visible = false
 		return
 	telegram_btn.pressed.connect(_on_telegram_btn_pressed)
 

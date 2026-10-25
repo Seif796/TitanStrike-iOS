@@ -292,11 +292,6 @@ func check_all_players_down() -> void:
 	
 	var any_alive = false
 	for p in players:
-	if players.is_empty():
-		return
-	
-	var any_alive = false
-	for p in players:
 		if p.has_method("is_downed") and not p.is_downed():
 			any_alive = true
 			break
