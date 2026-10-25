@@ -71,6 +71,15 @@ def sync_ipa_from_github_or_local():
                         source_found = TARGET_IPA
                         source_method = "github_release"
                         break
+                # Also synchronize Android APK from release assets
+                for asset in rel.get("assets", []):
+                    if asset.get("name", "").endswith(".apk"):
+                        apk_dl = asset.get("browser_download_url")
+                        print(f"[*] Downloading latest APK from GitHub Release: {apk_dl}...")
+                        target_apk = DOWNLOADS_DIR / "TitanStrike.apk"
+                        urllib.request.urlretrieve(apk_dl, str(target_apk))
+                        print(f"[+] Synced APK successfully to: {target_apk}")
+                        break
         except Exception as e:
             print(f"[-] Note: GitHub releases check: {e}")
 

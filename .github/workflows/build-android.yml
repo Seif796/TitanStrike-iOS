@@ -1,0 +1,82 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ master, main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Godot 4.3 & Android Export Templates
+        run: |
+          echo "=== Downloading Godot 4.3 Linux Headless ==="
+          GODOT_VERSION="4.3-stable"
+          curl -L -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          godot --version
+          
+          echo "=== Downloading Export Templates ==="
+          curl -L -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q templates.tpz
+          
+          TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/4.3.stable"
+          mkdir -p "$TEMPLATES_DIR"
+          mv templates/* "$TEMPLATES_DIR/"
+          echo "Templates installed to $TEMPLATES_DIR"
+
+      - name: Generate Android Debug Keystore
+        run: |
+          keytool -genkey -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=TitanStrike,C=US"
+          echo "Generated debug keystore at $HOME/debug.keystore"
+
+      - name: Configure Android Export Preset
+        run: |
+          KEYSTORE_PATH="$HOME/debug.keystore"
+          # Update debug keystore path in preset
+          sed -i "s|keystore/debug=\".*\"|keystore/debug=\"$KEYSTORE_PATH\"|g" export_presets.cfg || true
+
+      - name: Export Godot Project to Android APK
+        run: |
+          mkdir -p build/android
+          godot --headless --export-debug "Android" build/android/TitanStrike.apk
+          
+          echo "=== Android APK Exported Successfully ==="
+          ls -lh build/android/TitanStrike.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TitanStrike-Android-APK
+          path: build/android/TitanStrike.apk
+          retention-days: 14
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: build/android/TitanStrike.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
