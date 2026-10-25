@@ -26,7 +26,7 @@ VERSION_FILE = PUBLIC_DIR / "version.json"
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Files and folders to include in the update package
-INCLUDE_PATTERNS = ["scenes", "scripts", "project.godot", "icon.svg"]
+INCLUDE_PATTERNS = ["scenes", "scripts", "project.godot", "icon.svg", "build/TitanStrike.pck"]
 EXCLUDE_EXTS = [".tmp", ".log", ".pyc", ".git", ".import"]
 
 def calculate_sha256(filepath):
@@ -46,7 +46,8 @@ def publish_update(version: str, version_code: int, title: str, changelog: list,
         for item in INCLUDE_PATTERNS:
             item_path = ROOT_DIR / item
             if item_path.is_file():
-                zf.write(item_path, arcname=item)
+                arcname = item_path.name if item_path.suffix == ".pck" else item
+                zf.write(item_path, arcname=arcname)
                 file_count += 1
             elif item_path.is_dir():
                 for root, _, files in os.walk(item_path):

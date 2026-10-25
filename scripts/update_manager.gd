@@ -130,6 +130,22 @@ func _ready() -> void:
 	_load_config()
 	_load_installed_state()
 	
+	# Load persistent runtime patch pack if available
+	if FileAccess.file_exists("user://patch.pck"):
+		var pck_real = ProjectSettings.globalize_path("user://patch.pck")
+		var pck_ok = ProjectSettings.load_resource_pack(pck_real, true)
+		if not pck_ok:
+			pck_ok = ProjectSettings.load_resource_pack("user://patch.pck", true)
+		if pck_ok:
+			print("[UpdateManager] Loaded persistent patch.pck on startup!")
+	elif FileAccess.file_exists(UPDATE_PACKAGE_PATH):
+		var real_pkg = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
+		var pkg_ok = ProjectSettings.load_resource_pack(real_pkg, true)
+		if not pkg_ok:
+			pkg_ok = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
+		if pkg_ok:
+			print("[UpdateManager] Loaded persistent UPDATE_PACKAGE_PATH on startup!")
+	
 	_check_http = HTTPRequest.new()
 	_check_http.timeout = 2.5
 	add_child(_check_http)
@@ -922,6 +938,13 @@ func apply_update() -> bool:
 				continue
 			var data = reader.read_file(f_path)
 			
+			if f_path.ends_with(".pck"):
+				var f_patch = FileAccess.open("user://patch.pck", FileAccess.WRITE)
+				if f_patch:
+					f_patch.store_buffer(data)
+					f_patch.close()
+					extracted_count += 1
+			
 			# Overwrite in res:// (direct file update)
 			var res_target = "res://" + f_path
 			DirAccess.make_dir_recursive_absolute(res_target.get_base_dir())
@@ -942,7 +965,13 @@ func apply_update() -> bool:
 		print("[UpdateManager] Successfully extracted and updated %d files!" % extracted_count)
 	
 	# 2. Virtual resource pack mounting (for exported builds / APK)
-	var loaded = ProjectSettings.load_resource_pack(real_path, true)
+	var loaded = false
+	if FileAccess.file_exists("user://patch.pck"):
+		loaded = ProjectSettings.load_resource_pack(ProjectSettings.globalize_path("user://patch.pck"), true)
+		if not loaded:
+			loaded = ProjectSettings.load_resource_pack("user://patch.pck", true)
+	if not loaded:
+		loaded = ProjectSettings.load_resource_pack(real_path, true)
 	if not loaded:
 		loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
 	

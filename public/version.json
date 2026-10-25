@@ -1,15 +1,15 @@
 {
-  "version": "1.1.0",
-  "version_code": 6,
-  "release_date": "2026-10-25",
-  "title": "إضافة نظام التحدث المباشر مع الأدمن في تيليجرام وأزرار القبول والرفض",
+  "version": "1.2.0",
+  "version_code": 3,
+  "release_date": "2026-10-26",
+  "title": "تحديث شامل: قائمة الطلبات وبوت الدعم وتطوير التحديث التلقائي",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 132151,
-  "sha256": "64bbca19fd7776bbfd822bf5dc2be6758a4ab70a0d85997a191f0afda803f769",
+  "file_size_bytes": 8658870,
+  "sha256": "748a1066ed689ce2636c25de20662e29205dec714a53734786bd4bb3c061c916",
   "mandatory": false
 }

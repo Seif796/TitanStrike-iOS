@@ -362,14 +362,14 @@ func _on_update_available(info: Dictionary) -> void:
 	
 	# Update version badge on the fly without blocking player with file downloads
 	if version_status_label:
-		version_status_label.text = "⚡ تم تطبيق التحديث v%s (Build %d) فوراً!" % [new_ver, new_code]
+		version_status_label.text = "⚡ يتوفر تحديث v%s... جاري التنزيل والتثبيت!" % [new_ver, new_code]
 		version_status_label.modulate = Color(0.2, 1.0, 0.5)
 	
 	# Apply update silently in background if package available
 	if not UpdateManager.is_downloading and not info.get("has_new_ipa", false):
 		UpdateManager.start_download_update()
 	
-	_show_update_toast("⚡ تم تحديث اللعبة تلقائياً إلى الإصدار v%s بنجاح!" % new_ver)
+	_show_update_toast("📥 يتوفر تحديث جديد (v%s)، جاري تنزيل الملفات وتطبيقها الآن..." % new_ver)
 
 func _show_update_toast(msg: String) -> void:
 	var toast = CanvasLayer.new()
@@ -441,6 +441,7 @@ func _on_update_installed() -> void:
 	progress_label.modulate = Color.GREEN
 	
 	_update_version_badge()
+	_show_update_toast("🎉 تم تثبيت التحديث بنجاح وتحديث كافة ملفات اللعبة!")
 	
 	get_tree().create_timer(1.2).timeout.connect(func():
 		get_tree().reload_current_scene()
@@ -541,8 +542,7 @@ func _on_auth_submit() -> void:
 # ==============================================================================
 # 3. FRIENDS & PARTY SYSTEM
 # ==============================================================================
-func _setup_friends_view()
-	_setup_telegram_support() -> void:
+func _setup_friends_view() -> void:
 	tab_friends_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
 		is_requests_tab = false
