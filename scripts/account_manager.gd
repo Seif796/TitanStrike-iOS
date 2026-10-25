@@ -123,14 +123,22 @@ func sign_in(user_name: String, pass_word: String) -> Dictionary:
 	return {"success": true, "message": "✅ مرحباً بك مجدداً، " + u + "!"}
 
 
+func get_api_base_url() -> String:
+	var um = get_node_or_null("/root/UpdateManager")
+	if um and not um.server_url.is_empty():
+		return um.server_url.trim_suffix("/")
+	var nm = get_node_or_null("/root/NetworkManager")
+	if nm and not nm.server_ip.is_empty():
+		return "http://" + nm.server_ip + ":8080"
+	if OS.get_name() in ["Android", "iOS"]:
+		return "http://192.168.1.17:8080"
+	return "http://127.0.0.1:8080"
+
 func _sync_auth_with_server(action: String, u: String, p: String) -> void:
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
-	var host = "127.0.0.1"
-	if NetworkManager and not NetworkManager.server_ip.is_empty():
-		host = NetworkManager.server_ip
-	var url = "http://" + host + ":8080/api/auth/" + action
+	var url = get_api_base_url() + "/api/auth/" + action
 	var payload = {
 		"username": u,
 		"password": p,
@@ -213,10 +221,7 @@ func _poll_server_for_invites() -> void:
 						seen_invite_ids.append(inv_id)
 						party_invite_received.emit(inviter, inv_id)
 	)
-	var host = "127.0.0.1"
-	if NetworkManager and not NetworkManager.server_ip.is_empty():
-		host = NetworkManager.server_ip
-	var url = "http://" + host + ":8080/api/party/invites?user=" + cur
+	var url = get_api_base_url() + "/api/party/invites?user=" + cur
 	http.request(url)
 
 func invite_to_party(friend_name: String) -> Dictionary:
@@ -234,10 +239,7 @@ func invite_to_party(friend_name: String) -> Dictionary:
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
-	var host = "127.0.0.1"
-	if NetworkManager and not NetworkManager.server_ip.is_empty():
-		host = NetworkManager.server_ip
-	var url = "http://" + host + ":8080/api/party/invite"
+	var url = get_api_base_url() + "/api/party/invite"
 	var payload = {"from": cur, "to": friend_name}
 	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
 	
@@ -256,10 +258,7 @@ func accept_party_invite(inviter: String, invite_id: String) -> void:
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
-	var host = "127.0.0.1"
-	if NetworkManager and not NetworkManager.server_ip.is_empty():
-		host = NetworkManager.server_ip
-	var url = "http://" + host + ":8080/api/party/respond"
+	var url = get_api_base_url() + "/api/party/respond"
 	var payload = {"user": cur, "from": inviter, "action": "accept", "invite_id": invite_id}
 	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
 	
@@ -273,10 +272,7 @@ func reject_party_invite(inviter: String, invite_id: String) -> void:
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
-	var host = "127.0.0.1"
-	if NetworkManager and not NetworkManager.server_ip.is_empty():
-		host = NetworkManager.server_ip
-	var url = "http://" + host + ":8080/api/party/respond"
+	var url = get_api_base_url() + "/api/party/respond"
 	var payload = {"user": cur, "from": inviter, "action": "reject", "invite_id": invite_id}
 	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
 	

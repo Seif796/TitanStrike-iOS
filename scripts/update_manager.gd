@@ -905,16 +905,51 @@ func apply_update() -> bool:
 		return false
 	
 	var real_path = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
+	
+	# 1. Physical extraction using ZIPReader: extracts and writes new files into res:// and user://
+	var reader = ZIPReader.new()
+	var err = reader.open(real_path)
+	if err != OK:
+		err = reader.open(UPDATE_PACKAGE_PATH)
+	
+	var extracted_count = 0
+	if err == OK:
+		var files = reader.get_files()
+		for f_path in files:
+			if f_path.ends_with("/"):
+				DirAccess.make_dir_recursive_absolute("res://" + f_path)
+				DirAccess.make_dir_recursive_absolute("user://patch/" + f_path)
+				continue
+			var data = reader.read_file(f_path)
+			
+			# Overwrite in res:// (direct file update)
+			var res_target = "res://" + f_path
+			DirAccess.make_dir_recursive_absolute(res_target.get_base_dir())
+			var f_res = FileAccess.open(res_target, FileAccess.WRITE)
+			if f_res:
+				f_res.store_buffer(data)
+				f_res.close()
+				extracted_count += 1
+			
+			# Also write to user://patch/
+			var user_target = "user://patch/" + f_path
+			DirAccess.make_dir_recursive_absolute(user_target.get_base_dir())
+			var f_u = FileAccess.open(user_target, FileAccess.WRITE)
+			if f_u:
+				f_u.store_buffer(data)
+				f_u.close()
+		reader.close()
+		print("[UpdateManager] Successfully extracted and updated %d files!" % extracted_count)
+	
+	# 2. Virtual resource pack mounting (for exported builds / APK)
 	var loaded = ProjectSettings.load_resource_pack(real_path, true)
-	if loaded:
+	if not loaded:
+		loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
+	
+	if loaded or extracted_count > 0:
 		_save_installed_state(latest_server_info)
 		update_installed.emit()
 		return true
-	else:
-		var loaded_alt = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
-		if loaded_alt:
-			_save_installed_state(latest_server_info)
-			update_installed.emit()
-			return true
-		download_failed.emit("تعذر تطبيق وتثبيت حزمة التحديث في محرك اللعبة.")
-		return false
+	
+	download_failed.emit("تعذر تطبيق وتثبيت حزمة التحديث في محرك اللعبة.")
+	return false

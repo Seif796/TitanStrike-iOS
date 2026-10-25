@@ -101,8 +101,8 @@ def send_telegram_message(chat_id: int | str, text: str, reply_markup: dict = No
             req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=8) as resp:
                 return resp.status == 200
-        except Exception:
-            print(f"[TelegramBot] ⚠️ فشل إرسال الرسالة إلى {chat_id}: {e}")
+        except Exception as e2:
+            print(f"[TelegramBot] ⚠️ فشل إرسال الرسالة إلى {chat_id}: {e2}")
             return False
 
 def send_telegram_photo(chat_id: int | str, photo_path: str, caption: str = "") -> bool:
@@ -468,6 +468,14 @@ def run_telegram_polling() -> None:
     if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
         print("[TelegramBot] No bot token configured, polling disabled.")
         return
+
+    try:
+        del_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/deleteWebhook?drop_pending_updates=False"
+        req = urllib.request.Request(del_url, headers={"User-Agent": "TitanStrikeBot/2.0"})
+        with urllib.request.urlopen(req, timeout=8) as _r:
+            pass
+    except Exception:
+        pass
 
     print(f"[TelegramBot] 🚀 Starting Ultra-Fast Telegram Gemini Bot Agent (@cyberfort3d_bot)...")
     last_update_id = 0

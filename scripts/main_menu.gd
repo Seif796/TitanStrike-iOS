@@ -557,11 +557,13 @@ func _on_add_friend_pressed() -> void:
 		friends_status_label.text = res["message"]
 		friends_status_label.modulate = Color.GREEN
 		friend_name_input.text = ""
+		_show_update_toast(res["message"])
 		_refresh_friends_ui()
 	else:
 		AudioManager.play_sfx("error")
 		friends_status_label.text = res["message"]
 		friends_status_label.modulate = Color.YELLOW
+		_show_update_toast(res["message"])
 
 func _refresh_friends_ui() -> void:
 	for child in friends_list_vbox.get_children():
@@ -592,6 +594,7 @@ func _refresh_friends_ui() -> void:
 				var inv_res = AccountManager.invite_to_party(str(f))
 				friends_status_label.text = inv_res["message"]
 				friends_status_label.modulate = Color.GREEN
+				_show_update_toast(inv_res["message"])
 				_refresh_friends_ui()
 			)
 			row.add_child(invite_btn)
