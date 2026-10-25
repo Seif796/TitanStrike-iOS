@@ -147,10 +147,22 @@ def send_telegram_photo(chat_id: int | str, photo_path: str, caption: str = "") 
         print(f"[TelegramBot] ⚠️ فشل إرسال الصورة: {e}")
         return False
 
-def broadcast_to_admins(text: str) -> None:
+def answer_callback_query(callback_query_id: str, text: str = "") -> bool:
+    if not TELEGRAM_TOKEN:
+        return False
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery"
+    try:
+        payload = {"callback_query_id": callback_query_id, "text": text}
+        body = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", "User-Agent": "TitanStrikeBot/2.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+def broadcast_to_admins(text: str, reply_markup: dict = None) -> None:
     """Broadcasts an urgent notification to all registered commanders."""
     for chat_id in list(_admin_chat_ids):
-        send_telegram_message(chat_id, text)
+        send_telegram_message(chat_id, text, reply_markup=reply_markup)
 
 def notify_server_error(source: str, error_msg: str) -> None:
     """Sends an instant alert to the commander whenever an error occurs on the server."""

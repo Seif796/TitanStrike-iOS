@@ -1,15 +1,15 @@
 {
   "version": "1.1.0",
-  "version_code": 5,
+  "version_code": 6,
   "release_date": "2026-10-25",
-  "title": "إضافة زر REQUESTS للشاشة الرئيسية ونظام الطلبات الشامل",
+  "title": "إضافة نظام التحدث المباشر مع الأدمن في تيليجرام وأزرار القبول والرفض",
   "changelog": [
     "إضافة نظام التحديث التلقائي للعبة (Auto-Updater)",
     "ربط اللعبة بسيرفر التحديثات المباشر",
     "إصلاح الاتصال وتحديث واجهة المستخدم"
   ],
   "download_url": "/downloads/update.zip",
-  "file_size_bytes": 130998,
-  "sha256": "54b0af85ac0a067c67214e9f1d006f3dafb56ceeba3bfdc7c1ab9501480dfa65",
+  "file_size_bytes": 132151,
+  "sha256": "64bbca19fd7776bbfd822bf5dc2be6758a4ab70a0d85997a191f0afda803f769",
   "mandatory": false
 }

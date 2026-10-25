@@ -21,6 +21,7 @@ extends Control
 @onready var settings_btn: Button = $ViewHome/HomeCenterBox/SettingsBtn
 @onready var friends_btn: Button = $ViewHome/HomeCenterBox/FriendsBtn
 @onready var requests_btn: Button = $ViewHome/HomeCenterBox/RequestsBtn
+@onready var telegram_btn: Button = $ViewHome/HomeCenterBox/TelegramBtn
 @onready var exit_btn: Button = $ViewHome/HomeCenterBox/ExitBtn
 
 # --- Mode Select Views & Controls ---
@@ -157,6 +158,7 @@ func _ready() -> void:
 	_setup_update_system()
 	_setup_account_view()
 	_setup_friends_view()
+	_setup_telegram_support()
 	_setup_mode_select_view()
 	
 	_refresh_top_pills()
@@ -539,7 +541,8 @@ func _on_auth_submit() -> void:
 # ==============================================================================
 # 3. FRIENDS & PARTY SYSTEM
 # ==============================================================================
-func _setup_friends_view() -> void:
+func _setup_friends_view()
+	_setup_telegram_support() -> void:
 	tab_friends_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
 		is_requests_tab = false
@@ -1561,6 +1564,100 @@ func _refresh_requests_ui() -> void:
 			)
 			row.add_child(rej_btn)
 			requests_vbox.add_child(row)
+
+
+# ==============================================================================
+# TELEGRAM SUPPORT LIVE CHAT REQUEST
+# ==============================================================================
+const TELEGRAM_REJECTED_CACHE: String = "user://telegram_rejected.cfg"
+var _support_poll_timer: Timer = null
+
+func _setup_telegram_support() -> void:
+	if FileAccess.file_exists(TELEGRAM_REJECTED_CACHE):
+		telegram_btn.visible = false
+		return
+	telegram_btn.pressed.connect(_on_telegram_btn_pressed)
+
+func _on_telegram_btn_pressed() -> void:
+	AudioManager.play_sfx("click")
+	var cur_user = AccountManager.get_current_user()
+	if cur_user.is_empty():
+		cur_user = "لاعب_" + str(randi() % 9999)
+	
+	telegram_btn.disabled = true
+	telegram_btn.text = "⏳ جاري إرسال الطلب للأدمن..."
+	
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(res: int, code: int, _h: PackedStringArray, body: PackedByteArray):
+		http.queue_free()
+		if res == HTTPRequest.RESULT_SUCCESS and code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				var st = str(json.data.get("status", "PENDING"))
+				if st == "REJECTED":
+					_handle_telegram_rejection()
+					return
+				_show_update_toast("📩 تم إرسال طلب المحادثة للأدمن في تيليجرام بنجاح! بانتظار رده...")
+				telegram_btn.text = "⏳ بانتظار موافقة الأدمن..."
+				_start_support_polling(cur_user)
+				return
+		telegram_btn.disabled = false
+		telegram_btn.text = "💬 TELEGRAM BOT (تحدث مع الأدمن)"
+		_show_update_toast("❌ تعذر الاتصال بسيرفر الدعم حالياً.")
+	)
+	var url = AccountManager.get_api_base_url() + "/api/support/request"
+	var payload = {"user": cur_user, "device": OS.get_name()}
+	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+
+func _start_support_polling(cur_user: String) -> void:
+	if _support_poll_timer:
+		_support_poll_timer.queue_free()
+	_support_poll_timer = Timer.new()
+	_support_poll_timer.wait_time = 2.0
+	_support_poll_timer.autostart = true
+	_support_poll_timer.timeout.connect(func():
+		_check_support_status(cur_user)
+	)
+	add_child(_support_poll_timer)
+
+func _check_support_status(cur_user: String) -> void:
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(res: int, code: int, _h: PackedStringArray, body: PackedByteArray):
+		http.queue_free()
+		if res == HTTPRequest.RESULT_SUCCESS and code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				var st = str(json.data.get("status", ""))
+				if st == "ACCEPTED":
+					if _support_poll_timer:
+						_support_poll_timer.stop()
+						_support_poll_timer.queue_free()
+						_support_poll_timer = null
+					AudioManager.play_sfx("success")
+					telegram_btn.disabled = false
+					telegram_btn.text = "✅ تواصل مع الأدمن (مقبول)"
+					_show_update_toast("🎉 وافق الأدمن على طلب المحادثة! جاري فتح بوت تيليجرام...")
+					var chat_url = str(json.data.get("chat_url", "https://t.me/cyberfort3d_bot"))
+					OS.shell_open(chat_url)
+				elif st == "REJECTED":
+					if _support_poll_timer:
+						_support_poll_timer.stop()
+						_support_poll_timer.queue_free()
+						_support_poll_timer = null
+					_handle_telegram_rejection()
+	)
+	http.request(AccountManager.get_api_base_url() + "/api/support/status?user=" + cur_user.to_lower())
+
+func _handle_telegram_rejection() -> void:
+	AudioManager.play_sfx("error")
+	_show_update_toast("❌ تم رفض طلب المحادثة من قبل الأدمن.")
+	telegram_btn.visible = false
+	var f = FileAccess.open(TELEGRAM_REJECTED_CACHE, FileAccess.WRITE)
+	if f:
+		f.store_string("REJECTED")
+		f.close()
 
 func _show_party_invite_popup(inviter: String, invite_id: String) -> void:
 	var toast = CanvasLayer.new()

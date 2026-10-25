@@ -1187,6 +1187,64 @@ def handle_friend_list(username: str) -> dict:
     friends = db.get("users", {}).get(u, {}).get("friends", [])
     return {"success": True, "friends": friends}
 
+
+# ==============================================================================
+# TITAN STRIKE 3D - LIVE TELEGRAM SUPPORT REQUESTS SYSTEM
+# ==============================================================================
+GLOBAL_SUPPORT_REQUESTS = {} # { "username": { "status": "PENDING" | "ACCEPTED" | "REJECTED", "time": ... } }
+
+def handle_support_request(data: dict) -> tuple[int, dict]:
+    u = str(data.get("user", "")).strip().lower()
+    dev = str(data.get("device", "Unknown Device")).strip()
+    if not u:
+        return 400, {"success": False, "message": "اسم المستخدم مطلوب!"}
+
+    if GLOBAL_SUPPORT_REQUESTS.get(u, {}).get("status") == "REJECTED":
+        return 200, {"success": True, "status": "REJECTED", "message": "تم رفض طلب المحادثة مسبقاً من الأدمن."}
+
+    GLOBAL_SUPPORT_REQUESTS[u] = {"status": "PENDING", "time": time.time(), "device": dev}
+    add_console_log("SUPPORT", f"🔔 طلب محادثة جديد من اللاعب '{u}' عبر جهاز '{dev}'", "INFO")
+
+    try:
+        from telegram_bot import broadcast_to_admins
+        time_str = time.strftime("%H:%M:%S")
+        txt = (
+            f"🔔 <b>طلب محادثة مباشر من لاعب داخل اللعبة!</b>\n\n"
+            f"👤 <b>اسم اللاعب:</b> <code>{u}</code>\n"
+            f"📱 <b>الجهاز:</b> <code>{dev}</code>\n"
+            f"⏰ <b>الوقت:</b> <code>{time_str}</code>\n\n"
+            f"💬 <b>اللاعب يطلب إذناً للدخول والتحدث معك مباشرة!</b>\n"
+            f"<i>هل توافق على قبول المحادثة؟</i>"
+        )
+        markup = {
+            "inline_keyboard": [
+                [
+                    {"text": "✅ أوافق (Accept)", "callback_data": f"support_accept:{u}"},
+                    {"text": "❌ أرفض (Reject)", "callback_data": f"support_reject:{u}"}
+                ]
+            ]
+        }
+        broadcast_to_admins(txt, reply_markup=markup)
+    except Exception as ex:
+        add_console_log("SUPPORT", f"⚠️ فشل إرسال تنبيه التيليجرام: {ex}", "WARNING")
+
+    return 200, {
+        "success": True,
+        "status": "PENDING",
+        "message": "📩 تم إرسال طلب المحادثة للأدمن في تيليجرام بنجاح! بانتظار الموافقة..."
+    }
+
+def handle_support_status(username: str) -> dict:
+    u = username.strip().lower()
+    req = GLOBAL_SUPPORT_REQUESTS.get(u, {})
+    status = req.get("status", "NONE")
+    return {
+        "success": True,
+        "status": status,
+        "bot_username": "cyberfort3d_bot",
+        "chat_url": "https://t.me/cyberfort3d_bot"
+    }
+
 def send_json_response(handler, data, status_code: int = 200):
     body = json.dumps(data, ensure_ascii=False).encode("utf-8")
     handler.send_response(status_code)
@@ -1275,6 +1333,11 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         elif path == "/api/friends/list":
             u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
             send_json_response(self, handle_friend_list(u))
+            return
+
+        elif path == "/api/support/status":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            send_json_response(self, handle_support_status(u))
             return
 
         elif path == "/api/auth/stats":
@@ -1610,6 +1673,17 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
             return
 
+        elif path == "/api/support/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_support_request(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
         elif path == "/api/party/respond":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
@@ -1638,6 +1712,17 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, res = handle_friend_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/support/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_support_request(data)
                 send_json_response(self, res, status_code=code)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
@@ -2011,6 +2096,11 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             send_json_response(self, handle_friend_list(u))
             return
 
+        elif path == "/api/support/status":
+            u = urllib.parse.parse_qs(parsed.query).get("user", [""])[0].strip().lower()
+            send_json_response(self, handle_support_status(u))
+            return
+
         elif path in ("/", "/index.html", "/guest", "/guest.html"):
             guest_file = PUBLIC_DIR / "guest.html"
             if guest_file.is_file():
@@ -2153,6 +2243,17 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
             return
 
+        elif path == "/api/support/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_support_request(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
         elif path == "/api/party/respond":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
@@ -2181,6 +2282,17 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body.decode("utf-8")) if body else {}
                 code, res = handle_friend_respond(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
+        elif path == "/api/support/request":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_support_request(data)
                 send_json_response(self, res, status_code=code)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
