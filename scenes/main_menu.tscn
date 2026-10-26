@@ -223,7 +223,7 @@ custom_minimum_size = Vector2(150, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_telegram")
-text = "💬 تيليجرام بوت"
+text = "💬 ديسكورد بوت"
 
 [node name="ViewHome" type="Control" parent="."]
 layout_mode = 1
@@ -290,7 +290,7 @@ custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 19
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_telegram")
-text = "💬 TELEGRAM BOT (تحدث مع الأدمن)"
+text = "💬 DISCORD BOT (تحدث مع الأدمن)"
 
 [node name="ExitBtn" type="Button" parent="ViewHome/HomeCenterBox"]
 custom_minimum_size = Vector2(0, 54)
@@ -354,7 +354,7 @@ custom_minimum_size = Vector2(140, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_telegram")
-text = "💬 تيليجرام بوت"
+text = "💬 ديسكورد بوت"
 
 [node name="HBox" type="HBoxContainer" parent="ViewModeSelect"]
 layout_mode = 1

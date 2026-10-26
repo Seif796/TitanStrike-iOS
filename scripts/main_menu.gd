@@ -1639,12 +1639,12 @@ func _on_telegram_btn_pressed() -> void:
 				if st == "REJECTED":
 					_handle_telegram_rejection()
 					return
-				_show_update_toast("📩 تم إرسال طلب المحادثة للأدمن في تيليجرام بنجاح! بانتظار رده...")
+				_show_update_toast("📩 تم إرسال طلب المحادثة للأدمن في ديسكورد بنجاح! بانتظار رده...")
 				telegram_btn.text = "⏳ بانتظار موافقة الأدمن..."
 				_start_support_polling(cur_user)
 				return
 		telegram_btn.disabled = false
-		telegram_btn.text = "💬 TELEGRAM BOT (تحدث مع الأدمن)"
+		telegram_btn.text = "💬 DISCORD BOT (تحدث مع الأدمن)"
 		_show_update_toast("❌ تعذر الاتصال بسيرفر الدعم حالياً.")
 	)
 	var url = AccountManager.get_api_base_url() + "/api/support/request"
@@ -1679,7 +1679,7 @@ func _check_support_status(cur_user: String) -> void:
 					AudioManager.play_sfx("success")
 					telegram_btn.disabled = false
 					telegram_btn.text = "✅ تواصل مع الأدمن (مقبول)"
-					_show_update_toast("🎉 وافق الأدمن على طلب المحادثة! جاري فتح بوت تيليجرام...")
+					_show_update_toast("🎉 وافق الأدمن على طلب المحادثة! جاري فتح بوت ديسكورد...")
 					var chat_url = str(json.data.get("chat_url", "https://t.me/cyberfort3d_bot"))
 					OS.shell_open(chat_url)
 				elif st == "REJECTED":
