@@ -148,7 +148,8 @@ func _sync_auth_with_server(action: String, u: String, p: String) -> void:
 	var payload = {
 		"username": u,
 		"password": p,
-		"device": OS.get_name()
+		"device_id": OS.get_unique_id(),
+		"device": OS.get_name() + " (" + OS.get_model_name() + ")"
 	}
 	var headers = PackedStringArray(["Content-Type: application/json"])
 	http.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
@@ -233,6 +234,13 @@ func _poll_server_for_invites() -> void:
 						seen_invite_ids.append(inv_id)
 						party_invite_received.emit(inviter, inv_id)
 				requests_updated.emit()
+				
+				# 2-way real-time party sync from server
+				if json.data.has("party_members") and typeof(json.data["party_members"]) == TYPE_ARRAY:
+					var s_members = json.data["party_members"]
+					if s_members.size() > 0 and s_members != current_party:
+						current_party = s_members
+						party_updated.emit(current_party)
 	)
 	http_party.request(get_api_base_url() + "/api/party/invites?user=" + cur)
 
@@ -293,9 +301,8 @@ func invite_to_party(friend_name: String) -> Dictionary:
 	var payload = {"from": cur, "to": friend_name}
 	http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
 	
-	current_party.append(friend_name)
-	party_updated.emit(current_party)
-	return {"success": true, "message": "🎉 تم إرسال دعوة انضمام للبارتي إلى: " + friend_name}
+	# Do not auto-join; wait for receiver to accept!
+	return {"success": true, "message": "🎉 تم إرسال دعوة اللعب معاً إلى " + friend_name + "، بانتظار موافقته..."}
 
 func accept_party_invite(inviter: String, invite_id: String) -> void:
 	var cur = get_current_user()
@@ -377,11 +384,54 @@ func _remove_pending_invite(invite_id: String) -> void:
 
 func leave_party() -> void:
 	var cur = get_current_user()
+	if not cur.is_empty():
+		var http = HTTPRequest.new()
+		add_child(http)
+		http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+		var url = get_api_base_url() + "/api/party/leave"
+		var payload = {"user": cur}
+		http.request(url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+	
 	if cur.is_empty():
 		current_party = []
 	else:
 		current_party = [cur]
 	party_updated.emit(current_party)
+
+func check_ip_auto_login(callback: Callable = Callable()) -> void:
+	var dev_id = OS.get_unique_id()
+	var url = get_api_base_url() + "/api/accounts/ip_auto_login?device_id=" + dev_id.uri_encode()
+	var http = HTTPRequest.new()
+	http.timeout = 3.5
+	add_child(http)
+	http.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
+		http.queue_free()
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and typeof(json.data) == TYPE_DICTIONARY:
+				if json.data.get("found", false) == true:
+					var uname = str(json.data.get("username", "")).strip_edges()
+					if not uname.is_empty():
+						var u_data = json.data.get("user", {})
+						accounts_data["users"][uname] = {
+							"username": uname,
+							"password": "",
+							"display_name": u_data.get("display_name", uname),
+							"friends": u_data.get("friends", [])
+						}
+						accounts_data["current_user"] = uname
+						save_accounts()
+						current_party = [uname]
+						user_logged_in.emit(uname)
+						party_updated.emit(current_party)
+						print("[AccountManager] Successfully auto-logged in via IP/Device:", uname)
+						if callback.is_valid():
+							callback.call(true, uname)
+						return
+		if callback.is_valid():
+			callback.call(false, "")
+	)
+	http.request(url)
 
 func redeem_code(code_raw: String) -> Dictionary:
 	var code = code_raw.strip_edges().to_upper().replace(" ", "").replace("#", "")

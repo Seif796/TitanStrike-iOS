@@ -86,12 +86,12 @@ signal server_announcement_received(message: String)
 # Hero Classes (including unlockable 500 HP Admin)
 var CLASSES: Dictionary = {
 	0: {
-		"name": "🍉 Melon Knight (فارس البطيخ الجديد)",
+		"name": "🍉 Melon Knight (فارس البطيخ - محفوظ جانباً)",
 		"hp": 130,
 		"speed": 7.5,
-		"role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls.",
+		"role": "Hero kept aside as requested. Emerald watermelon warrior with ruby cyber-core.",
 		"color": Color(0.25, 0.8, 0.2), # Melon Green
-		"enabled": true
+		"enabled": false # Kept aside as requested
 	},
 	1: {
 		"name": "🍓 Berry Striker (بطلة الفراولة)",
@@ -166,11 +166,11 @@ func apply_server_config(cfg: Dictionary) -> void:
 
 func is_hero_unlocked(hero_id: int) -> bool:
 	match hero_id:
-		0: return true # Melon Boy is unlocked from the beginning
-		1: return berry_unlocked
-		2: return citrus_unlocked
-		3: return admin_unlocked
-		4: return true # Spider Hero unlocked & ready to play!
+		0: return false # Melon Knight is kept aside as requested
+		1: return true  # Berry Striker unlocked
+		2: return true  # Citrus Tank unlocked
+		3: return true  # Admin unlocked with all powers (500 HP, speed 20, golden armor)
+		4: return true  # Spider Hero unlocked & ready to play
 		_: return false
 
 func unlock_hero(hero_id: int) -> bool:

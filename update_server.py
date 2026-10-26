@@ -988,7 +988,7 @@ def save_accounts_db(db: dict) -> None:
     except Exception as e:
         print(f"[!] Error saving accounts db: {e}")
 
-def auth_register(username: str, password: str, nickname: str = "", device: str = "") -> tuple[bool, str, dict]:
+def auth_register(username: str, password: str, nickname: str = "", device: str = "", ip: str = "", device_id: str = "") -> tuple[bool, str, dict]:
     u = str(username).strip().lower()
     p = str(password).strip()
     if len(u) < 2:
@@ -1007,21 +1007,23 @@ def auth_register(username: str, password: str, nickname: str = "", device: str 
         "display_name": nickname if nickname else u,
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "last_login": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "last_ip": ip,
+        "device_id": device_id,
         "role": "player",
         "level": 1,
         "coins": 500,
         "wins": 0,
         "kills": 0,
-        "unlocked_heroes": [0, 1],
+        "unlocked_heroes": [1, 2, 3, 4],
         "device": device if device else "Mobile/Browser"
     }
     db.setdefault("users", {})[u] = user_record
     db.setdefault("sessions", {})[token] = u
     save_accounts_db(db)
-    add_console_log("AUTH", f"🎉 تسجيل لاعب جديد بنجاح: '{u}' من جهاز '{device}'", "SUCCESS")
+    add_console_log("AUTH", f"🎉 تسجيل لاعب جديد بنجاح: '{u}' (IP: {ip}, Dev: {device_id})", "SUCCESS")
     return True, f"🎉 تم إنشاء الحساب بنجاح! مرحباً بك يا {u}", {"token": token, "username": u, "user": user_record}
 
-def auth_login(username: str, password: str, device: str = "") -> tuple[bool, str, dict]:
+def auth_login(username: str, password: str, device: str = "", ip: str = "", device_id: str = "") -> tuple[bool, str, dict]:
     u = str(username).strip().lower()
     p = str(password).strip()
     db = load_accounts_db()
@@ -1037,10 +1039,14 @@ def auth_login(username: str, password: str, device: str = "") -> tuple[bool, st
     token = secrets.token_hex(16)
     db.setdefault("sessions", {})[token] = u
     user_record["last_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    if ip:
+        user_record["last_ip"] = ip
+    if device_id:
+        user_record["device_id"] = device_id
     if device:
         user_record["device"] = device
     save_accounts_db(db)
-    add_console_log("AUTH", f"🔑 تسجيل دخول ناجح للاعب: '{u}'", "INFO")
+    add_console_log("AUTH", f"🔑 تسجيل دخول ناجح للاعب: '{u}' (IP: {ip})", "INFO")
     return True, f"🔑 تم تسجيل الدخول بنجاح! مرحباً بعودتك يا {u}", {"token": token, "username": u, "user": user_record}
 
 def auth_get_user(token: str) -> dict:
@@ -1077,6 +1083,7 @@ def auth_get_stats() -> dict:
 # TITAN STRIKE 3D - LIVE PARTY INVITATIONS SYSTEM
 # ==============================================================================
 GLOBAL_PARTY_INVITES = {} # { "username": [ { "id": "...", "from": "...", "time": ... } ] }
+GLOBAL_PARTY_GROUPS = {}  # { "username": ["userA", "userB"] }
 
 def handle_party_invite(data: dict) -> tuple[int, dict]:
     from_u = str(data.get("from", "")).strip().lower()
@@ -1092,12 +1099,11 @@ def handle_party_invite(data: dict) -> tuple[int, dict]:
         "time": time.time()
     }
     inv_list = GLOBAL_PARTY_INVITES.setdefault(to_u, [])
-    # Don't duplicate
     if not any(i["from"] == from_u for i in inv_list):
         inv_list.append(inv_obj)
     
     add_console_log("PARTY", f"💌 دعوة بارتي جديدة: من '{from_u}' إلى '{to_u}'", "INFO")
-    return 200, {"success": True, "message": f"🎉 تم إرسال دعوة البارتي إلى {to_u} بنجاح!", "invite_id": inv_id}
+    return 200, {"success": True, "message": f"🎉 تم إرسال دعوة اللعب معاً إلى {to_u} بنجاح!", "invite_id": inv_id}
 
 def handle_party_respond(data: dict) -> tuple[int, dict]:
     u = str(data.get("user", "")).strip().lower()
@@ -1109,11 +1115,28 @@ def handle_party_respond(data: dict) -> tuple[int, dict]:
         GLOBAL_PARTY_INVITES[u] = [i for i in GLOBAL_PARTY_INVITES[u] if i.get("id") != inv_id and i.get("from") != from_u]
 
     if action == "accept":
-        add_console_log("PARTY", f"✅ قبل اللاعب '{u}' دعوة البارتي من '{from_u}' وانضم للبارتي!", "SUCCESS")
-        return 200, {"success": True, "action": "accept", "message": f"تم قبول دعوة {from_u} ودخول البارتي!"}
+        members = list(set([u, from_u]))
+        if from_u in GLOBAL_PARTY_GROUPS:
+            members = list(set(GLOBAL_PARTY_GROUPS[from_u] + [u]))
+        if u in GLOBAL_PARTY_GROUPS:
+            members = list(set(members + GLOBAL_PARTY_GROUPS[u]))
+        for m in members:
+            GLOBAL_PARTY_GROUPS[m] = members
+        add_console_log("PARTY", f"✅ قبل اللاعب '{u}' دعوة البارتي من '{from_u}' وانضم للبارتي! الأعضاء: {members}", "SUCCESS")
+        return 200, {"success": True, "action": "accept", "party_members": members, "message": f"تم قبول دعوة {from_u} ودخول البارتي!"}
     else:
         add_console_log("PARTY", f"❌ رفض اللاعب '{u}' دعوة البارتي من '{from_u}'.", "INFO")
         return 200, {"success": True, "action": "reject", "message": "تم رفض الدعوة."}
+
+def handle_party_leave(data: dict) -> tuple[int, dict]:
+    u = str(data.get("user", "")).strip().lower()
+    if u in GLOBAL_PARTY_GROUPS:
+        old_members = GLOBAL_PARTY_GROUPS.pop(u, [])
+        for m in old_members:
+            if m in GLOBAL_PARTY_GROUPS:
+                GLOBAL_PARTY_GROUPS[m] = [x for x in GLOBAL_PARTY_GROUPS[m] if x != u]
+        add_console_log("PARTY", f"🚪 غادر اللاعب '{u}' البارتي.", "INFO")
+    return 200, {"success": True, "message": "تمت مغادرة البارتي بنجاح."}
 
 
 # ==============================================================================
@@ -1257,6 +1280,68 @@ def send_json_response(handler, data, status_code: int = 200):
     handler.end_headers()
     handler.wfile.write(body)
 
+def handle_ip_auto_login(handler, parsed):
+    clean_ip = handler.client_address[0]
+    if clean_ip.startswith("::ffff:"):
+        clean_ip = clean_ip[7:]
+    parsed_q = urllib.parse.parse_qs(parsed.query)
+    dev_id = parsed_q.get("device_id", [""])[0].strip()
+    
+    db = load_accounts_db()
+    users = db.get("users", {})
+    matched_user = None
+    matched_uname = ""
+    
+    # 1. Match by device_id
+    if dev_id:
+        for uname, udata in users.items():
+            if udata.get("device_id") and udata.get("device_id") == dev_id:
+                matched_user = udata
+                matched_uname = uname
+                break
+    
+    # 2. Match by IP address
+    if not matched_user and clean_ip not in ["127.0.0.1", "localhost", ""]:
+        for uname, udata in users.items():
+            if udata.get("last_ip") == clean_ip:
+                matched_user = udata
+                matched_uname = uname
+                break
+    
+    # 3. Fallback for localhost
+    if not matched_user and clean_ip in ["127.0.0.1", "localhost"]:
+        if "admin" in users:
+            matched_user = users["admin"]
+            matched_uname = "admin"
+        elif users:
+            matched_uname = list(users.keys())[0]
+            matched_user = users[matched_uname]
+
+    if matched_user and matched_uname:
+        token = secrets.token_hex(16)
+        db.setdefault("sessions", {})[token] = matched_uname
+        matched_user["last_login"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        matched_user["last_ip"] = clean_ip
+        if dev_id:
+            matched_user["device_id"] = dev_id
+        save_accounts_db(db)
+        add_console_log("AUTH", f"⚡ دخول تلقائي لحساب '{matched_uname}' عبر IP ({clean_ip})", "SUCCESS")
+        send_json_response(handler, {
+            "success": True,
+            "found": True,
+            "username": matched_uname,
+            "token": token,
+            "user": matched_user,
+            "message": f"🎉 تم التعرف على جهازك ({clean_ip}) والدخول تلقائياً!"
+        })
+    else:
+        send_json_response(handler, {
+            "success": True,
+            "found": False,
+            "ip": clean_ip,
+            "message": "لا يوجد حساب مسجل لهذا الـ IP حالياً."
+        })
+
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -1319,7 +1404,7 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             now = time.time()
             invs = [inv for inv in GLOBAL_PARTY_INVITES.get(u, []) if now - inv.get("time", 0) < 300]
             GLOBAL_PARTY_INVITES[u] = invs
-            send_json_response(self, {"success": True, "invites": invs})
+            send_json_response(self, {"success": True, "invites": invs, "party_members": GLOBAL_PARTY_GROUPS.get(u, [u] if u else [])})
             return
 
         elif path == "/api/friends/requests":
@@ -1328,6 +1413,10 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
             reqs = [r for r in GLOBAL_FRIEND_REQUESTS.get(u, []) if now - r.get("time", 0) < 600]
             GLOBAL_FRIEND_REQUESTS[u] = reqs
             send_json_response(self, {"success": True, "requests": reqs})
+            return
+
+        elif path == "/api/accounts/ip_auto_login":
+            handle_ip_auto_login(self, parsed)
             return
 
         elif path == "/api/friends/list":
@@ -1342,6 +1431,10 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
 
         elif path == "/api/auth/stats":
             send_json_response(self, auth_get_stats())
+            return
+
+        elif path == "/api/accounts/ip_auto_login":
+            handle_ip_auto_login(self, parsed)
             return
 
         elif path == "/api/auth/me":
@@ -1684,6 +1777,17 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
             return
 
+        elif path == "/api/party/leave":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_leave(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
         elif path == "/api/party/respond":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
@@ -1737,7 +1841,10 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 p = data.get("password", "")
                 nick = data.get("nickname", "")
                 dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
-                ok, msg, res_data = auth_register(u, p, nick, dev)
+                clean_ip = self.client_address[0]
+                if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
+                dev_id = str(data.get("device_id", "")).strip()
+                ok, msg, res_data = auth_register(u, p, nick, dev, ip=clean_ip, device_id=dev_id)
                 send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
@@ -1751,7 +1858,10 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 u = data.get("username", "")
                 p = data.get("password", "")
                 dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
-                ok, msg, res_data = auth_login(u, p, dev)
+                clean_ip = self.client_address[0]
+                if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
+                dev_id = str(data.get("device_id", "")).strip()
+                ok, msg, res_data = auth_login(u, p, dev, ip=clean_ip, device_id=dev_id)
                 send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
@@ -2080,7 +2190,7 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             now = time.time()
             invs = [inv for inv in GLOBAL_PARTY_INVITES.get(u, []) if now - inv.get("time", 0) < 300]
             GLOBAL_PARTY_INVITES[u] = invs
-            send_json_response(self, {"success": True, "invites": invs})
+            send_json_response(self, {"success": True, "invites": invs, "party_members": GLOBAL_PARTY_GROUPS.get(u, [u] if u else [])})
             return
 
         elif path == "/api/friends/requests":
@@ -2089,6 +2199,10 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
             reqs = [r for r in GLOBAL_FRIEND_REQUESTS.get(u, []) if now - r.get("time", 0) < 600]
             GLOBAL_FRIEND_REQUESTS[u] = reqs
             send_json_response(self, {"success": True, "requests": reqs})
+            return
+
+        elif path == "/api/accounts/ip_auto_login":
+            handle_ip_auto_login(self, parsed)
             return
 
         elif path == "/api/friends/list":
@@ -2134,6 +2248,10 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         elif path == "/api/auth/stats":
             send_json_response(self, auth_get_stats())
+            return
+
+        elif path == "/api/accounts/ip_auto_login":
+            handle_ip_auto_login(self, parsed)
             return
 
         elif path == "/api/auth/me":
@@ -2254,6 +2372,17 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
             return
 
+        elif path == "/api/party/leave":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                code, res = handle_party_leave(data)
+                send_json_response(self, res, status_code=code)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": str(e)}, status_code=500)
+            return
+
         elif path == "/api/party/respond":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
@@ -2307,7 +2436,10 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 p = data.get("password", "")
                 nick = data.get("nickname", "")
                 dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
-                ok, msg, res_data = auth_register(u, p, nick, dev)
+                clean_ip = self.client_address[0]
+                if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
+                dev_id = str(data.get("device_id", "")).strip()
+                ok, msg, res_data = auth_register(u, p, nick, dev, ip=clean_ip, device_id=dev_id)
                 send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
@@ -2321,7 +2453,10 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 u = data.get("username", "")
                 p = data.get("password", "")
                 dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
-                ok, msg, res_data = auth_login(u, p, dev)
+                clean_ip = self.client_address[0]
+                if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
+                dev_id = str(data.get("device_id", "")).strip()
+                ok, msg, res_data = auth_login(u, p, dev, ip=clean_ip, device_id=dev_id)
                 send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)

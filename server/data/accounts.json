@@ -15,7 +15,9 @@
         2,
         3,
         4
-      ]
+      ],
+      "last_ip": "127.0.0.1",
+      "last_login": "2026-10-26 14:29:15"
     },
     "hero77": {
       "friends": [
@@ -25,8 +27,43 @@
     "seif": {
       "friends": [
         "hero77"
-      ]
+      ],
+      "last_ip": "192.168.1.17",
+      "last_login": "2026-10-26 14:29:29"
+    },
+    "seif2": {
+      "username": "seif2",
+      "password_hash": "ad704e4c9480b6295bfc4f9494e17dbd795ac7b3ba067405253822831c3ef342",
+      "display_name": "seif2",
+      "created_at": "2026-10-26 01:33:59",
+      "last_login": "2026-10-26 01:33:59",
+      "role": "player",
+      "level": 1,
+      "coins": 500,
+      "wins": 0,
+      "kills": 0,
+      "unlocked_heroes": [
+        0,
+        1
+      ],
+      "device": "Android",
+      "friends": [
+        "seif1"
+      ],
+      "last_ip": "192.168.1.17"
+    },
+    "seif1": {
+      "friends": [
+        "seif2"
+      ],
+      "last_ip": "192.168.1.17"
     }
   },
-  "sessions": {}
+  "sessions": {
+    "89982f57f1e042713191189a5f5c2820": "seif2",
+    "75cfe9ead1d6013d6221744a6456feca": "admin",
+    "3551d53a034f9fcab432378b2d35c405": "admin",
+    "953e7bf45774452bd2206953cc7c3330": "admin",
+    "39ddf4601e2d7de1170d451ff382b093": "seif"
+  }
 }

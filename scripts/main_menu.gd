@@ -206,7 +206,15 @@ func _ready() -> void:
 	
 	# Mandatory Sign In / Sign Up at startup if not logged in
 	if not AccountManager.is_logged_in():
-		_switch_view(view_account)
+		# Auto-login via IP / Device ID if returning player
+		AccountManager.check_ip_auto_login(func(success: bool, uname: String):
+			if success:
+				_show_update_toast("🎉 أهلاً بعودتك يا %s! تم الدخول لحسابك تلقائياً بالـ IP." % uname)
+				_switch_view(view_home)
+				_refresh_top_pills()
+			else:
+				_switch_view(view_account)
+		)
 	else:
 		_switch_view(view_home)
 
@@ -758,42 +766,34 @@ func _refresh_hero_options() -> void:
 	var prev_idx = class_option.selected
 	class_option.clear()
 	for id in GameManager.CLASSES:
+		if id == 0:
+			continue # Melon Knight is kept aside as requested
 		var c = GameManager.CLASSES[id]
 		if not GameManager.is_hero_enabled(id):
-			class_option.add_item("⛔ %s (معطل من السيرفر)" % c["name"], id)
-		elif not GameManager.is_hero_unlocked(id):
-			var unlock_hint = ""
-			match id:
-				1: unlock_hint = "Win Wave 1"
-				2: unlock_hint = "Win Wave 2"
-				3: unlock_hint = "Beat Big Bosses to unlock"
-			class_option.add_item("🔒 %s (Locked - %s)" % [c["name"], unlock_hint], id)
-		else:
-			class_option.add_item(c["name"], id)
+			continue
+		class_option.add_item(c["name"], id)
 	
-	if prev_idx >= 0 and prev_idx < class_option.item_count and GameManager.is_hero_enabled(prev_idx):
+	if prev_idx >= 0 and prev_idx < class_option.item_count and GameManager.is_hero_enabled(prev_idx) and prev_idx != 0:
 		class_option.select(prev_idx)
 	else:
-		# Auto-select first enabled hero
-		var first_enabled = 0
-		for id in GameManager.CLASSES:
-			if GameManager.is_hero_enabled(id):
-				first_enabled = id
+		# Default to Spider Hero (4) or first available hero
+		var default_id = 4 if GameManager.CLASSES.has(4) and GameManager.is_hero_enabled(4) else 1
+		for i in range(class_option.item_count):
+			if class_option.get_item_id(i) == default_id:
+				class_option.select(i)
+				selected_class = default_id
 				break
-		class_option.select(first_enabled)
-		selected_class = first_enabled
 	
 	if bot_option:
 		bot_option.clear()
 		bot_option.add_item("🚫 بدون بوت (Solo - No Bot)", -1)
 		for id in GameManager.CLASSES:
+			if id == 0:
+				continue # Melon Knight is kept aside as requested
 			var c = GameManager.CLASSES[id]
 			if not GameManager.is_hero_enabled(id):
-				bot_option.add_item("⛔ %s (معطل)" % c["name"], id)
-			elif not GameManager.is_hero_unlocked(id):
-				bot_option.add_item("🔒 %s (مقفول)" % c["name"], id)
-			else:
-				bot_option.add_item("🤖 " + c["name"], id)
+				continue
+			bot_option.add_item("🤖 " + c["name"], id)
 		
 		if not GameManager.bot_enabled:
 			bot_option.select(0)
@@ -1752,7 +1752,7 @@ func _show_party_invite_popup(inviter: String, invite_id: String) -> void:
 	vbox.add_child(icon_lbl)
 	
 	var desc_lbl = Label.new()
-	desc_lbl.text = "اللاعب: %s\nيدعوك للانضمام إلى البارتي الخاص به للقتال معاً كفريق واحد!" % inviter
+	desc_lbl.text = "اللاعب: %s\nعايز يبعتلك دعوة انكم تلعبوا مع بعض في نفس الفريق! هل تقبل؟" % inviter
 	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_lbl.add_theme_font_size_override("font_size", 15)
 	desc_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
