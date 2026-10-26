@@ -131,20 +131,24 @@ func _ready() -> void:
 	_load_installed_state()
 	
 	# Load persistent runtime patch pack if available
+	var persistent_loaded: bool = false
 	if FileAccess.file_exists("user://patch.pck"):
 		var pck_real = ProjectSettings.globalize_path("user://patch.pck")
-		var pck_ok = ProjectSettings.load_resource_pack(pck_real, true)
-		if not pck_ok:
-			pck_ok = ProjectSettings.load_resource_pack("user://patch.pck", true)
-		if pck_ok:
+		persistent_loaded = ProjectSettings.load_resource_pack(pck_real, true)
+		if not persistent_loaded:
+			persistent_loaded = ProjectSettings.load_resource_pack("user://patch.pck", true)
+		if persistent_loaded:
 			print("[UpdateManager] Loaded persistent patch.pck on startup!")
 	elif FileAccess.file_exists(UPDATE_PACKAGE_PATH):
 		var real_pkg = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
-		var pkg_ok = ProjectSettings.load_resource_pack(real_pkg, true)
-		if not pkg_ok:
-			pkg_ok = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
-		if pkg_ok:
+		persistent_loaded = ProjectSettings.load_resource_pack(real_pkg, true)
+		if not persistent_loaded:
+			persistent_loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
+		if persistent_loaded:
 			print("[UpdateManager] Loaded persistent UPDATE_PACKAGE_PATH on startup!")
+	
+	if persistent_loaded:
+		call_deferred("_reload_main_scene_after_patch")
 	
 	_check_http = HTTPRequest.new()
 	_check_http.timeout = 2.5
@@ -882,6 +886,18 @@ func _on_config_request_completed(result: int, response_code: int, _headers: Pac
 		GameManager.apply_server_config(json.data)
 		game_config_synced.emit(json.data)
 
+func _reload_main_scene_after_patch() -> void:
+	await get_tree().process_frame
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		var scene_path = tree.current_scene.scene_file_path
+		if scene_path.is_empty():
+			scene_path = "res://scenes/main_menu.tscn"
+		var new_scene = ResourceLoader.load(scene_path, "PackedScene", ResourceLoader.CACHE_MODE_REPLACE)
+		if new_scene:
+			tree.change_scene_to_packed(new_scene)
+			print("[UpdateManager] Reloaded scene with updated patch: ", scene_path)
+
 func start_download_update() -> void:
 	if is_downloading or _shutdown_in_progress:
 		return
@@ -889,18 +905,19 @@ func start_download_update() -> void:
 		download_failed.emit("لا توجد معلومات تحديث متوفرة حالياً.")
 		return
 	
-	var dl_path = latest_server_info.get("download_url", "/downloads/update.zip")
+	var dl_path = str(latest_server_info.get("download_url", "/downloads/update.pck"))
 	var full_url = ""
 	if dl_path.begins_with("http://") or dl_path.begins_with("https://"):
 		full_url = dl_path
 	else:
 		full_url = server_url.trim_suffix("/") + "/" + dl_path.trim_prefix("/")
 	
-	var target_path = "user://patch.pck" if dl_path.ends_with(".pck") else UPDATE_PACKAGE_PATH
-	if FileAccess.file_exists(target_path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(target_path))
+	var temp_target = "user://download_temp.bin"
+	if FileAccess.file_exists(temp_target):
+		var real_t = ProjectSettings.globalize_path(temp_target)
+		DirAccess.remove_absolute(real_t)
 	
-	_download_http.download_file = target_path
+	_download_http.download_file = temp_target
 	is_downloading = true
 	var err = _download_http.request(full_url)
 	if err != OK:
@@ -913,82 +930,68 @@ func _on_download_request_completed(result: int, response_code: int, _headers: P
 		download_failed.emit("فشل التحميل من السيرفر (كود الخطأ: %d)" % response_code)
 		return
 	
-	download_completed.emit(UPDATE_PACKAGE_PATH)
+	var temp_target = "user://download_temp.bin"
+	if not FileAccess.file_exists(temp_target):
+		download_failed.emit("ملف التحديث فارغ أو لم يكتمل تحميله.")
+		return
+	
+	var tf = FileAccess.open(temp_target, FileAccess.READ)
+	if not tf or tf.get_length() < 1000:
+		if tf: tf.close()
+		download_failed.emit("حجم ملف التحديث المحمل غير صالح.")
+		return
+	tf.close()
+	
+	var dl_path = str(latest_server_info.get("download_url", "")).to_lower()
+	var temp_real = ProjectSettings.globalize_path(temp_target)
+	var patch_real = ProjectSettings.globalize_path("user://patch.pck")
+	var zip_real = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
+	
+	if dl_path.ends_with(".pck"):
+		if FileAccess.file_exists("user://patch.pck"):
+			DirAccess.remove_absolute(patch_real)
+		DirAccess.rename_absolute(temp_real, patch_real)
+	else:
+		# ZIP file: extract PCK if contained, or save zip
+		var reader = ZIPReader.new()
+		var err = reader.open(temp_real)
+		if err == OK:
+			for f_name in reader.get_files():
+				if f_name.ends_with(".pck"):
+					var pck_data = reader.read_file(f_name)
+					var f_out = FileAccess.open("user://patch.pck", FileAccess.WRITE)
+					if f_out:
+						f_out.store_buffer(pck_data)
+						f_out.close()
+						print("[UpdateManager] Extracted PCK from ZIP archive:", f_name)
+					break
+			reader.close()
+		
+		if FileAccess.file_exists(UPDATE_PACKAGE_PATH):
+			DirAccess.remove_absolute(zip_real)
+		DirAccess.rename_absolute(temp_real, zip_real)
+	
+	download_completed.emit("user://patch.pck" if FileAccess.file_exists("user://patch.pck") else UPDATE_PACKAGE_PATH)
 	apply_update()
 
 func apply_update() -> bool:
-	var dl_path = latest_server_info.get("download_url", "")
-	if dl_path.ends_with(".pck") or FileAccess.file_exists("user://patch.pck"):
-		var pck_real = ProjectSettings.globalize_path("user://patch.pck")
-		var pck_loaded = ProjectSettings.load_resource_pack(pck_real, true)
-		if not pck_loaded:
-			pck_loaded = ProjectSettings.load_resource_pack("user://patch.pck", true)
-		if pck_loaded:
-			print("[UpdateManager] Successfully applied PCK update directly!")
-			_save_installed_state(latest_server_info)
-			update_installed.emit()
-			return true
-
-	if not FileAccess.file_exists(UPDATE_PACKAGE_PATH):
-		download_failed.emit("ملف التحديث غير موجود في مسار اللعبة.")
-		return false
-	
-	var real_path = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
-	
-	# 1. Physical extraction using ZIPReader: extracts and writes new files into res:// and user://
-	var reader = ZIPReader.new()
-	var err = reader.open(real_path)
-	if err != OK:
-		err = reader.open(UPDATE_PACKAGE_PATH)
-	
-	var extracted_count = 0
-	if err == OK:
-		var files = reader.get_files()
-		for f_path in files:
-			if f_path.ends_with("/"):
-				DirAccess.make_dir_recursive_absolute("res://" + f_path)
-				DirAccess.make_dir_recursive_absolute("user://patch/" + f_path)
-				continue
-			var data = reader.read_file(f_path)
-			
-			if f_path.ends_with(".pck"):
-				var f_patch = FileAccess.open("user://patch.pck", FileAccess.WRITE)
-				if f_patch:
-					f_patch.store_buffer(data)
-					f_patch.close()
-					extracted_count += 1
-			
-			# Overwrite in res:// (direct file update)
-			var res_target = "res://" + f_path
-			DirAccess.make_dir_recursive_absolute(res_target.get_base_dir())
-			var f_res = FileAccess.open(res_target, FileAccess.WRITE)
-			if f_res:
-				f_res.store_buffer(data)
-				f_res.close()
-				extracted_count += 1
-			
-			# Also write to user://patch/
-			var user_target = "user://patch/" + f_path
-			DirAccess.make_dir_recursive_absolute(user_target.get_base_dir())
-			var f_u = FileAccess.open(user_target, FileAccess.WRITE)
-			if f_u:
-				f_u.store_buffer(data)
-				f_u.close()
-		reader.close()
-		print("[UpdateManager] Successfully extracted and updated %d files!" % extracted_count)
-	
-	# 2. Virtual resource pack mounting (for exported builds / APK)
 	var loaded = false
-	if FileAccess.file_exists("user://patch.pck"):
-		loaded = ProjectSettings.load_resource_pack(ProjectSettings.globalize_path("user://patch.pck"), true)
-		if not loaded:
-			loaded = ProjectSettings.load_resource_pack("user://patch.pck", true)
-	if not loaded:
-		loaded = ProjectSettings.load_resource_pack(real_path, true)
-	if not loaded:
-		loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
+	var patch_path = "user://patch.pck"
+	var patch_real = ProjectSettings.globalize_path(patch_path)
 	
-	if loaded or extracted_count > 0:
+	if FileAccess.file_exists(patch_path):
+		loaded = ProjectSettings.load_resource_pack(patch_real, true)
+		if not loaded:
+			loaded = ProjectSettings.load_resource_pack(patch_path, true)
+	
+	if not loaded and FileAccess.file_exists(UPDATE_PACKAGE_PATH):
+		var zip_real = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
+		loaded = ProjectSettings.load_resource_pack(zip_real, true)
+		if not loaded:
+			loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
+	
+	if loaded:
+		print("[UpdateManager] Successfully loaded patch pack into engine virtual filesystem!")
 		_save_installed_state(latest_server_info)
 		update_installed.emit()
 		return true
