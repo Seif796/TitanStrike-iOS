@@ -1,35 +1,35 @@
 {
   "heroes": {
     "0": {
-      "name": "🍉 Melon Knight (محفوظ جانباً)",
+      "name": "🍉 Melon Knight",
       "enabled": false,
       "hp": 130,
       "speed": 10,
       "role": "The newly upgraded hero! Fully animated emerald watermelon warrior with ruby cyber-core, fires rapid seeds and builds sturdy walls."
     },
     "1": {
-      "name": "🍓 Berry Striker (بطلة الفراولة)",
+      "name": "🍓 Berry Striker",
       "enabled": true,
       "hp": 100,
       "speed": 8.5,
       "role": "Super fast berry ranger with high critical seed shots and tactical speed ramps."
     },
     "2": {
-      "name": "🍊 Citrus Tank (البرتقال المدرّع)",
+      "name": "🍊 Citrus Tank",
       "enabled": true,
       "hp": 240,
       "speed": 5.6,
       "role": "Heavy armored citrus juggernaut with explosive melon cannons and auto-turrets."
     },
     "3": {
-      "name": "👑 Admin (الأدمن الخارق)",
+      "name": "👑 Admin",
       "enabled": true,
       "hp": 600,
       "speed": 30,
-      "role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 500 HP and golden armor."
+      "role": "Legendary secret hero! Unlocked by beating all 3 waves and both Big Bosses. Has 600 HP and golden armor."
     },
     "4": {
-      "name": "🕷️ Spider Hero (سبايدر هودي)",
+      "name": "🕷️ Spider Hero",
       "enabled": true,
       "hp": 220,
       "speed": 9.2,
@@ -56,6 +56,12 @@
         "status": "APPROVED",
         "role": "FULL_ACCESS",
         "approved_at": "2026-10-20 23:16"
+      },
+      {
+        "id": "e2d79a1cda0352f3",
+        "name": "RMX3269",
+        "status": "APPROVED",
+        "approved_at": "2026-10-19"
       }
     ],
     "pending_devices": [
@@ -65,14 +71,6 @@
         "os": "iOS",
         "username": "seif1",
         "ip": "192.168.1.10",
-        "requested_at": "2026-10-20"
-      },
-      {
-        "id": "e2d79a1cda0352f3",
-        "name": "RMX3269",
-        "os": "Android",
-        "username": "",
-        "ip": "192.168.1.15",
         "requested_at": "2026-10-20"
       }
     ]

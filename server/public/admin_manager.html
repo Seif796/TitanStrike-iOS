@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>Admin Manager - Titan Strike</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA & Mobile Native App Metas -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Admin Manager">
+    <meta name="theme-color" content="#070a13">
+    <link rel="manifest" href="/admin_manifest.json">
+    <link rel="apple-touch-icon" href="/images/app_icon.png">
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <style>
+        :root {
+            --bg-base: #060913;
+            --bg-card: rgba(13, 20, 36, 0.92);
+            --bg-card-hover: rgba(19, 29, 52, 0.95);
+            --border-color: rgba(0, 229, 255, 0.22);
+            --border-glow: 0 0 16px rgba(0, 229, 255, 0.18);
+            --cyan: #00e5ff;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+            --red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --nav-height: 68px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: calc(var(--nav-height) + 24px);
+            overflow-x: hidden;
+        }
+
+        /* Top Bar */
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(6, 9, 19, 0.94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title img {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            border: 1px solid var(--cyan);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+
+        .header-title h1 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00e5ff, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-badge {
+            font-size: 0.72rem;
+            color: var(--cyan);
+            border: 1px solid rgba(0, 229, 255, 0.35);
+            padding: 2px 7px;
+            border-radius: 12px;
+            background: rgba(0, 229, 255, 0.08);
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid var(--emerald);
+            color: var(--emerald);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--emerald);
+            box-shadow: 0 0 8px var(--emerald);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        /* Install Hint Banner */
+        .install-banner {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(56, 189, 248, 0.05));
+            border: 1px solid var(--cyan);
+            border-radius: 14px;
+            margin: 12px 14px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--border-glow);
+        }
+
+        .install-text {
+            font-size: 0.82rem;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+
+        .install-btn {
+            background: linear-gradient(135deg, #00e5ff, #0284c7);
+            color: #030712;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Main View Containers */
+        .tab-view {
+            display: none;
+            padding: 14px;
+            animation: fadeIn 0.22s ease-out;
+        }
+
+        .tab-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card Component */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #f1f5f9;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .stat-box {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--cyan);
+            margin-top: 4px;
+        }
+
+        .stat-lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Quick Action Buttons */
+        .action-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 48px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.18s ease;
+            text-align: center;
+            user-select: none;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-emerald {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: #fff;
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-amber {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #030712;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #00e5ff, #0284c7);
+            color: #030712;
+            box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #cbd5e1;
+        }
+
+        /* Toggle Switch */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info h4 {
+            font-size: 0.95rem;
+            color: #f8fafc;
+        }
+
+        .toggle-info p {
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 30px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .24s;
+            border-radius: 34px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: .24s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #10b981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Inputs */
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .input-text {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 11px 14px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .input-text:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+
+        /* Rooms List Card */
+        .room-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .room-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-code-tag {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--cyan);
+            background: rgba(0, 229, 255, 0.1);
+            padding: 3px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 229, 255, 0.4);
+        }
+
+        /* Console Log View */
+        .console-box {
+            background: #020409;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            max-height: 260px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            color: #38bdf8;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+            padding-bottom: 3px;
+        }
+
+        .log-time { color: #64748b; }
+        .log-tag { color: var(--cyan); font-weight: bold; }
+        .log-msg { color: #f1f5f9; }
+
+        /* CyberAI Chat in App */
+        .chat-box {
+            max-height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-right: 4px;
+        }
+
+        .chat-msg {
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            max-width: 86%;
+            line-height: 1.45;
+        }
+
+        .chat-user {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-ai {
+            align-self: flex-end;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid var(--border-color);
+            color: #f1f5f9;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Bottom Mobile Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background: rgba(6, 9, 19, 0.96);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 99;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.72rem;
+            font-weight: 600;
+            flex: 1;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--cyan);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: scale(1.15);
+            color: var(--cyan);
+            filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+        }
+
+        .nav-icon {
+            font-size: 1.35rem;
+            transition: all 0.2s;
+        }
+
+        /* Floating Toast */
+        .toast {
+            position: fixed;
+            top: 76px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            opacity: 0;
+            background: rgba(15, 23, 42, 0.98);
+            border: 2px solid var(--cyan);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #fff;
+            pointer-events: none;
+            z-index: 999;
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <header class="app-header">
+        <div class="header-title">
+            <img src="/images/app_icon.png" alt="Icon">
+            <div>
+                <h1>Admin Manager</h1>
+                <span class="header-badge">Mobile Command ⚡</span>
+            </div>
+        </div>
+        <div class="status-pill" id="serverStatusPill" onclick="toggleServerPower()">
+            <span class="status-dot" id="serverStatusDot"></span>
+            <span id="serverStatusText">ONLINE</span>
+        </div>
+    </header>
+
+    <!-- Install Banner for iOS / Android -->
+    <div class="install-banner" id="installBanner">
+        <div class="install-text" id="installPromptText">
+            📲 <b>تثبيت التطبيق على هاتفك:</b> احفظ Admin Manager على الشاشة الرئيسية للتحكم السريع في أي وقت!
+        </div>
+        <button class="install-btn" id="installAppBtn" onclick="triggerAppInstall()">تثبيت الآن</button>
+    </div>
+
+    <!-- TAB 1: DASHBOARD (الرئيسية) -->
+    <section class="tab-view active" id="tabDashboard">
+        <!-- Live Stats -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-lbl">الغرف المفتوحة</div>
+                <div class="stat-val" id="statRooms">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-lbl">اللاعبين الأونلاين</div>
+                <div class="stat-val" id="statPlayers">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-lbl">إصدار اللعبة</div>
+                <div class="stat-val" style="font-size:1.1rem; color:#10b981;" id="statVersion">v1.4.3</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-lbl">حالة السيرفر</div>
+                <div class="stat-val" style="font-size:1.1rem; color:#00e5ff;" id="statServerMode">مفتوح للجميع</div>
+            </div>
+        </div>
+
+        <!-- Power Controls -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">⚡ التحكم الفوري بالسيرفر</div>
+            </div>
+            <div class="action-row">
+                <button class="btn btn-emerald" id="btnToggleServer" onclick="toggleServerPower()">
+                    🟢 السيرفر مفتوح (تبديل)
+                </button>
+                <button class="btn btn-red" onclick="triggerEmergencyAlarm()">
+                    🚨 إنذار الطوارئ
+                </button>
+            </div>
+            <div class="action-row">
+                <button class="btn btn-amber" onclick="broadcastServerReboot()">
+                    🔄 إعادة التشغيل
+                </button>
+                <button class="btn btn-cyan" onclick="openTab('tabRooms')">
+                    🎮 إدارة الغرف
+                </button>
+            </div>
+        </div>
+
+        <!-- In-game Global Announcement -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📢 إعلان عام في نص شاشة اللاعبين</div>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">
+                اكتب أي رسالة وسوف تظهر فوراً في منتصف شاشة جميع اللاعبين داخل كل الرومات!
+            </p>
+            <div class="input-group">
+                <input type="text" class="input-text" id="globalMsgInput" placeholder="اكتب إعلانك هنا (مثال: انتظروا بطولة قريباً)...">
+                <button class="btn btn-cyan" style="min-height:auto; padding:0 16px;" onclick="sendGlobalBroadcast()">إرسال</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 2: ROOMS & PLAYERS (الغرف واللاعبين) -->
+    <section class="tab-view" id="tabRooms">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🎮 الغرف النشطة حالياً (<span id="roomsCountHeader">0</span>)</div>
+                <button class="btn btn-outline" style="min-height:32px; font-size:0.75rem; padding:4px 10px;" onclick="refreshRooms()">🔄 تحديث</button>
+            </div>
+            <div id="roomsListContainer">
+                <p style="text-align:center; color:var(--text-muted); padding:20px;">جاري تحميل الغرف النشطة...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 3: HEROES & GAME CONFIG (الأبطال واللعبة) -->
+    <section class="tab-view" id="tabHeroes">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🦸 التحكم في الأبطال (مفاتيح فورية)</div>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:12px;">
+                أي مفتاح تقفله أو تفتحه ينعكس فوراً في اللعبة دون إعادة تشغيل السيرفر!
+            </p>
+
+            <!-- Melon Knight -->
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4>🍉 Melon Knight (الفارس البطيخي)</h4>
+                    <p>المقاتل الأساسي ذو المطرقة الخارقة</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="heroToggle_0" onchange="toggleHero(0, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Strawberry Striker -->
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4>🍓 Strawberry Striker (الفراولة السريعة)</h4>
+                    <p>الهجوم السريع والرشاش المزدوج</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="heroToggle_1" onchange="toggleHero(1, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Citrus Defender -->
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4>🍊 Citrus Defender (البرتقال المدرع)</h4>
+                    <p>الدفاع العملاق والصدمة الثقيلة</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="heroToggle_2" onchange="toggleHero(2, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Admin Hero -->
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4>👑 Admin Hero (بطل المدير الأسطوري)</h4>
+                    <p>البطل الخارق السري (يُفتح بهزيمة البيج بوس)</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="heroToggle_3" onchange="toggleHero(3, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Spider Hero -->
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <h4>🕷️ Spider Hero (سبايدر هيرو 3D)</h4>
+                    <p>قفزات عالية وإطلاق شباك العنكبوت</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="heroToggle_4" onchange="toggleHero(4, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Boss & Wave Controls -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">👾 إعدادات الصعوبة والبيج بوس</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <label style="font-size:0.82rem; color:#cbd5e1;">❤️ صحة البيج بوس (Boss Max HP): <b id="valBossHp">1000</b></label>
+                    <input type="range" id="sliderBossHp" min="200" max="5000" step="100" value="1000" style="width:100%; margin-top:6px;" oninput="document.getElementById('valBossHp').innerText=this.value">
+                </div>
+                <div>
+                    <label style="font-size:0.82rem; color:#cbd5e1;">🌊 عدد الموجات (Max Waves): <b id="valMaxWaves">5</b></label>
+                    <input type="range" id="sliderMaxWaves" min="1" max="15" step="1" value="5" style="width:100%; margin-top:6px;" oninput="document.getElementById('valMaxWaves').innerText=this.value">
+                </div>
+                <button class="btn btn-cyan" onclick="saveGameConfigAdjustments()">💾 تطبيق إعدادات الصعوبة فوراً</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 4: SECURITY & DEVICES (الأمان والأجهزة) -->
+    <section class="tab-view" id="tabSecurity">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🛡️ جدار حماية الأجهزة (Whitelist)</div>
+                <label class="switch">
+                    <input type="checkbox" id="whitelistToggle" onchange="toggleWhitelist(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:12px;">
+                عند التفعيل، لن يتمكن أي جهاز جديد من دخول السيرفر إلا بعد موافقتك من هنا!
+            </p>
+
+            <h4 style="font-size:0.9rem; color:var(--amber); margin-bottom:8px;">⏳ أجهزة بانتظار الموافقة (<span id="pendingCount">0</span>)</h4>
+            <div id="pendingDevicesContainer">
+                <p style="font-size:0.8rem; color:var(--text-muted); padding:8px 0;">لا توجد طلبات معلقة حالياً.</p>
+            </div>
+
+            <h4 style="font-size:0.9rem; color:var(--emerald); margin-top:16px; margin-bottom:8px;">✅ الأجهزة المصرح لها (<span id="allowedCount">0</span>)</h4>
+            <div id="allowedDevicesContainer">
+                <p style="font-size:0.8rem; color:var(--text-muted); padding:8px 0;">جاري تحميل الأجهزة...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 5: CYBERAI & CONSOLE (المساعد والكونسول) -->
+    <section class="tab-view" id="tabConsole">
+        <!-- CyberAI Chat -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🤖 مساعد CyberAI لإصدار الأوامر</div>
+            </div>
+            <div class="chat-box" id="aiChatBox">
+                <div class="chat-msg chat-ai">
+                    مرحباً يا قائد! ⚡ أنا CyberAI مساعد السيرفر الذكي. اكتب لي أي أمر مثل: "اقفل السيرفر"، "ابعت إعلان للاعبين"، "عطّل بطل البطيخ" وسأنفذه فوراً!
+                </div>
+            </div>
+            <div class="input-group">
+                <input type="text" class="input-text" id="aiChatInput" placeholder="أمرك يا قائد...">
+                <button class="btn btn-cyan" style="min-height:auto; padding:0 16px;" onclick="sendAiCommand()">إرسال</button>
+            </div>
+        </div>
+
+        <!-- Live Server Console -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">💻 كونسول السيرفر الحي</div>
+                <button class="btn btn-outline" style="min-height:30px; font-size:0.75rem; padding:2px 10px;" onclick="clearConsole()">🗑️ مسح</button>
+            </div>
+            <div class="console-box" id="consoleBox">
+                <div class="log-entry"><span class="log-time">[LIVE]</span> <span class="log-tag">[SYSTEM]</span> <span class="log-msg">متصل بالسيرفر بنجاح...</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="openTab('tabDashboard', this)">
+            <span class="nav-icon">⚡</span>
+            <span>الرئيسية</span>
+        </div>
+        <div class="nav-item" onclick="openTab('tabRooms', this)">
+            <span class="nav-icon">🎮</span>
+            <span>الغرف</span>
+        </div>
+        <div class="nav-item" onclick="openTab('tabHeroes', this)">
+            <span class="nav-icon">🦸</span>
+            <span>الأبطال</span>
+        </div>
+        <div class="nav-item" onclick="openTab('tabSecurity', this)">
+            <span class="nav-icon">🛡️</span>
+            <span>الأمان</span>
+        </div>
+        <div class="nav-item" onclick="openTab('tabConsole', this)">
+            <span class="nav-icon">🤖</span>
+            <span>المساعد</span>
+        </div>
+    </nav>
+
+    <!-- Floating Feedback Toast -->
+    <div class="toast" id="appToast">✅ تم تنفيذ الأمر بنجاح</div>
+
+    <script>
+        // --- State Management ---
+        let currentTab = 'tabDashboard';
+        let serverConfig = {};
+        let deferredPrompt = null;
+        let isServerOnline = true;
+
+        // --- Tab Switching ---
+        function openTab(tabId, navEl) {
+            document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+            
+            if (navEl) {
+                navEl.classList.add('active');
+            } else {
+                const idx = ['tabDashboard', 'tabRooms', 'tabHeroes', 'tabSecurity', 'tabConsole'].indexOf(tabId);
+                const items = document.querySelectorAll('.nav-item');
+                if (items[idx]) items[idx].classList.add('active');
+            }
+            currentTab = tabId;
+            vibrate(15);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Toast Notification ---
+        function showToast(msg) {
+            const toast = document.getElementById('appToast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2400);
+            vibrate(30);
+        }
+
+        function vibrate(ms) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        // --- PWA Installation Handling ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').style.display = 'flex';
+        });
+
+        // Detect iOS
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIos && !window.navigator.standalone) {
+            document.getElementById('installPromptText').innerHTML = 
+                '📲 <b>تثبيت على الآيفون:</b> اضغط زر المشاركة (Share ⎋) ثم اختر <b>"إضافة إلى الشاشة الرئيسية"</b> لفتح التطبيق بكامل الشاشة!';
+            document.getElementById('installAppBtn').style.display = 'none';
+        }
+
+        function triggerAppInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('installBanner').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('لتثبيت التطبيق على أندرويد: اضغط على خيارات المتصفح (⋮) ثم اختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".');
+            }
+        }
+
+        // --- API Handlers ---
+        async function fetchServerStatus() {
+            try {
+                const res = await fetch('/api/server_status');
+                const data = await res.json();
+                isServerOnline = (data.status === 'OPEN' || data.is_open === true);
+                
+                const pill = document.getElementById('serverStatusPill');
+                const text = document.getElementById('serverStatusText');
+                const dot = document.getElementById('serverStatusDot');
+                const btn = document.getElementById('btnToggleServer');
+                const modeLbl = document.getElementById('statServerMode');
+
+                if (isServerOnline) {
+                    pill.style.borderColor = 'var(--emerald)';
+                    pill.style.color = 'var(--emerald)';
+                    dot.style.backgroundColor = 'var(--emerald)';
+                    text.innerText = 'ONLINE';
+                    btn.className = 'btn btn-emerald';
+                    btn.innerText = '🟢 السيرفر مفتوح (إيقاف)';
+                    modeLbl.innerText = 'مفتوح للجميع';
+                    modeLbl.style.color = 'var(--emerald)';
+                } else {
+                    pill.style.borderColor = 'var(--red)';
+                    pill.style.color = 'var(--red)';
+                    dot.style.backgroundColor = 'var(--red)';
+                    text.innerText = 'OFFLINE';
+                    btn.className = 'btn btn-red';
+                    btn.innerText = '🔴 السيرفر مغلق (تشغيل)';
+                    modeLbl.innerText = 'مغلق للصيانة';
+                    modeLbl.style.color = 'var(--red)';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleServerPower() {
+            try {
+                const newStatus = isServerOnline ? 'CLOSED' : 'OPEN';
+                const res = await fetch('/api/server_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const d = await res.json();
+                showToast(newStatus === 'OPEN' ? '🟢 تم فتح السيرفر لجميع اللاعبين!' : '⛔ تم إغلاق السيرفر وإيقاف الدخول!');
+                fetchServerStatus();
+            } catch (e) {
+                showToast('❌ تعذر تغيير حالة السيرفر');
+            }
+        }
+
+        async function triggerEmergencyAlarm() {
+            if (!confirm('هل أنت متأكد من إطلاق إنذار الطوارئ في جميع الغرف الآن؟')) return;
+            try {
+                await fetch('/api/emergency_alarm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'trigger', message: '🚨 إنذار طوارئ من قائد السيرفر!' })
+                });
+                showToast('🚨 تم إطلاق إنذار الطوارئ باللعبة فوراً!');
+            } catch (e) {
+                showToast('❌ خطأ في إطلاق الإنذار');
+            }
+        }
+
+        async function broadcastServerReboot() {
+            if (!confirm('إرسال تنبيه بإعادة التشغيل للاعبين؟')) return;
+            try {
+                await fetch('/api/rooms/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: '⚠️ جاري تحديث وإعادة تشغيل السيرفر خلال ثوانٍ!' })
+                });
+                showToast('⚠️ تم إرسال تنبيه إعادة التشغيل لجميع الغرف!');
+            } catch (e) {
+                showToast('❌ خطأ في الإرسال');
+            }
+        }
+
+        async function sendGlobalBroadcast() {
+            const input = document.getElementById('globalMsgInput');
+            const msg = input.value.trim();
+            if (!msg) {
+                showToast('⚠️ يرجى كتابة نص الإعلان أولاً');
+                return;
+            }
+            try {
+                await fetch('/api/rooms/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                input.value = '';
+                showToast('📢 تم إرسال الإعلان لجميع اللاعبين فوراً!');
+            } catch (e) {
+                showToast('❌ فشل إرسال الإعلان');
+            }
+        }
+
+        // --- Rooms Management ---
+        async function refreshRooms() {
+            try {
+                const res = await fetch('/api/rooms');
+                const data = await res.json();
+                
+                document.getElementById('statRooms').innerText = data.rooms ? data.rooms.length : 0;
+                document.getElementById('statPlayers').innerText = data.online_players_count || 0;
+                document.getElementById('roomsCountHeader').innerText = data.rooms ? data.rooms.length : 0;
+
+                const c = document.getElementById('roomsListContainer');
+                if (!data.rooms || data.rooms.length === 0) {
+                    c.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:24px 0;">لا توجد غرف نشطة حالياً. أي غرفة يفتحها اللاعبون ستظهر هنا فوراً!</p>';
+                    return;
+                }
+
+                let html = '';
+                data.rooms.forEach(r => {
+                    html += `
+                        <div class="room-card">
+                            <div class="room-card-head">
+                                <span class="room-code-tag">#${r.code}</span>
+                                <span style="font-size:0.8rem; color:#10b981; font-weight:bold;">${r.status || 'ACTIVE'}</span>
+                            </div>
+                            <div style="font-size:0.85rem; color:#cbd5e1;">👑 <b>المضيف:</b> ${r.host || 'Player'} | ⚔️ <b>الطور:</b> ${r.mode || 'Co-op'}</div>
+                            <div style="font-size:0.8rem; color:#94a3b8;">👥 <b>اللاعبين (${r.players || 1}):</b> ${(r.players_list || [r.host]).join(', ')}</div>
+                            <div style="display:flex; gap:8px; margin-top:6px;">
+                                <button class="btn btn-red" style="min-height:36px; font-size:0.8rem; flex:1;" onclick="terminateRoom('${r.code}')">🛑 إنهاء الغرفة</button>
+                                <button class="btn btn-outline" style="min-height:36px; font-size:0.8rem; flex:1;" onclick="sendRoomDirectMsg('${r.code}')">📢 رسالة</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                c.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function terminateRoom(code) {
+            if (!confirm(`هل تريد بالتأكيد إنهاء الغرفة #${code} وطرد جميع اللاعبين منها؟`)) return;
+            try {
+                await fetch('/api/rooms/terminate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_code: code })
+                });
+                showToast(`🛑 تم إنهاء الغرفة #${code} وطرد اللاعبين!`);
+                refreshRooms();
+            } catch (e) {
+                showToast('❌ تعذر إنهاء الغرفة');
+            }
+        }
+
+        async function sendRoomDirectMsg(code) {
+            const msg = prompt(`أدخل الرسالة التي تريد إظهارها للاعبي الغرفة #${code}:`);
+            if (!msg) return;
+            try {
+                await fetch('/api/rooms/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_code: code, message: msg })
+                });
+                showToast(`📢 تم إرسال الرسالة إلى الغرفة #${code}!`);
+            } catch (e) {
+                showToast('❌ فشل إرسال الرسالة');
+            }
+        }
+
+        // --- Heroes & Game Config ---
+        async function fetchGameConfig() {
+            try {
+                const res = await fetch('/api/game_config');
+                serverConfig = await res.json();
+                
+                // Update hero toggles
+                const heroes = serverConfig.heroes || {};
+                [0, 1, 2, 3, 4].forEach(id => {
+                    const el = document.getElementById('heroToggle_' + id);
+                    if (el && heroes[id] !== undefined) {
+                        el.checked = (heroes[id].enabled !== false);
+                    }
+                });
+
+                // Update whitelist
+                const devSec = serverConfig.device_security || {};
+                const wlEl = document.getElementById('whitelistToggle');
+                if (wlEl) wlEl.checked = devSec.whitelist_enabled !== false;
+
+                // Render devices
+                renderDevices(devSec);
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleHero(heroId, isEnabled) {
+            if (!serverConfig.heroes) serverConfig.heroes = {};
+            if (!serverConfig.heroes[heroId]) serverConfig.heroes[heroId] = {};
+            serverConfig.heroes[heroId].enabled = isEnabled;
+
+            try {
+                await fetch('/api/game_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ heroes: serverConfig.heroes })
+                });
+                const names = ['Melon Knight', 'Strawberry Striker', 'Citrus Defender', 'Admin Hero', 'Spider Hero'];
+                showToast(isEnabled ? `✅ تم تفعيل بطل ${names[heroId]}` : `⛔ تم تعطيل بطل ${names[heroId]}`);
+            } catch (e) {
+                showToast('❌ فشل تحديث البطل');
+            }
+        }
+
+        async function saveGameConfigAdjustments() {
+            const hp = parseInt(document.getElementById('sliderBossHp').value);
+            const waves = parseInt(document.getElementById('sliderMaxWaves').value);
+
+            if (!serverConfig.game_settings) serverConfig.game_settings = {};
+            serverConfig.game_settings.boss_health = hp;
+            serverConfig.game_settings.max_waves = waves;
+
+            try {
+                await fetch('/api/game_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serverConfig)
+                });
+                showToast('💾 تم حفظ وتطبيق إعدادات الصعوبة فوراً!');
+            } catch (e) {
+                showToast('❌ خطأ في حفظ الإعدادات');
+            }
+        }
+
+        // --- Security & Devices ---
+        async function toggleWhitelist(enabled) {
+            try {
+                await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'toggle_whitelist', enabled: enabled })
+                });
+                showToast(enabled ? '🛡️ تم تفعيل جدار حماية الأجهزة' : '⚠️ تم تعطيل جدار الحماية (مفتوح للجميع)');
+                fetchGameConfig();
+            } catch (e) {
+                showToast('❌ خطأ في تبديل جدار الحماية');
+            }
+        }
+
+        function renderDevices(sec) {
+            const pending = sec.pending_devices || [];
+            const allowed = sec.allowed_devices || [];
+
+            document.getElementById('pendingCount').innerText = pending.length;
+            document.getElementById('allowedCount').innerText = allowed.length;
+
+            const pContainer = document.getElementById('pendingDevicesContainer');
+            if (pending.length === 0) {
+                pContainer.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); padding:8px 0;">لا توجد طلبات معلقة حالياً.</p>';
+            } else {
+                let html = '';
+                pending.forEach(d => {
+                    html += `
+                        <div style="background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.4); border-radius:10px; padding:10px; margin-bottom:8px;">
+                            <div style="font-size:0.85rem; font-weight:bold; color:#f59e0b;">📱 ${d.name || 'جهاز جديد'} (${d.ip || 'LAN'})</div>
+                            <div style="font-size:0.75rem; color:#cbd5e1; margin-top:2px;">المستخدم: ${d.username || 'زائر'} | معرف: ${d.id ? d.id.substring(0, 10) + '...' : ''}</div>
+                            <div style="display:flex; gap:8px; margin-top:8px;">
+                                <button class="btn btn-emerald" style="min-height:34px; font-size:0.78rem; flex:1;" onclick="handleDevice('approve', '${d.id}', '${d.name}')">✅ قبول</button>
+                                <button class="btn btn-red" style="min-height:34px; font-size:0.78rem; flex:1;" onclick="handleDevice('ban', '${d.id}', '${d.name}')">❌ رفض</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                pContainer.innerHTML = html;
+            }
+
+            const aContainer = document.getElementById('allowedDevicesContainer');
+            if (allowed.length === 0) {
+                aContainer.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); padding:8px 0;">لا توجد أجهزة مصرح لها حالياً.</p>';
+            } else {
+                let html = '';
+                allowed.slice(-10).reverse().forEach(d => {
+                    html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 12px; margin-bottom:6px;">
+                            <div>
+                                <div style="font-size:0.82rem; font-weight:bold; color:#f8fafc;">📱 ${d.name || 'جهاز مصرح'}</div>
+                                <div style="font-size:0.72rem; color:var(--text-muted);">${d.id ? d.id.substring(0, 12) + '...' : ''}</div>
+                            </div>
+                            <button class="btn btn-outline" style="min-height:30px; font-size:0.72rem; padding:2px 8px; color:#ef4444;" onclick="handleDevice('ban', '${d.id}', '${d.name}')">حظر</button>
+                        </div>
+                    `;
+                });
+                aContainer.innerHTML = html;
+            }
+        }
+
+        async function handleDevice(action, id, name) {
+            try {
+                await fetch('/api/device_action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, device_id: id, device_name: name })
+                });
+                showToast(action === 'approve' ? `✅ تم قبول الجهاز ${name}` : `⛔ تم حظر الجهاز ${name}`);
+                fetchGameConfig();
+            } catch (e) {
+                showToast('❌ خطأ في تعديل الجهاز');
+            }
+        }
+
+        // --- CyberAI & Console ---
+        async function sendAiCommand() {
+            const input = document.getElementById('aiChatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const box = document.getElementById('aiChatBox');
+            box.innerHTML += `<div class="chat-msg chat-user">${msg}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                const d = await res.json();
+                box.innerHTML += `<div class="chat-msg chat-ai">${d.reply || 'تم تنفيذ الأمر بنجاح!'}</div>`;
+                box.scrollTop = box.scrollHeight;
+                fetchServerStatus();
+                refreshRooms();
+            } catch (e) {
+                box.innerHTML += `<div class="chat-msg chat-ai" style="color:#ef4444;">عذراً، حدث خطأ في معالجة الأمر.</div>`;
+            }
+        }
+
+        async function fetchConsoleLogs() {
+            try {
+                const res = await fetch('/api/console_logs');
+                const data = await res.json();
+                const box = document.getElementById('consoleBox');
+                if (data.logs && data.logs.length > 0) {
+                    let html = '';
+                    data.logs.slice(-30).forEach(l => {
+                        html += `
+                            <div class="log-entry">
+                                <span class="log-time">[${l.time || 'NOW'}]</span>
+                                <span class="log-tag">[${l.tag || 'INFO'}]</span>
+                                <span class="log-msg">${l.message || ''}</span>
+                            </div>
+                        `;
+                    });
+                    box.innerHTML = html;
+                    box.scrollTop = box.scrollHeight;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function clearConsole() {
+            try {
+                await fetch('/api/console_clear', { method: 'POST' });
+                document.getElementById('consoleBox').innerHTML = '<div class="log-entry"><span class="log-time">[CLEARED]</span> تم مسح السجلات.</div>';
+                showToast('🗑️ تم مسح سجلات الكونسول');
+            } catch (e) {
+                showToast('❌ خطأ في مسح الكونسول');
+            }
+        }
+
+        // --- Live Poller (Every 1.5s) ---
+        function runLivePoller() {
+            fetchServerStatus();
+            refreshRooms();
+            if (currentTab === 'tabHeroes' || currentTab === 'tabSecurity') {
+                fetchGameConfig();
+            }
+            if (currentTab === 'tabConsole') {
+                fetchConsoleLogs();
+            }
+        }
+
+        // --- Init ---
+        fetchServerStatus();
+        refreshRooms();
+        fetchGameConfig();
+        fetchConsoleLogs();
+        setInterval(runLivePoller, 1500);
+    </script>
+</body>
+</html>

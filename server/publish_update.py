@@ -53,7 +53,7 @@ def export_pck():
 
     if godot_exe.is_file():
         print(f"[*] Compiling latest PCK via Godot 4.3...")
-        cmd = [str(godot_exe), "--headless", "--export-pack", "Android", str(pck_dest)]
+        cmd = [str(godot_exe), "--headless", "--export-pack", "iOS", str(pck_dest)]
         res = subprocess.run(cmd, cwd=str(ROOT_DIR), capture_output=True, text=True)
         if res.returncode == 0 and pck_dest.is_file():
             print(f"[+] Compiled PCK: {pck_dest.stat().st_size} bytes")
@@ -145,6 +145,20 @@ def publish_update(version: str, version_code: int, title: str, changelog: list,
                 if src.is_file():
                     shutil.copy2(src, d_dir / fname)
             print(f"[+] Synced fresh game binaries to {d_dir}")
+    # Create Admin Manager shortcut on Desktop
+    url_content = f"""[InternetShortcut]
+URL=http://localhost:8080/admin
+IconIndex=0
+"""
+    for d_dir in DESKTOP_DIRS:
+        if d_dir.exists():
+            try:
+                with open(d_dir / "Admin-Manager.url", "w", encoding="utf-8") as uf:
+                    uf.write(url_content)
+                print(f"[+] Created Admin-Manager shortcut on {d_dir}")
+            except Exception as e:
+                pass
+
     
     # 7. Write version.json
     pck_size = pck_dest.stat().st_size

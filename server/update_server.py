@@ -1390,7 +1390,10 @@ def handle_ip_auto_login(handler, parsed):
         })
 
 class UpdateRequestHandler(http.server.SimpleHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
+    protocol_version = "HTTP/1.0"
+
+    def do_HEAD(self):
+        self.do_GET()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
@@ -1617,15 +1620,45 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         elif path in ("/guest", "/guest.html"):
             guest_file = PUBLIC_DIR / "guest.html"
             if guest_file.is_file():
+                body = guest_file.read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                with open(guest_file, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(body)
                 return
             else:
                 self.send_error(404, "guest.html not found")
+                return
+
+        elif path in ("/admin", "/app", "/manager", "/admin_manager", "/admin_app", "/admin.html", "/admin_manager.html"):
+            admin_file = PUBLIC_DIR / "admin_manager.html"
+            if admin_file.is_file():
+                with open(admin_file, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            else:
+                self.send_error(404, "admin_manager.html not found")
+                return
+
+        elif path == "/admin_manifest.json":
+            m_file = PUBLIC_DIR / "admin_manifest.json"
+            if m_file.is_file():
+                with open(m_file, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
                 return
 
         elif path == "/" or path == "/index.html":
@@ -1633,12 +1666,13 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 return
             index_file = PUBLIC_DIR / "index.html"
             if index_file.is_file():
+                body = index_file.read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                with open(index_file, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(body)
                 return
             else:
                 self.send_error(404, "index.html not found")
@@ -2231,7 +2265,10 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
         self.end_headers()
 
 class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
+    protocol_version = "HTTP/1.0"
+
+    def do_HEAD(self):
+        self.do_GET()
 
     """
     Dedicated Guest & Player handler (Port 8081):
@@ -2281,12 +2318,13 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif path in ("/", "/index.html", "/guest", "/guest.html"):
             guest_file = PUBLIC_DIR / "guest.html"
             if guest_file.is_file():
+                body = guest_file.read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                with open(guest_file, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(body)
                 return
             else:
                 self.send_error(404, "guest.html not found")
