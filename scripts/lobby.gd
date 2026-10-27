@@ -18,6 +18,7 @@ extends Control
 func _ready() -> void:
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
 	NetworkManager.server_disconnected.connect(_on_server_disconnected)
+	NetworkManager.player_connected.connect(_on_player_connected_to_room)
 	
 	var um = get_node_or_null("/root/UpdateManager")
 	if um:
@@ -212,3 +213,132 @@ func _on_leave_pressed() -> void:
 
 func _on_server_disconnected() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func _on_player_connected_to_room(peer_id: int, player_info: Dictionary) -> void:
+	if not multiplayer.is_server():
+		return
+	if peer_id == 1:
+		return
+	
+	var player_name = player_info.get("name", "لاعب جديد")
+	_show_host_start_prompt(player_name)
+
+func _show_host_start_prompt(player_name: String) -> void:
+	AudioManager.play_sfx("redeem")
+	
+	var old_modal = get_node_or_null("HostStartPromptLayer")
+	if old_modal:
+		old_modal.queue_free()
+		
+	var canvas = CanvasLayer.new()
+	canvas.name = "HostStartPromptLayer"
+	canvas.layer = 150
+	add_child(canvas)
+	
+	var overlay = ColorRect.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.75)
+	canvas.add_child(overlay)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	canvas.add_child(center)
+	
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(540, 260)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.1, 0.18, 0.98)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(0.0, 0.9, 1.0)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.shadow_color = Color(0.0, 0.8, 1.0, 0.4)
+	style.shadow_size = 25
+	card.add_theme_stylebox_override("panel", style)
+	center.add_child(card)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	card.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	margin.add_child(vbox)
+	
+	var header_lbl = Label.new()
+	header_lbl.text = "🎮 انضمام لاعب جديد إلى الروم!"
+	header_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header_lbl.add_theme_font_size_override("font_size", 20)
+	header_lbl.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	vbox.add_child(header_lbl)
+	
+	var desc_lbl = Label.new()
+	desc_lbl.text = "اللاعب [%s] انضم إلى البارتي الآن!\nعايز تخش اللعبة دلوقتي ولا لسه مستني؟" % player_name
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.add_theme_font_size_override("font_size", 16)
+	desc_lbl.add_theme_color_override("font_color", Color(0.92, 0.96, 1.0))
+	vbox.add_child(desc_lbl)
+	
+	var btns_hbox = HBoxContainer.new()
+	btns_hbox.add_theme_constant_override("separation", 16)
+	vbox.add_child(btns_hbox)
+	
+	# Button 1: ماشي (Start game)
+	var ok_btn = Button.new()
+	ok_btn.text = "✅ ماشي (ادخل اللعبة الآن)"
+	ok_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ok_btn.custom_minimum_size = Vector2(0, 52)
+	ok_btn.add_theme_font_size_override("font_size", 16)
+	var ok_style = StyleBoxFlat.new()
+	ok_style.bg_color = Color(0.12, 0.55, 0.3, 0.95)
+	ok_style.border_width_left = 2
+	ok_style.border_width_top = 2
+	ok_style.border_width_right = 2
+	ok_style.border_width_bottom = 2
+	ok_style.border_color = Color(0.2, 1.0, 0.5)
+	ok_style.corner_radius_top_left = 10
+	ok_style.corner_radius_top_right = 10
+	ok_style.corner_radius_bottom_left = 10
+	ok_style.corner_radius_bottom_right = 10
+	ok_btn.add_theme_stylebox_override("normal", ok_style)
+	
+	ok_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		canvas.queue_free()
+		_on_start_pressed()
+	)
+	btns_hbox.add_child(ok_btn)
+	
+	# Button 2: لسه (Wait)
+	var wait_btn = Button.new()
+	wait_btn.text = "⏳ لسه (انتظار باقي اللاعبين)"
+	wait_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wait_btn.custom_minimum_size = Vector2(0, 52)
+	wait_btn.add_theme_font_size_override("font_size", 16)
+	var wait_style = StyleBoxFlat.new()
+	wait_style.bg_color = Color(0.18, 0.22, 0.32, 0.95)
+	wait_style.border_width_left = 2
+	wait_style.border_width_top = 2
+	wait_style.border_width_right = 2
+	wait_style.border_width_bottom = 2
+	wait_style.border_color = Color(0.5, 0.7, 0.9)
+	wait_style.corner_radius_top_left = 10
+	wait_style.corner_radius_top_right = 10
+	wait_style.corner_radius_bottom_left = 10
+	wait_style.corner_radius_bottom_right = 10
+	wait_btn.add_theme_stylebox_override("normal", wait_style)
+	
+	wait_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		canvas.queue_free()
+	)
+	btns_hbox.add_child(wait_btn)

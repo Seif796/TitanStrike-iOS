@@ -885,6 +885,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="AuthModeHBox" type="HBoxContainer" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 10
 
@@ -908,14 +909,15 @@ text = "➕ إنشاء حساب جديد (Sign Up)"
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 16
-text = "سجل الدخول لحفظ تقدمك واللعب مع أصدقائك:"
+text = "✨ اختر اسمك للبدء فوراً (Create a Username):"
 
 [node name="AuthUsernameInput" type="LineEdit" parent="ViewAccount/AccountCard/VBox/AuthBox"]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
-placeholder_text = "اسم المستخدم (Username)..."
+placeholder_text = "اكتب اسمك هنا (Create a Username)..."
 
 [node name="AuthPasswordInput" type="LineEdit" parent="ViewAccount/AccountCard/VBox/AuthBox"]
+visible = false
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 secret = true
@@ -926,7 +928,7 @@ custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_start")
-text = "دخول (Sign In)"
+text = "🚀 دخول اللعبة (Start Playing)"
 
 [node name="AuthStatusLabel" type="Label" parent="ViewAccount/AccountCard/VBox/AuthBox"]
 layout_mode = 2

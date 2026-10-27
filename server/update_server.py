@@ -1049,6 +1049,59 @@ def auth_login(username: str, password: str, device: str = "", ip: str = "", dev
     add_console_log("AUTH", f"🔑 تسجيل دخول ناجح للاعب: '{u}' (IP: {ip})", "INFO")
     return True, f"🔑 تم تسجيل الدخول بنجاح! مرحباً بعودتك يا {u}", {"token": token, "username": u, "user": user_record}
 
+def auth_quick_auth(username: str, device: str = "", ip: str = "", device_id: str = "") -> tuple[bool, str, dict]:
+    u = str(username).strip()
+    if len(u) < 2:
+        return False, "⚠️ اسم المستخدم يجب أن يكون حرفين على الأقل!", {}
+    
+    db = load_accounts_db()
+    users = db.setdefault("users", {})
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    matched_key = None
+    for k in users:
+        if k.lower() == u.lower():
+            matched_key = k
+            break
+            
+    if matched_key:
+        user_record = users[matched_key]
+        user_record["last_login"] = now_str
+        if ip:
+            user_record["last_ip"] = ip
+        if device_id:
+            user_record["device_id"] = device_id
+        if device:
+            user_record["device"] = device
+        token = secrets.token_hex(16)
+        db.setdefault("sessions", {})[token] = matched_key
+        save_accounts_db(db)
+        add_console_log("AUTH", f"✨ دخول سريع بالاسم فقط: '{matched_key}' (IP: {ip}, Dev: {device_id})", "SUCCESS")
+        return True, f"🎉 مرحباً بك مجدداً يا {matched_key}!", {"token": token, "username": matched_key, "user": user_record}
+    else:
+        token = secrets.token_hex(16)
+        user_record = {
+            "username": u,
+            "password_hash": "",
+            "display_name": u,
+            "created_at": now_str,
+            "last_login": now_str,
+            "last_ip": ip,
+            "device_id": device_id,
+            "role": "player",
+            "level": 1,
+            "coins": 500,
+            "wins": 0,
+            "kills": 0,
+            "unlocked_heroes": [1, 2, 3, 4],
+            "device": device if device else "Mobile/Android"
+        }
+        users[u] = user_record
+        db.setdefault("sessions", {})[token] = u
+        save_accounts_db(db)
+        add_console_log("AUTH", f"🎉 إنشاء مستخدم جديد سريعاً: '{u}' (IP: {ip}, Dev: {device_id})", "SUCCESS")
+        return True, f"🎉 تم إنشاء الحساب بنجاح! مرحباً بك يا {u}", {"token": token, "username": u, "user": user_record}
+
 def auth_get_user(token: str) -> dict:
     if not token:
         return None
@@ -1844,6 +1897,22 @@ p {{ color: #cbd5e1; font-size: 16px; line-height: 1.7; margin: 0 0 20px; }}
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
             return
 
+        elif path == "/api/auth/quick_auth":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                u = data.get("username", "")
+                dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
+                clean_ip = self.client_address[0]
+                if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
+                dev_id = str(data.get("device_id", "")).strip()
+                ok, msg, res_data = auth_quick_auth(u, dev, ip=clean_ip, device_id=dev_id)
+                send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
+            return
+
         elif path == "/api/auth/login":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
@@ -2434,6 +2503,22 @@ class GuestRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
                 dev_id = str(data.get("device_id", "")).strip()
                 ok, msg, res_data = auth_register(u, p, nick, dev, ip=clean_ip, device_id=dev_id)
+                send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
+            except Exception as e:
+                send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)
+            return
+
+        elif path == "/api/auth/quick_auth":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                u = data.get("username", "")
+                dev = data.get("device", self.headers.get("User-Agent", "Mobile"))
+                clean_ip = self.client_address[0]
+                if clean_ip.startswith("::ffff:"): clean_ip = clean_ip[7:]
+                dev_id = str(data.get("device_id", "")).strip()
+                ok, msg, res_data = auth_quick_auth(u, dev, ip=clean_ip, device_id=dev_id)
                 send_json_response(self, {"success": ok, "message": msg, "data": res_data}, status_code=200 if ok else 400)
             except Exception as e:
                 send_json_response(self, {"success": False, "message": f"خطأ: {e}"}, status_code=500)

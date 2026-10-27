@@ -110,6 +110,8 @@ var is_requests_tab: bool = false
 
 var selected_class: int = 0
 var is_signup_mode: bool = false
+var _last_known_party_count: int = 1
+
 
 func _ready() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
@@ -242,7 +244,7 @@ func _refresh_top_pills() -> void:
 		name_input.text = AccountManager.get_current_user()
 		account_back_btn.visible = true
 	else:
-		account_pill_btn.text = "👤 تسجيل الدخول"
+		account_pill_btn.text = "👤 Create a Username"
 		account_pill_btn.modulate = Color(1.0, 0.85, 0.2)
 		name_input.text = ""
 		account_back_btn.visible = false
@@ -552,18 +554,14 @@ func _on_update_installed() -> void:
 # 3. ACCOUNTS (SIGN IN, SIGN UP, SIGN OUT)
 # ==============================================================================
 func _setup_account_view() -> void:
-	tab_sign_in_btn.pressed.connect(func():
-		AudioManager.play_sfx("click")
-		is_signup_mode = false
-		_update_auth_tab_styles()
-	)
-	tab_sign_up_btn.pressed.connect(func():
-		AudioManager.play_sfx("click")
-		is_signup_mode = true
-		_update_auth_tab_styles()
-	)
+	if auth_box.has_node("AuthModeHBox"):
+		auth_box.get_node("AuthModeHBox").visible = false
+	if auth_password_input:
+		auth_password_input.visible = false
 	
+	auth_username_input.text_submitted.connect(func(_t): _on_auth_submit())
 	auth_submit_btn.pressed.connect(_on_auth_submit)
+	sign_out_btn.text = "🚪 تغيير الاسم (Change Username)"
 	sign_out_btn.pressed.connect(func():
 		AudioManager.play_sfx("click")
 		AccountManager.sign_out()
@@ -583,16 +581,13 @@ func _setup_account_view() -> void:
 
 func _update_auth_tab_styles() -> void:
 	auth_status_label.text = ""
-	if is_signup_mode:
-		auth_title_label.text = "إنشاء حساب جديد للاحتفاظ بأبطالك وأصدقائك:"
-		auth_submit_btn.text = "➕ إنشاء حساب (Sign Up)"
-		tab_sign_up_btn.modulate = Color(0.2, 0.95, 0.6)
-		tab_sign_in_btn.modulate = Color.WHITE
-	else:
-		auth_title_label.text = "تسجيل الدخول إلى حسابك المسجل:"
-		auth_submit_btn.text = "🔑 تسجيل الدخول (Sign In)"
-		tab_sign_in_btn.modulate = Color(0, 0.9, 1.0)
-		tab_sign_up_btn.modulate = Color.WHITE
+	auth_title_label.text = "✨ اختر اسمك للبدء فوراً (Create a Username):"
+	auth_submit_btn.text = "🚀 دخول اللعبة (Start Playing)"
+	auth_username_input.placeholder_text = "اكتب اسمك هنا (Create a Username)..."
+	if auth_password_input:
+		auth_password_input.visible = false
+	if auth_box.has_node("AuthModeHBox"):
+		auth_box.get_node("AuthModeHBox").visible = false
 
 func _refresh_account_ui() -> void:
 	if AccountManager.is_logged_in():
@@ -614,30 +609,32 @@ func _refresh_account_ui() -> void:
 		_update_auth_tab_styles()
 
 func _on_auth_submit() -> void:
-	var u = auth_username_input.text
-	var p = auth_password_input.text
+	var u = auth_username_input.text.strip_edges()
+	if u.is_empty():
+		AudioManager.play_sfx("error")
+		auth_status_label.text = "⚠️ يرجى كتابة اسمك أولاً (Create a username)!"
+		auth_status_label.modulate = Color.YELLOW
+		return
+	if u.length() < 2:
+		AudioManager.play_sfx("error")
+		auth_status_label.text = "⚠️ الاسم يجب أن يكون حرفين على الأقل!"
+		auth_status_label.modulate = Color.YELLOW
+		return
 	
-	var res: Dictionary
-	if is_signup_mode:
-		res = AccountManager.sign_up(u, p)
-	else:
-		res = AccountManager.sign_in(u, p)
-	
-	if res["success"]:
+	var res = AccountManager.create_or_login_username(u)
+	if res.get("success", false):
 		AudioManager.play_sfx("success")
-		auth_status_label.text = res["message"] + " جاري تحويلك لبدء اللعبة..."
+		auth_status_label.text = "🎉 مرحباً بك يا %s! جاري تحويلك لبدء اللعبة..." % u
 		auth_status_label.modulate = Color.GREEN
 		auth_username_input.text = ""
-		auth_password_input.text = ""
 		_refresh_top_pills()
 		_refresh_account_ui()
-		# Immediately transition to Home menu where all options are visible!
-		get_tree().create_timer(0.4).timeout.connect(func():
+		get_tree().create_timer(0.35).timeout.connect(func():
 			_switch_view(view_home)
 		)
 	else:
 		AudioManager.play_sfx("error")
-		auth_status_label.text = res["message"]
+		auth_status_label.text = res.get("message", "فشل تسجيل الاسم")
 		auth_status_label.modulate = Color.RED
 
 # ==============================================================================
@@ -671,7 +668,7 @@ func _setup_friends_view() -> void:
 	)
 	
 	AccountManager.friends_updated.connect(func(_fl): _refresh_friends_ui())
-	AccountManager.party_updated.connect(func(_pm): _refresh_friends_ui())
+	AccountManager.party_updated.connect(_on_party_members_updated)
 	AccountManager.party_invite_received.connect(_on_party_invite_received)
 	AccountManager.friend_request_received.connect(_on_friend_request_received)
 	AccountManager.requests_updated.connect(_on_requests_updated)
@@ -2004,3 +2001,132 @@ func _show_temp_server_banner(msg: String, duration: float = 4.0) -> void:
 		if is_instance_valid(canvas):
 			canvas.queue_free()
 	)
+
+
+func _on_party_members_updated(members: Array) -> void:
+	_refresh_friends_ui()
+	if AccountManager.is_logged_in() and members.size() > _last_known_party_count:
+		var cur_u = AccountManager.get_current_user()
+		if members.size() > 0 and members[0] == cur_u:
+			var newest_member = str(members[members.size() - 1])
+			if newest_member != cur_u:
+				_show_main_menu_party_prompt(newest_member)
+	_last_known_party_count = members.size()
+
+func _show_main_menu_party_prompt(member_name: String) -> void:
+	AudioManager.play_sfx("redeem")
+	
+	var old = get_node_or_null("PartyHostPromptLayer")
+	if old:
+		old.queue_free()
+		
+	var canvas = CanvasLayer.new()
+	canvas.name = "PartyHostPromptLayer"
+	canvas.layer = 150
+	add_child(canvas)
+	
+	var overlay = ColorRect.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.75)
+	canvas.add_child(overlay)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	canvas.add_child(center)
+	
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(540, 260)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.1, 0.18, 0.98)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(0.0, 0.9, 1.0)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.shadow_color = Color(0.0, 0.8, 1.0, 0.4)
+	style.shadow_size = 25
+	card.add_theme_stylebox_override("panel", style)
+	center.add_child(card)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	card.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	margin.add_child(vbox)
+	
+	var header_lbl = Label.new()
+	header_lbl.text = "🎮 انضمام لاعب جديد إلى البارتي!"
+	header_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header_lbl.add_theme_font_size_override("font_size", 20)
+	header_lbl.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	vbox.add_child(header_lbl)
+	
+	var desc_lbl = Label.new()
+	desc_lbl.text = "اللاعب [%s] انضم للبارتي بتاعك دلوقتي!\nعايز تخش اللعبة ولا لسه مستني؟" % member_name
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.add_theme_font_size_override("font_size", 16)
+	desc_lbl.add_theme_color_override("font_color", Color(0.92, 0.96, 1.0))
+	vbox.add_child(desc_lbl)
+	
+	var btns_hbox = HBoxContainer.new()
+	btns_hbox.add_theme_constant_override("separation", 16)
+	vbox.add_child(btns_hbox)
+	
+	var ok_btn = Button.new()
+	ok_btn.text = "✅ ماشي (ادخل اللعبة الآن)"
+	ok_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ok_btn.custom_minimum_size = Vector2(0, 52)
+	ok_btn.add_theme_font_size_override("font_size", 16)
+	var ok_style = StyleBoxFlat.new()
+	ok_style.bg_color = Color(0.12, 0.55, 0.3, 0.95)
+	ok_style.border_width_left = 2
+	ok_style.border_width_top = 2
+	ok_style.border_width_right = 2
+	ok_style.border_width_bottom = 2
+	ok_style.border_color = Color(0.2, 1.0, 0.5)
+	ok_style.corner_radius_top_left = 10
+	ok_style.corner_radius_top_right = 10
+	ok_style.corner_radius_bottom_left = 10
+	ok_style.corner_radius_bottom_right = 10
+	ok_btn.add_theme_stylebox_override("normal", ok_style)
+	
+	ok_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		canvas.queue_free()
+		_switch_view(view_mode_select)
+		_on_create_room_pressed()
+	)
+	btns_hbox.add_child(ok_btn)
+	
+	var wait_btn = Button.new()
+	wait_btn.text = "⏳ لسه (انتظار باقي اللاعبين)"
+	wait_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wait_btn.custom_minimum_size = Vector2(0, 52)
+	wait_btn.add_theme_font_size_override("font_size", 16)
+	var wait_style = StyleBoxFlat.new()
+	wait_style.bg_color = Color(0.18, 0.22, 0.32, 0.95)
+	wait_style.border_width_left = 2
+	wait_style.border_width_top = 2
+	wait_style.border_width_right = 2
+	wait_style.border_width_bottom = 2
+	wait_style.border_color = Color(0.5, 0.7, 0.9)
+	wait_style.corner_radius_top_left = 10
+	wait_style.corner_radius_top_right = 10
+	wait_style.corner_radius_bottom_left = 10
+	wait_style.corner_radius_bottom_right = 10
+	wait_btn.add_theme_stylebox_override("normal", wait_style)
+	
+	wait_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		canvas.queue_free()
+	)
+	btns_hbox.add_child(wait_btn)

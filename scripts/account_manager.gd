@@ -80,6 +80,40 @@ func is_logged_in() -> bool:
 func get_current_user() -> String:
 	return accounts_data.get("current_user", "")
 
+func create_or_login_username(user_name: String) -> Dictionary:
+	var u = user_name.strip_edges()
+	if u.length() < 2:
+		return {"success": false, "message": "⚠️ اسم المستخدم يجب أن يكون حرفين على الأقل!"}
+	
+	if not accounts_data["users"].has(u):
+		accounts_data["users"][u] = {
+			"password": "",
+			"friends": [],
+			"redeemed_codes": [],
+			"created_at": Time.get_datetime_string_from_system()
+		}
+	
+	accounts_data["current_user"] = u
+	current_party = [u]
+	save_accounts()
+	
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+	var url = get_api_base_url() + "/api/auth/quick_auth"
+	var payload = {
+		"username": u,
+		"device_id": OS.get_unique_id(),
+		"device": OS.get_name() + " (" + OS.get_model_name() + ")"
+	}
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	http.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+	
+	user_logged_in.emit(u)
+	friends_updated.emit(get_friends())
+	party_updated.emit(current_party)
+	return {"success": true, "message": "🎉 تم تجهيز الحساب والدخول كـ: " + u}
+
 func sign_up(user_name: String, pass_word: String) -> Dictionary:
 	var u = user_name.strip_edges()
 	var p = pass_word.strip_edges()
