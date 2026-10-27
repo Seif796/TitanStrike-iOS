@@ -1746,8 +1746,9 @@ func _check_support_status(cur_user: String) -> void:
 					AudioManager.play_sfx("success")
 					telegram_btn.disabled = false
 					telegram_btn.text = "✅ تمام تقدر تتحدث معاه!"
+					var chat_url = str(json.data.get("chat_url", "https://discord.com/channels/1564558038826754110/1564558039556816918"))
 					_show_update_toast("🎉 تمام تقدر تتحدث معاه! وافق الأدمن لحسابك (" + cur_user + ") فقط.")
-					var chat_url = str(json.data.get("chat_url", "https://discord.com/oauth2/authorize?client_id=1564555083864088596&permissions=8&scope=bot%20applications.commands"))
+					_show_support_accepted_popup(cur_user, chat_url)
 					OS.shell_open(chat_url)
 				elif st == "REJECTED":
 					if _support_poll_timer:
@@ -1876,3 +1877,79 @@ func _show_party_invite_popup(inviter: String, invite_id: String) -> void:
 	btns_hbox.add_child(reject_btn)
 	
 	add_child(toast)
+
+func _show_support_accepted_popup(user_name: String, chat_url: String) -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 127
+	
+	var dimmer = ColorRect.new()
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.78)
+	layer.add_child(dimmer)
+	
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(440, 260)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.1, 0.2, 0.98)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(0.0, 0.9, 0.6, 1.0)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	panel.add_theme_stylebox_override("panel", style)
+	layer.add_child(panel)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	margin.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "👑 تمت موافقة الأدمن بنجاح! 👑"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	vbox.add_child(title)
+	
+	var desc = Label.new()
+	desc.text = "🎉 تمام يا %s! تقدر دلوقتي تتحدث معاه مباشرة!\nوافق الأدمن على طلب المحادثة لحسابك فقط." % user_name
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.add_theme_font_size_override("font_size", 15)
+	desc.add_theme_color_override("font_color", Color(0.2, 1.0, 0.5))
+	vbox.add_child(desc)
+	
+	var open_btn = Button.new()
+	open_btn.text = "💬 فتح المحادثة في ديسكورد الآن"
+	open_btn.custom_minimum_size = Vector2(0, 48)
+	open_btn.add_theme_font_size_override("font_size", 16)
+	open_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		if not chat_url.is_empty():
+			OS.shell_open(chat_url)
+		layer.queue_free()
+	)
+	vbox.add_child(open_btn)
+	
+	var close_btn = Button.new()
+	close_btn.text = "❌ إغلاق"
+	close_btn.custom_minimum_size = Vector2(0, 36)
+	close_btn.pressed.connect(func():
+		AudioManager.play_sfx("click")
+		layer.queue_free()
+	)
+	vbox.add_child(close_btn)
+	
+	get_tree().root.add_child(layer)

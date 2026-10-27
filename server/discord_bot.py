@@ -24,6 +24,7 @@ from discord.ext import commands
 
 BASE_DIR = Path(__file__).resolve().parent
 DISCORD_DATA_FILE = BASE_DIR / "data" / "discord_admins.json"
+SUPPORT_STATUS_FILE = BASE_DIR / "data" / "support_status.json"
 DISCORD_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 CLIENT_ID = "1564555083864088596"
@@ -77,6 +78,27 @@ def save_discord_data():
 
 load_discord_data()
 
+# Shared Persistent Support Status File Handler (guarantees zero split-brain in memory)
+def save_support_status_disk(username: str, status: str, admin: str = ""):
+    u = username.strip().lower()
+    try:
+        SUPPORT_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        cur = {}
+        if SUPPORT_STATUS_FILE.exists():
+            try:
+                cur = json.loads(SUPPORT_STATUS_FILE.read_text(encoding="utf-8"))
+            except Exception:
+                cur = {}
+        cur[u] = {
+            "status": status,
+            "accepted_by": admin,
+            "time": time.time()
+        }
+        SUPPORT_STATUS_FILE.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[DiscordBot] 💾 Persistent status saved: '{u}' -> {status} by '{admin}'")
+    except Exception as ex:
+        print(f"[DiscordBot] Error saving support status to disk: {ex}")
+
 # Bot Setup with unprivileged intents
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix=["!", "/"], intents=intents, help_command=None)
@@ -98,6 +120,8 @@ def send_support_request_to_discord(username: str, device: str) -> bool:
         return False
 
     uname_clean = username.strip()
+    save_support_status_disk(uname_clean, "PENDING")
+
     payload = {
         "content": "🚨 **طلب إذن محادثة مباشر من لاعب داخل اللعبة:**",
         "embeds": [{
@@ -301,25 +325,16 @@ async def slash_create_room(interaction: discord.Interaction):
 @app_commands.describe(username="اسم حساب اللاعب")
 async def slash_accept(interaction: discord.Interaction, username: str):
     register_interaction(interaction)
-    from update_server import GLOBAL_SUPPORT_REQUESTS
     uname = username.strip().lower()
-    if uname not in GLOBAL_SUPPORT_REQUESTS:
-        GLOBAL_SUPPORT_REQUESTS[uname] = {}
-    GLOBAL_SUPPORT_REQUESTS[uname]["status"] = "ACCEPTED"
-    GLOBAL_SUPPORT_REQUESTS[uname]["accepted_by"] = str(interaction.user)
-    GLOBAL_SUPPORT_REQUESTS[uname]["accepted_time"] = time.time()
+    save_support_status_disk(uname, "ACCEPTED", interaction.user.name)
     await interaction.response.send_message(f"🎉 **تمت الموافقة على محادثة حساب `{username}` فقط!**\n🎮 ستظهر له في اللعبة فوراً: *تمام تقدر تتحدث معاه!*")
 
 @bot.tree.command(name="reject", description="رفض طلب محادثة لاعب معين")
 @app_commands.describe(username="اسم حساب اللاعب")
 async def slash_reject(interaction: discord.Interaction, username: str):
     register_interaction(interaction)
-    from update_server import GLOBAL_SUPPORT_REQUESTS
     uname = username.strip().lower()
-    if uname not in GLOBAL_SUPPORT_REQUESTS:
-        GLOBAL_SUPPORT_REQUESTS[uname] = {}
-    GLOBAL_SUPPORT_REQUESTS[uname]["status"] = "REJECTED"
-    GLOBAL_SUPPORT_REQUESTS[uname]["rejected_by"] = str(interaction.user)
+    save_support_status_disk(uname, "REJECTED", interaction.user.name)
     await interaction.response.send_message(f"🚫 **تم رفض طلب محادثة اللاعب `{username}`.**")
 
 @bot.tree.command(name="help", description="عرض دليل أوامر بوت Titan Strike 3D")
@@ -367,16 +382,11 @@ async def on_interaction(interaction: discord.Interaction):
             cid = interaction.data.get("custom_id", "")
             if cid.startswith("support_accept:"):
                 target_user = cid.split(":", 1)[1].strip().lower()
-                from update_server import GLOBAL_SUPPORT_REQUESTS
-                if target_user not in GLOBAL_SUPPORT_REQUESTS:
-                    GLOBAL_SUPPORT_REQUESTS[target_user] = {}
-                GLOBAL_SUPPORT_REQUESTS[target_user]["status"] = "ACCEPTED"
-                GLOBAL_SUPPORT_REQUESTS[target_user]["accepted_by"] = str(interaction.user)
-                GLOBAL_SUPPORT_REQUESTS[target_user]["accepted_time"] = time.time()
+                save_support_status_disk(target_user, "ACCEPTED", interaction.user.name)
 
                 embed = interaction.message.embeds[0] if interaction.message.embeds else None
                 if embed:
-                    embed.color = 0x57F287
+                    embed.color = 0x57F287  # Green
                     embed.title = f"✅ تمت الموافقة على محادثة اللاعب '{target_user}'!"
                     embed.set_footer(text=f"تم القبول بواسطة: {interaction.user.name} • الصلاحية لحساب '{target_user}' فقط")
 
@@ -394,15 +404,11 @@ async def on_interaction(interaction: discord.Interaction):
 
             elif cid.startswith("support_reject:"):
                 target_user = cid.split(":", 1)[1].strip().lower()
-                from update_server import GLOBAL_SUPPORT_REQUESTS
-                if target_user not in GLOBAL_SUPPORT_REQUESTS:
-                    GLOBAL_SUPPORT_REQUESTS[target_user] = {}
-                GLOBAL_SUPPORT_REQUESTS[target_user]["status"] = "REJECTED"
-                GLOBAL_SUPPORT_REQUESTS[target_user]["rejected_by"] = str(interaction.user)
+                save_support_status_disk(target_user, "REJECTED", interaction.user.name)
 
                 embed = interaction.message.embeds[0] if interaction.message.embeds else None
                 if embed:
-                    embed.color = 0xED4245
+                    embed.color = 0xED4245  # Red
                     embed.title = f"❌ تم رفض طلب اللاعب '{target_user}'"
                     embed.set_footer(text=f"تم الرفض بواسطة: {interaction.user.name}")
 
@@ -455,12 +461,7 @@ async def on_message(message: discord.Message):
             parts = content.split(maxsplit=1)
             if len(parts) > 1:
                 uname = parts[1].strip().lower()
-                from update_server import GLOBAL_SUPPORT_REQUESTS
-                if uname not in GLOBAL_SUPPORT_REQUESTS:
-                    GLOBAL_SUPPORT_REQUESTS[uname] = {}
-                GLOBAL_SUPPORT_REQUESTS[uname]["status"] = "ACCEPTED"
-                GLOBAL_SUPPORT_REQUESTS[uname]["accepted_by"] = str(message.author)
-                GLOBAL_SUPPORT_REQUESTS[uname]["accepted_time"] = time.time()
+                save_support_status_disk(uname, "ACCEPTED", str(message.author))
                 await message.channel.send(f"🎉 **تمت الموافقة على محادثة حساب `{parts[1].strip()}` فقط!**\n🎮 اللاعب الآن يرى باللعبة: *تمام تقدر تتحدث معاه!*")
                 return
 
@@ -469,11 +470,7 @@ async def on_message(message: discord.Message):
             parts = content.split(maxsplit=1)
             if len(parts) > 1:
                 uname = parts[1].strip().lower()
-                from update_server import GLOBAL_SUPPORT_REQUESTS
-                if uname not in GLOBAL_SUPPORT_REQUESTS:
-                    GLOBAL_SUPPORT_REQUESTS[uname] = {}
-                GLOBAL_SUPPORT_REQUESTS[uname]["status"] = "REJECTED"
-                GLOBAL_SUPPORT_REQUESTS[uname]["rejected_by"] = str(message.author)
+                save_support_status_disk(uname, "REJECTED", str(message.author))
                 await message.channel.send(f"🚫 **تم رفض طلب محادثة اللاعب `{parts[1].strip()}`.**")
                 return
 

@@ -1242,8 +1242,19 @@ def handle_support_request(data: dict) -> tuple[int, dict]:
 
 def handle_support_status(username: str) -> dict:
     u = username.strip().lower()
-    req = GLOBAL_SUPPORT_REQUESTS.get(u, {})
-    status = req.get("status", "NONE")
+    status = "NONE"
+    status_file = BASE_DIR / "data" / "support_status.json"
+    if status_file.exists():
+        try:
+            with open(status_file, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                if u in saved:
+                    status = str(saved[u].get("status", "NONE"))
+        except Exception:
+            pass
+    if status == "NONE":
+        req = GLOBAL_SUPPORT_REQUESTS.get(u, {})
+        status = req.get("status", "NONE")
     return {
         "success": True,
         "status": status,
