@@ -352,59 +352,76 @@ def register_interaction(interaction: discord.Interaction):
     if changed:
         save_discord_data()
 
-# --- Discord Button Interaction Listener ---
+# --- Discord Button Interaction Listener (Sub-second response guaranteed) ---
 
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
-    if interaction.type == discord.InteractionType.component:
-        cid = interaction.data.get("custom_id", "")
-        if cid.startswith("support_accept:"):
-            target_user = cid.split(":", 1)[1].strip().lower()
-            from update_server import GLOBAL_SUPPORT_REQUESTS
-            if target_user not in GLOBAL_SUPPORT_REQUESTS:
-                GLOBAL_SUPPORT_REQUESTS[target_user] = {}
-            GLOBAL_SUPPORT_REQUESTS[target_user]["status"] = "ACCEPTED"
-            GLOBAL_SUPPORT_REQUESTS[target_user]["accepted_by"] = str(interaction.user)
-            GLOBAL_SUPPORT_REQUESTS[target_user]["accepted_time"] = time.time()
+    try:
+        if interaction.type == discord.InteractionType.component:
+            # 1. IMMEDIATE ACKNOWLEDGEMENT within < 0.1s so Discord NEVER says "didn't respond in time"
+            try:
+                await interaction.response.defer()
+            except Exception:
+                pass
 
-            embed = interaction.message.embeds[0] if interaction.message.embeds else None
-            if embed:
-                embed.color = 0x57F287
-                embed.title = f"✅ تمت الموافقة على محادثة اللاعب '{target_user}'!"
-                embed.set_footer(text=f"تم القبول بواسطة: {interaction.user.name} • الصلاحية لحساب '{target_user}' فقط")
+            cid = interaction.data.get("custom_id", "")
+            if cid.startswith("support_accept:"):
+                target_user = cid.split(":", 1)[1].strip().lower()
+                from update_server import GLOBAL_SUPPORT_REQUESTS
+                if target_user not in GLOBAL_SUPPORT_REQUESTS:
+                    GLOBAL_SUPPORT_REQUESTS[target_user] = {}
+                GLOBAL_SUPPORT_REQUESTS[target_user]["status"] = "ACCEPTED"
+                GLOBAL_SUPPORT_REQUESTS[target_user]["accepted_by"] = str(interaction.user)
+                GLOBAL_SUPPORT_REQUESTS[target_user]["accepted_time"] = time.time()
 
-            await interaction.response.edit_message(
-                content=f"🎉 **تمت الموافقة على محادثة حساب `{target_user}` بنجاح بواسطة {interaction.user.mention}!**\n🎮 اللاعب يرى الآن في اللعبة: *تمام تقدر تتحدث معاه!*",
-                embed=embed,
-                components=[]
-            )
-            print(f"[DiscordBot] ✅ Admin {interaction.user} ACCEPTED player '{target_user}'")
-            return
+                embed = interaction.message.embeds[0] if interaction.message.embeds else None
+                if embed:
+                    embed.color = 0x57F287
+                    embed.title = f"✅ تمت الموافقة على محادثة اللاعب '{target_user}'!"
+                    embed.set_footer(text=f"تم القبول بواسطة: {interaction.user.name} • الصلاحية لحساب '{target_user}' فقط")
 
-        elif cid.startswith("support_reject:"):
-            target_user = cid.split(":", 1)[1].strip().lower()
-            from update_server import GLOBAL_SUPPORT_REQUESTS
-            if target_user not in GLOBAL_SUPPORT_REQUESTS:
-                GLOBAL_SUPPORT_REQUESTS[target_user] = {}
-            GLOBAL_SUPPORT_REQUESTS[target_user]["status"] = "REJECTED"
-            GLOBAL_SUPPORT_REQUESTS[target_user]["rejected_by"] = str(interaction.user)
+                try:
+                    await interaction.message.edit(
+                        content=f"🎉 **تمت الموافقة على محادثة حساب `{target_user}` بنجاح بواسطة {interaction.user.mention}!**\n🎮 اللاعب يرى الآن في اللعبة: *تمام تقدر تتحدث معاه!*",
+                        embed=embed,
+                        view=None
+                    )
+                except Exception as edit_err:
+                    print(f"[DiscordBot] Edit message error: {edit_err}")
 
-            embed = interaction.message.embeds[0] if interaction.message.embeds else None
-            if embed:
-                embed.color = 0xED4245
-                embed.title = f"❌ تم رفض طلب اللاعب '{target_user}'"
-                embed.set_footer(text=f"تم الرفض بواسطة: {interaction.user.name}")
+                print(f"[DiscordBot] ✅ Admin {interaction.user} ACCEPTED player '{target_user}'")
+                return
 
-            await interaction.response.edit_message(
-                content=f"🚫 **تم رفض طلب محادثة اللاعب `{target_user}` بواسطة {interaction.user.mention}.**",
-                embed=embed,
-                components=[]
-            )
-            print(f"[DiscordBot] ❌ Admin {interaction.user} REJECTED player '{target_user}'")
-            return
+            elif cid.startswith("support_reject:"):
+                target_user = cid.split(":", 1)[1].strip().lower()
+                from update_server import GLOBAL_SUPPORT_REQUESTS
+                if target_user not in GLOBAL_SUPPORT_REQUESTS:
+                    GLOBAL_SUPPORT_REQUESTS[target_user] = {}
+                GLOBAL_SUPPORT_REQUESTS[target_user]["status"] = "REJECTED"
+                GLOBAL_SUPPORT_REQUESTS[target_user]["rejected_by"] = str(interaction.user)
 
-    # Process normal slash commands
-    await bot.process_application_commands(interaction)
+                embed = interaction.message.embeds[0] if interaction.message.embeds else None
+                if embed:
+                    embed.color = 0xED4245
+                    embed.title = f"❌ تم رفض طلب اللاعب '{target_user}'"
+                    embed.set_footer(text=f"تم الرفض بواسطة: {interaction.user.name}")
+
+                try:
+                    await interaction.message.edit(
+                        content=f"🚫 **تم رفض طلب محادثة اللاعب `{target_user}` بواسطة {interaction.user.mention}.**",
+                        embed=embed,
+                        view=None
+                    )
+                except Exception as edit_err:
+                    print(f"[DiscordBot] Edit message error: {edit_err}")
+
+                print(f"[DiscordBot] ❌ Admin {interaction.user} REJECTED player '{target_user}'")
+                return
+
+        # Process normal slash commands
+        await bot.process_application_commands(interaction)
+    except Exception as ex:
+        print(f"[DiscordBot] Interaction error: {ex}")
 
 # --- Message Event Handler ---
 
