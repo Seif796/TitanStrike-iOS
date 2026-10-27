@@ -28,4 +28,16 @@ server/ai_config.json
 Godot_v*
 godot*.zip
 
+# Generated game packages & binaries
+public/downloads/
+server/public/downloads/
+*.pck
+*.apk
+*.zip
+*.key
+*.token
+server/data/*.key
+server/data/*.json
+
+
 

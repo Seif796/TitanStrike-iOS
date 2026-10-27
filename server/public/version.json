@@ -1,15 +1,15 @@
 {
-  "version": "1.3.4",
-  "version_code": 10,
-  "release_date": "2026-10-26",
-  "title": "نظام دعوات البارتي الإشعاري والدخول التلقائي بالـ IP",
+  "version": "1.3.5",
+  "version_code": 11,
+  "release_date": "2026-10-27",
+  "title": "تفعيل أزرار القبول والرفض التفاعلية لبوت ديسكورد والمحادثة الفردية",
   "changelog": [
     "تحديث مباشر وفوري عبر السيرفر لجميع الأجهزة",
     "إضافة زر الطلبات (Requests) وزر تيليجرام بوت في القائمة الرئيسية",
     "تحسين استقرار المحرك على أندرويد وآيفون"
   ],
   "download_url": "/downloads/update.pck",
-  "file_size_bytes": 9231152,
-  "sha256": "6a70c9f45c2b845aaa79fefbdda0769fe89a3982cb203f286765941c5a932ba3",
+  "file_size_bytes": 9232032,
+  "sha256": "81dcbc91f8d4a98a8a10fd435ee56a47b8929a11de2c1c6e9cab5978ce3368af",
   "mandatory": true
 }

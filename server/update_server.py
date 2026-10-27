@@ -678,7 +678,7 @@ def add_console_log(source: str, message: str, level: str = "INFO"):
     # Instant Telegram Alert on any server or game error
     if level == "ERROR":
         try:
-            from telegram_bot import notify_server_error
+            from discord_bot import notify_server_error
             notify_server_error(source, message)
         except Exception:
             pass
@@ -1229,32 +1229,15 @@ def handle_support_request(data: dict) -> tuple[int, dict]:
     add_console_log("SUPPORT", f"🔔 طلب محادثة جديد من اللاعب '{u}' عبر جهاز '{dev}'", "INFO")
 
     try:
-        from telegram_bot import broadcast_to_admins
-        time_str = time.strftime("%H:%M:%S")
-        txt = (
-            f"🔔 <b>طلب محادثة مباشر من لاعب داخل اللعبة!</b>\n\n"
-            f"👤 <b>اسم اللاعب:</b> <code>{u}</code>\n"
-            f"📱 <b>الجهاز:</b> <code>{dev}</code>\n"
-            f"⏰ <b>الوقت:</b> <code>{time_str}</code>\n\n"
-            f"💬 <b>اللاعب يطلب إذناً للدخول والتحدث معك مباشرة!</b>\n"
-            f"<i>هل توافق على قبول المحادثة؟</i>"
-        )
-        markup = {
-            "inline_keyboard": [
-                [
-                    {"text": "✅ أوافق (Accept)", "callback_data": f"support_accept:{u}"},
-                    {"text": "❌ أرفض (Reject)", "callback_data": f"support_reject:{u}"}
-                ]
-            ]
-        }
-        broadcast_to_admins(txt, reply_markup=markup)
+        from discord_bot import send_support_request_to_discord
+        send_support_request_to_discord(u, dev)
     except Exception as ex:
-        add_console_log("SUPPORT", f"⚠️ فشل إرسال تنبيه التيليجرام: {ex}", "WARNING")
+        add_console_log("SUPPORT", f"⚠️ فشل إرسال تنبيه الديسكورد: {ex}", "WARNING")
 
     return 200, {
         "success": True,
         "status": "PENDING",
-        "message": "📩 تم إرسال طلب المحادثة للأدمن في تيليجرام بنجاح! بانتظار الموافقة..."
+        "message": "📩 تم إرسال طلب المحادثة للأدمن في ديسكورد بنجاح! بانتظار الموافقة..."
     }
 
 def handle_support_status(username: str) -> dict:
@@ -1264,8 +1247,8 @@ def handle_support_status(username: str) -> dict:
     return {
         "success": True,
         "status": status,
-        "bot_username": "cyberfort3d_bot",
-        "chat_url": "https://t.me/cyberfort3d_bot"
+        "bot_username": "Cyberfort",
+        "chat_url": "https://discord.com/channels/1564558038826754110/1564558039556816918"
     }
 
 def send_json_response(handler, data, status_code: int = 200):
@@ -2649,13 +2632,13 @@ def run_server():
         print(f"    - رابط الزوار (Wi-Fi):          http://{lan_ip}:{GUEST_PORT}")
         print(f"    - رابط الإنترنت (WAN):          http://{wan_ip}:{GUEST_PORT}")
     print("=" * 75)
-    # Launch Telegram Bot Gemini Agent Daemon
+    # Launch Discord Bot Gemini Agent Daemon
     try:
-        from telegram_bot import start_telegram_bot_thread
-        start_telegram_bot_thread()
-        print("🤖 [Telegram Bot Agent] نشط ويعمل بنجاح لاستقبال الأوامر وإرسال تنبيهات الأخطاء!")
+        from discord_bot import start_discord_bot_thread
+        start_discord_bot_thread()
+        print("🤖 [Discord Bot Agent] نشط ويعمل بنجاح لاستقبال الأوامر وإرسال تنبيهات الأخطاء عبر ديسكورد!")
     except Exception as e:
-        print(f"[!] Warning: Could not start Telegram Bot: {e}")
+        print(f"[!] Warning: Could not start Discord Bot: {e}")
 
     # Launch Cloud 24/7 Keep-Alive Thread (Prevents Render 15-min Sleep)
     try:

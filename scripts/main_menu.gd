@@ -1678,9 +1678,9 @@ func _check_support_status(cur_user: String) -> void:
 						_support_poll_timer = null
 					AudioManager.play_sfx("success")
 					telegram_btn.disabled = false
-					telegram_btn.text = "✅ تواصل مع الأدمن (مقبول)"
-					_show_update_toast("🎉 وافق الأدمن على طلب المحادثة! جاري فتح بوت ديسكورد...")
-					var chat_url = str(json.data.get("chat_url", "https://t.me/cyberfort3d_bot"))
+					telegram_btn.text = "✅ تمام تقدر تتحدث معاه!"
+					_show_update_toast("🎉 تمام تقدر تتحدث معاه! وافق الأدمن لحسابك (" + cur_user + ") فقط.")
+					var chat_url = str(json.data.get("chat_url", "https://discord.com/oauth2/authorize?client_id=1564555083864088596&permissions=8&scope=bot%20applications.commands"))
 					OS.shell_open(chat_url)
 				elif st == "REJECTED":
 					if _support_poll_timer:
