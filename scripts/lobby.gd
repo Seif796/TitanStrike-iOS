@@ -58,31 +58,7 @@ func _ready() -> void:
 	if leave_btn:
 		leave_btn.pressed.connect(_on_leave_pressed)
 	
-	var r_code = NetworkManager.current_room_code
-	var all_ips = NetworkManager.get_all_local_ips()
-	var visible_ips: Array[String] = []
-	for ip in all_ips:
-		if ip != "127.0.0.1" and not visible_ips.has(ip):
-			visible_ips.append(ip)
-	var ips_str = " / ".join(visible_ips) if not visible_ips.is_empty() else NetworkManager.get_local_ip()
-	
-	if multiplayer.is_server():
-		room_title.text = "👑 SQUAD ROOM HOST (أنت صاحب الغرفة)"
-		code_banner.text = "🔑 كود الغرفة (4 أرقام): #%s (أعطِ هذا الكود لأصدقائك للانضمام فوراً!)" % r_code
-		if start_btn:
-			start_btn.visible = true
-			start_btn.disabled = false
-			start_btn.text = "🚀 START BATTLE (ابدأ المعركة)"
-			start_btn.modulate = Color(0.2, 1.0, 0.5)
-	else:
-		room_title.text = "🎮 SQUAD ROOM - READY (تم الانضمام للغرفة بنجاح)"
-		code_banner.text = "🔑 متصل بالغرفة #%s   |   📱 السيرفر: %s" % [r_code, ips_str]
-		if start_btn:
-			start_btn.visible = true
-			start_btn.disabled = true
-			start_btn.text = "⏳ WAITING FOR HOST (بانتظار الهوست لبدء المعركة)..."
-			start_btn.modulate = Color(0.7, 0.75, 0.85)
-	
+	_refresh_code_banner()
 	_update_lobby_ui()
 
 func _setup_hero_options_lobby() -> void:
@@ -175,6 +151,7 @@ func _update_map_banner(map_id: int) -> void:
 			map_banner_notice.modulate = Color(0.3, 1.0, 0.6)
 
 func _update_lobby_ui() -> void:
+	_refresh_code_banner()
 	for child in player_list_container.get_children():
 		child.queue_free()
 	
@@ -342,3 +319,37 @@ func _show_host_start_prompt(player_name: String) -> void:
 		canvas.queue_free()
 	)
 	btns_hbox.add_child(wait_btn)
+
+func _refresh_code_banner() -> void:
+	var r_code = NetworkManager.current_room_code
+	if r_code.is_empty():
+		if multiplayer.is_server():
+			r_code = NetworkManager.generate_room_code()
+		else:
+			r_code = "----"
+	
+	var all_ips = NetworkManager.get_all_local_ips()
+	var visible_ips: Array[String] = []
+	for ip in all_ips:
+		if ip != "127.0.0.1" and not visible_ips.has(ip):
+			visible_ips.append(ip)
+	var ips_str = " / ".join(visible_ips) if not visible_ips.is_empty() else NetworkManager.get_local_ip()
+	
+	if multiplayer.is_server():
+		room_title.text = "👑 SQUAD ROOM HOST (أنت صاحب الغرفة)"
+		code_banner.text = "🔑 كود الغرفة (4 أرقام): #%s (أعطِ هذا الكود لأصدقائك للانضمام فوراً!)" % r_code
+		code_banner.modulate = Color(0.2, 1.0, 0.5)
+		if start_btn:
+			start_btn.visible = true
+			start_btn.disabled = false
+			start_btn.text = "🚀 START BATTLE (ابدأ المعركة)"
+			start_btn.modulate = Color(0.2, 1.0, 0.5)
+	else:
+		room_title.text = "🎮 SQUAD ROOM - READY (تم الانضمام للغرفة بنجاح)"
+		code_banner.text = "🔑 متصل بالغرفة كود: #%s   |   📱 السيرفر: %s" % [r_code, ips_str]
+		code_banner.modulate = Color(0.3, 0.9, 1.0)
+		if start_btn:
+			start_btn.visible = true
+			start_btn.disabled = true
+			start_btn.text = "⏳ WAITING FOR HOST (بانتظار الهوست لبدء المعركة)..."
+			start_btn.modulate = Color(0.7, 0.75, 0.85)

@@ -159,9 +159,11 @@ func get_bluetooth_or_hotspot_host_ip() -> String:
 # --- CREATE ROOM ---
 
 func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
-	if current_room_code.is_empty():
-		generate_room_code()
+	var code_to_use = current_room_code
+	if code_to_use.is_empty():
+		code_to_use = generate_room_code()
 	leave_game()
+	current_room_code = code_to_use
 	local_player_name = player_name
 	local_class_id = class_id
 	peer = ENetMultiplayerPeer.new()
@@ -666,6 +668,8 @@ func _register_player(id: int, info: Dictionary) -> void:
 	lobby_updated.emit()
 	if multiplayer and multiplayer.is_server():
 		update_room_details("", players.size())
+		if id != 1:
+			rpc_id(id, "_sync_client_room_code", current_room_code)
 		var p_name = info.get("name", "لاعب")
 		var um = get_node_or_null("/root/UpdateManager")
 		if um and id != 1:
@@ -747,3 +751,9 @@ func get_local_ip() -> String:
 				return ip
 		return list[0]
 	return "127.0.0.1"
+
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_client_room_code(code: String) -> void:
+	current_room_code = code
+	lobby_updated.emit()
