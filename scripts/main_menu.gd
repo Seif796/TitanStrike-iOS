@@ -309,6 +309,37 @@ func _on_redeem_pressed() -> void:
 # 2. OTA UPDATE SYSTEM & SERVER
 # ==============================================================================
 func _setup_update_system() -> void:
+	# Modern cyberpunk style for ProgressBar
+	if progress_bar:
+		progress_bar.custom_minimum_size = Vector2(0, 32)
+		progress_bar.show_percentage = true
+		
+		var bg_style = StyleBoxFlat.new()
+		bg_style.bg_color = Color(0.04, 0.08, 0.16, 0.95)
+		bg_style.border_width_left = 2
+		bg_style.border_width_top = 2
+		bg_style.border_width_right = 2
+		bg_style.border_width_bottom = 2
+		bg_style.border_color = Color(0.0, 0.7, 0.95, 0.7)
+		bg_style.corner_radius_top_left = 12
+		bg_style.corner_radius_top_right = 12
+		bg_style.corner_radius_bottom_left = 12
+		bg_style.corner_radius_bottom_right = 12
+		progress_bar.add_theme_stylebox_override("background", bg_style)
+		
+		var fill_style = StyleBoxFlat.new()
+		fill_style.bg_color = Color(0.0, 0.92, 0.65, 0.95)
+		fill_style.border_width_left = 1
+		fill_style.border_width_top = 1
+		fill_style.border_width_right = 1
+		fill_style.border_width_bottom = 1
+		fill_style.border_color = Color(0.4, 1.0, 0.8, 1.0)
+		fill_style.corner_radius_top_left = 12
+		fill_style.corner_radius_top_right = 12
+		fill_style.corner_radius_bottom_left = 12
+		fill_style.corner_radius_bottom_right = 12
+		progress_bar.add_theme_stylebox_override("fill", fill_style)
+
 	if check_update_btn:
 		check_update_btn.pressed.connect(func():
 			AudioManager.play_sfx("click")
@@ -384,19 +415,41 @@ func _on_update_checked(has_update: bool, info: Dictionary) -> void:
 
 func _on_update_available(info: Dictionary) -> void:
 	AudioManager.play_sfx("redeem")
-	var new_ver = str(info.get("version", "1.2.0"))
-	var new_code = int(info.get("version_code", 2))
+	var new_ver = str(info.get("version", "1.3.6"))
+	var new_code = int(info.get("version_code", 12))
+	var title = str(info.get("title", "تحديث جديد"))
 	
-	# Update version badge on the fly without blocking player with file downloads
+	# Show the beautiful Update Modal with progress & percentage!
+	if update_modal:
+		update_modal.visible = true
+	if modal_version_tag:
+		modal_version_tag.text = "🔥 الإصدار الجديد: v%s (Build %d) - %s" % [new_ver, new_code, title]
+	
+	var changelog_items = info.get("changelog", [])
+	if changelog_label:
+		if typeof(changelog_items) == TYPE_ARRAY and not changelog_items.is_empty():
+			changelog_label.text = "• " + "\n• ".join(changelog_items)
+		else:
+			changelog_label.text = "• تحديثات مستمرة وتحسينات أداء وسيرفر متطور."
+	
+	if progress_bar:
+		progress_bar.value = 0.0
+	if progress_label:
+		progress_label.text = "⚡ جاري بدء تنزيل حزمة التحديث... (0%)"
+		progress_label.modulate = Color(0.3, 0.9, 1.0)
+	
+	if update_now_btn:
+		update_now_btn.disabled = true
+		update_now_btn.text = "⏳ جاري التحديث التلقائي..."
+	
 	if version_status_label:
-		version_status_label.text = "⚡ يتوفر تحديث v%s... جاري التنزيل والتثبيت!" % [new_ver, new_code]
+		version_status_label.text = "⚡ يتوفر تحديث v%s (Build %d)... جاري التنزيل!" % [new_ver, new_code]
 		version_status_label.modulate = Color(0.2, 1.0, 0.5)
 	
-	# Apply update silently in background if package available
 	if not UpdateManager.is_downloading and not info.get("has_new_ipa", false):
 		UpdateManager.start_download_update()
 	
-	_show_update_toast("📥 يتوفر تحديث جديد (v%s)، جاري تنزيل الملفات وتطبيقها الآن..." % new_ver)
+	_show_update_toast("📥 جاري تحديث اللعبة الآن إلى v%s..." % new_ver)
 
 func _show_update_toast(msg: String) -> void:
 	var toast = CanvasLayer.new()
@@ -448,10 +501,18 @@ func _show_update_toast(msg: String) -> void:
 	)
 
 func _on_update_download_progress(downloaded: int, total: int, pct: float) -> void:
-	progress_bar.value = pct * 100.0
+	if update_modal and not update_modal.visible:
+		update_modal.visible = true
+	var percent_int = int(clampf(pct * 100.0, 0.0, 100.0))
+	if progress_bar:
+		progress_bar.value = percent_int
 	var dl_mb = float(downloaded) / (1024.0 * 1024.0)
 	var tot_mb = float(total) / (1024.0 * 1024.0)
-	progress_label.text = "جاري التحميل... %.1f / %.1f MB (%d%%)" % [dl_mb, tot_mb, int(pct * 100.0)]
+	if progress_label:
+		progress_label.text = "⚡ جاري تحميل وتثبيت التحديث... %.1f / %.1f MB ( %d%% )" % [dl_mb, tot_mb, percent_int]
+		progress_label.modulate = Color(0.2, 0.95, 1.0)
+	if update_now_btn:
+		update_now_btn.text = "⏳ جاري التحديث (%d%%)..." % percent_int
 
 func _on_update_download_failed(msg: String) -> void:
 	AudioManager.play_sfx("error")
@@ -463,14 +524,20 @@ func _on_update_download_failed(msg: String) -> void:
 
 func _on_update_installed() -> void:
 	AudioManager.play_sfx("success")
-	progress_bar.value = 100.0
-	progress_label.text = "✅ تم تثبيت التحديث بنجاح! جاري إعادة تشغيل اللعبة وتطبيق التحديث..."
-	progress_label.modulate = Color.GREEN
+	if progress_bar:
+		progress_bar.value = 100.0
+	if progress_label:
+		progress_label.text = "✅ تم تثبيت التحديث 100%! جاري تشغيل اللعبة بالتحديث الجديد..."
+		progress_label.modulate = Color(0.2, 1.0, 0.4)
+	if update_now_btn:
+		update_now_btn.text = "✅ تم اكتمال التحديث 100%"
 	
 	_update_version_badge()
-	_show_update_toast("🎉 تم تثبيت التحديث بنجاح وتحديث كافة ملفات اللعبة!")
+	_show_update_toast("🎉 تم تثبيت التحديث بنجاح 100%!")
 	
-	get_tree().create_timer(0.8).timeout.connect(func():
+	get_tree().create_timer(1.2).timeout.connect(func():
+		if update_modal:
+			update_modal.visible = false
 		var new_scene = ResourceLoader.load("res://scenes/main_menu.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REPLACE)
 		if new_scene:
 			get_tree().change_scene_to_packed(new_scene)
