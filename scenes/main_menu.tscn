@@ -535,7 +535,7 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "ادخل كود الغرفة (مثال: 4829)..."
+placeholder_text = "ادخل كود الغرفة المكون من 4 أرقام (مثال: 4829)..."
 
 [node name="JoinRoomBtn" type="Button" parent="ViewModeSelect/HBox/RightCol/Panel/VBox/JoinBox"]
 custom_minimum_size = Vector2(160, 44)

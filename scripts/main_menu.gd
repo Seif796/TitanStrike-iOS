@@ -806,6 +806,7 @@ func _setup_mode_select_view() -> void:
 	# Multiplayer buttons
 	create_room_btn.pressed.connect(_on_create_room_pressed)
 	join_room_btn.pressed.connect(_on_join_room_pressed)
+	code_input.text_submitted.connect(func(_t): _on_join_room_pressed())
 	bt_btn.pressed.connect(_on_bluetooth_btn_pressed)
 	scan_btn.pressed.connect(_on_scan_btn_pressed)
 	party_play_btn.pressed.connect(func():
@@ -1048,7 +1049,7 @@ func _on_join_room_pressed() -> void:
 	
 	var code = code_input.text.strip_edges().to_upper().replace("#", "")
 	if code.is_empty():
-		status_label.text = "⚠️ اكتب كود الغرفة (Room Code) للانضمام!"
+		status_label.text = "⚠️ اكتب كود الغرفة المكون من 4 أرقام (مثال: 4829) للانضمام!"
 		status_label.modulate = Color.YELLOW
 		_speak_prompt("Please enter the Room Code!")
 		code_input.grab_focus()

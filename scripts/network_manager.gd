@@ -23,6 +23,7 @@ var players: Dictionary = {}
 var local_player_name: String = ""
 var local_class_id: int = 0
 var current_room_code: String = ""
+var discovered_rooms: Dictionary = {}
 var last_received_msg_id: int = 0
 var _broadcast_overlay: CanvasLayer = null
 var _ejected_overlay: CanvasLayer = null
@@ -83,9 +84,10 @@ func _process(delta: float) -> void:
 		if pkt.begins_with("TITANSTRIKE:"):
 			var parts = pkt.split(":")
 			if parts.size() >= 4:
-				var r_code = parts[1]
-				var r_ip = parts[2]
+				var r_code = parts[1].strip_edges().to_upper().replace("#", "")
+				var r_ip = parts[2].strip_edges()
 				var r_map = int(parts[4]) if parts.size() >= 5 else 0
+				discovered_rooms[r_code] = r_ip
 				room_discovered.emit(r_code, r_ip, r_map)
 
 # --- ROOM CODE ENCODING / DECODING ---
@@ -157,6 +159,8 @@ func get_bluetooth_or_hotspot_host_ip() -> String:
 # --- CREATE ROOM ---
 
 func create_room(player_name: String, class_id: int, port: int = DEFAULT_PORT) -> Error:
+	if current_room_code.is_empty():
+		generate_room_code()
 	leave_game()
 	local_player_name = player_name
 	local_class_id = class_id
@@ -221,6 +225,13 @@ func join_room_with_code(code: String, player_name: String, class_id: int, port:
 		_joining_candidates.append(current_room_code)
 		_start_next_candidate_connection()
 		return OK
+
+	# 2.1. Check if 4-digit room was already discovered locally via UDP
+	if discovered_rooms.has(current_room_code):
+		var disc_ip = str(discovered_rooms[current_room_code]).strip_edges()
+		if not disc_ip.is_empty() and not _joining_candidates.has(disc_ip):
+			_joining_candidates.append(disc_ip)
+			print("⚡ [UDP Discovery] Matched local 4-digit room #%s at IP %s" % [current_room_code, disc_ip])
 
 	# 3. Query Central Server FIRST for Host Candidate IPs (Ultra-Fast < 0.2s lookup!)
 	var um = get_node_or_null("/root/UpdateManager")
