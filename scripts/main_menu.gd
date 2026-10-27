@@ -543,7 +543,7 @@ func _on_update_installed() -> void:
 	get_tree().create_timer(1.2).timeout.connect(func():
 		if update_modal:
 			update_modal.visible = false
-		var new_scene = ResourceLoader.load("res://scenes/main_menu.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REPLACE)
+		var new_scene = ResourceLoader.load("res://scenes/main_menu.tscn", "PackedScene", ResourceLoader.CACHE_MODE_IGNORE)
 		if new_scene:
 			get_tree().change_scene_to_packed(new_scene)
 		else:

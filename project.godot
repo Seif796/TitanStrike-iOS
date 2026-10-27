@@ -23,11 +23,11 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+UpdateManager="*res://scripts/update_manager.gd"
 NetworkManager="*res://scripts/network_manager.gd"
 GameManager="*res://scripts/game_manager.gd"
 AudioManager="*res://scripts/audio_manager.gd"
 AccountManager="*res://scripts/account_manager.gd"
-UpdateManager="*res://scripts/update_manager.gd"
 
 [display]
 

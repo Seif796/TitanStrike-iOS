@@ -125,6 +125,28 @@ var _is_checking_heartbeat: bool = false
 var _heartbeat_candidate_idx: int = 0
 var _heartbeat_candidates: Array[String] = []
 
+
+func _init() -> void:
+	_mount_installed_patches()
+
+func _mount_installed_patches() -> bool:
+	var mounted: bool = false
+	var patch_candidates = [
+		"user://patch.pck",
+		ProjectSettings.globalize_path("user://patch.pck"),
+		"user://update.pck",
+		ProjectSettings.globalize_path("user://update.pck"),
+		UPDATE_PACKAGE_PATH,
+		ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
+	]
+	for p in patch_candidates:
+		if FileAccess.file_exists(p):
+			if ProjectSettings.load_resource_pack(p, true):
+				print("[UpdateManager] Successfully mounted patch pack: ", p)
+				mounted = true
+				break
+	return mounted
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_load_config()
@@ -943,16 +965,21 @@ func _on_download_request_completed(result: int, response_code: int, _headers: P
 	tf.close()
 	
 	var dl_path = str(latest_server_info.get("download_url", "")).to_lower()
-	var temp_real = ProjectSettings.globalize_path(temp_target)
-	var patch_real = ProjectSettings.globalize_path("user://patch.pck")
-	var zip_real = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
+	var buf = tf.get_buffer(tf.get_length())
+	tf.close()
 	
 	if dl_path.ends_with(".pck"):
-		if FileAccess.file_exists("user://patch.pck"):
-			DirAccess.remove_absolute(patch_real)
-		DirAccess.rename_absolute(temp_real, patch_real)
+		var pck_out = FileAccess.open("user://patch.pck", FileAccess.WRITE)
+		if pck_out:
+			pck_out.store_buffer(buf)
+			pck_out.close()
+			print("[UpdateManager] Stored user://patch.pck (%d bytes)" % buf.size())
+		var pck_out2 = FileAccess.open("user://update.pck", FileAccess.WRITE)
+		if pck_out2:
+			pck_out2.store_buffer(buf)
+			pck_out2.close()
 	else:
-		# ZIP file: extract PCK if contained, or save zip
+		var temp_real = ProjectSettings.globalize_path(temp_target)
 		var reader = ZIPReader.new()
 		var err = reader.open(temp_real)
 		if err == OK:
@@ -963,15 +990,18 @@ func _on_download_request_completed(result: int, response_code: int, _headers: P
 					if f_out:
 						f_out.store_buffer(pck_data)
 						f_out.close()
-						print("[UpdateManager] Extracted PCK from ZIP archive:", f_name)
 					break
 			reader.close()
-		
-		if FileAccess.file_exists(UPDATE_PACKAGE_PATH):
-			DirAccess.remove_absolute(zip_real)
-		DirAccess.rename_absolute(temp_real, zip_real)
+		var z_out = FileAccess.open(UPDATE_PACKAGE_PATH, FileAccess.WRITE)
+		if z_out:
+			z_out.store_buffer(buf)
+			z_out.close()
 	
-	download_completed.emit("user://patch.pck" if FileAccess.file_exists("user://patch.pck") else UPDATE_PACKAGE_PATH)
+	if FileAccess.file_exists(temp_target):
+		DirAccess.remove_absolute(temp_target)
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_target))
+	
+	download_completed.emit("user://patch.pck")
 	apply_update()
 
 func apply_update() -> bool:
@@ -980,21 +1010,41 @@ func apply_update() -> bool:
 	var patch_real = ProjectSettings.globalize_path(patch_path)
 	
 	if FileAccess.file_exists(patch_path):
-		loaded = ProjectSettings.load_resource_pack(patch_real, true)
+		loaded = ProjectSettings.load_resource_pack(patch_path, true)
 		if not loaded:
-			loaded = ProjectSettings.load_resource_pack(patch_path, true)
+			loaded = ProjectSettings.load_resource_pack(patch_real, true)
+	
+	if not loaded and FileAccess.file_exists("user://update.pck"):
+		loaded = ProjectSettings.load_resource_pack("user://update.pck", true)
 	
 	if not loaded and FileAccess.file_exists(UPDATE_PACKAGE_PATH):
-		var zip_real = ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH)
-		loaded = ProjectSettings.load_resource_pack(zip_real, true)
+		loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
 		if not loaded:
-			loaded = ProjectSettings.load_resource_pack(UPDATE_PACKAGE_PATH, true)
+			loaded = ProjectSettings.load_resource_pack(ProjectSettings.globalize_path(UPDATE_PACKAGE_PATH), true)
 	
 	if loaded:
 		print("[UpdateManager] Successfully loaded patch pack into engine virtual filesystem!")
 		_save_installed_state(latest_server_info)
+		
+		# Hot-reload all live singletons so Android updates in-memory immediately
+		_hot_reload_autoload("AccountManager", "res://scripts/account_manager.gd")
+		_hot_reload_autoload("NetworkManager", "res://scripts/network_manager.gd")
+		_hot_reload_autoload("GameManager", "res://scripts/game_manager.gd")
+		_hot_reload_autoload("AudioManager", "res://scripts/audio_manager.gd")
+		
 		update_installed.emit()
 		return true
 	
 	download_failed.emit("تعذر تطبيق وتثبيت حزمة التحديث في محرك اللعبة.")
 	return false
+
+func _hot_reload_autoload(node_name: String, script_path: String) -> void:
+	var root = get_tree().root
+	var target_node = root.get_node_or_null(node_name)
+	if target_node:
+		var new_script = ResourceLoader.load(script_path, "GDScript", ResourceLoader.CACHE_MODE_IGNORE)
+		if new_script:
+			target_node.set_script(new_script)
+			if target_node.has_method("_ready"):
+				target_node._ready()
+			print("[UpdateManager] Hot-reloaded live Autoload: ", node_name)
