@@ -217,6 +217,9 @@ func _ready() -> void:
 		)
 	else:
 		_switch_view(view_home)
+		
+	# Temporary 4-second confirmation banner requested by Commander
+	_show_temp_server_banner("✅ أعتقد أن كل حاجة تمام في السيرفر ⚡", 4.0)
 
 func _switch_view(target_view: Control) -> void:
 	view_home.visible = (target_view == view_home)
@@ -1953,3 +1956,51 @@ func _show_support_accepted_popup(user_name: String, chat_url: String) -> void:
 	vbox.add_child(close_btn)
 	
 	get_tree().root.add_child(layer)
+
+func _show_temp_server_banner(msg: String, duration: float = 4.0) -> void:
+	var canvas = CanvasLayer.new()
+	canvas.layer = 125
+	
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 40)
+	canvas.add_child(margin)
+	
+	var panel = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.14, 0.1, 0.95)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.0, 0.95, 0.5, 0.9)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	panel.add_theme_stylebox_override("panel", style)
+	margin.add_child(panel)
+	
+	var hbox = HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 10)
+	panel.add_child(hbox)
+	
+	var lbl = Label.new()
+	lbl.text = msg
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(0.2, 1.0, 0.55))
+	hbox.add_child(lbl)
+	
+	get_tree().root.add_child(canvas)
+	
+	var tween = canvas.create_tween()
+	tween.tween_interval(duration)
+	tween.tween_property(margin, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(func():
+		if is_instance_valid(canvas):
+			canvas.queue_free()
+	)
