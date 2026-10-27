@@ -1,0 +1,162 @@
+[gd_scene load_steps=3 format=3 uid="uid://cadminman001app"]
+
+[ext_resource type="Script" path="res://scripts/admin_manager_app.gd" id="1_admin"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.03, 0.05, 0.09, 1)
+
+[node name="AdminManagerApp" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_admin")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "👑 Titan Strike: Admin Manager"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.85, 1)
+theme_override_font_sizes/font_size = 14
+text = "تطبيق التحكم المباشر والسريع في السيرفر واللعبة"
+horizontal_alignment = 1
+
+[node name="ServerCard" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="VBox/ServerCard"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "📡 رابط اتصال السيرفر (Wi-Fi Server IP):"
+
+[node name="HBox" type="HBoxContainer" parent="VBox/ServerCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UrlInput" type="LineEdit" parent="VBox/ServerCard/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "http://192.168.1.17:8080"
+placeholder_text = "http://192.168.1.17:8080"
+
+[node name="ConnectBtn" type="Button" parent="VBox/ServerCard/HBox"]
+layout_mode = 2
+text = " 🔄 اتصال "
+
+[node name="StatusCard" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="StatusLabel" type="Label" parent="VBox/StatusCard"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 16
+text = "🟢 السيرفر: شغال ومفتوح (ONLINE)"
+
+[node name="InfoLabel" type="Label" parent="VBox/StatusCard"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 12
+text = "الأوامر أدناه تتنفذ في السيرفر واللعبة وقتياً وبدون أي تأخير."
+
+[node name="Actions" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ServerToggleBtn" type="Button" parent="VBox/Actions"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "🛑 إيقاف السيرفر (قفل اللعبة)"
+
+[node name="AlarmToggleBtn" type="Button" parent="VBox/Actions"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "🚨 إطلاق صفارة الإنذار"
+
+[node name="KillRoomsBtn" type="Button" parent="VBox/Actions"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "⛔ إنهاء كل الغرف وطرد اللاعبين"
+
+[node name="BroadcastCard" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="VBox/BroadcastCard"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "📢 إرسال إعلان عام فوري داخل اللعبة:"
+
+[node name="HBox" type="HBoxContainer" parent="VBox/BroadcastCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BroadcastInput" type="LineEdit" parent="VBox/BroadcastCard/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "اكتب رسالة للاعبين..."
+
+[node name="BroadcastBtn" type="Button" parent="VBox/BroadcastCard/HBox"]
+layout_mode = 2
+text = " إرسال الآن 🚀 "
+
+[node name="OpenDashboardBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "🌐 فتح لوحة التحكم الشاملة والكونسول (Web Dashboard)"
+
+[node name="ToastLabel" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 13
+text = "جاهز لتنفيذ الأوامر."
+horizontal_alignment = 1
+
+[node name="PollerTimer" type="Timer" parent="."]
+wait_time = 3.0
+
+[connection signal="pressed" from="VBox/ServerCard/HBox/ConnectBtn" to="." method="_on_connect_btn_pressed"]
+[connection signal="pressed" from="VBox/Actions/ServerToggleBtn" to="." method="_on_server_toggle_pressed"]
+[connection signal="pressed" from="VBox/Actions/AlarmToggleBtn" to="." method="_on_alarm_toggle_pressed"]
+[connection signal="pressed" from="VBox/Actions/KillRoomsBtn" to="." method="_on_kill_rooms_btn_pressed"]
+[connection signal="pressed" from="VBox/BroadcastCard/HBox/BroadcastBtn" to="." method="_on_broadcast_btn_pressed"]
+[connection signal="pressed" from="VBox/OpenDashboardBtn" to="." method="_on_open_dashboard_pressed"]
