@@ -91,17 +91,8 @@ func _process(delta: float) -> void:
 # --- ROOM CODE ENCODING / DECODING ---
 
 func generate_room_code() -> String:
-	var ip = get_local_ip()
-	var parts = ip.split(".")
-	if parts.size() == 4:
-		var b1 = int(parts[0])
-		var b2 = int(parts[1])
-		var b3 = int(parts[2])
-		var b4 = int(parts[3])
-		current_room_code = "%02X%02X%02X%02X" % [b1, b2, b3, b4]
-		return current_room_code
-	
-	current_room_code = "7777"
+	# Clean, easy-to-share 4-digit Room Code for instant joining without IP
+	current_room_code = "%04d" % randi_range(1000, 9999)
 	return current_room_code
 
 func is_ai_duel_room_code(code: String) -> bool:
@@ -221,34 +212,80 @@ func join_room_with_code(code: String, player_name: String, class_id: int, port:
 			GameManager.start_game_scene()
 			return OK
 	
-	# 2. Build prioritized candidate IPs list for fast multi-IP connection
 	_joining_candidates.clear()
 	_candidate_idx = 0
 	_connecting_port = port
-	
+
+	# 2. If code is directly an IP with dots (e.g. 192.168.1.15), connect to it directly
+	if current_room_code.find(".") != -1 and current_room_code.split(".").size() == 4:
+		_joining_candidates.append(current_room_code)
+		_start_next_candidate_connection()
+		return OK
+
+	# 3. Query Central Server FIRST for Host Candidate IPs (Ultra-Fast < 0.2s lookup!)
+	var um = get_node_or_null("/root/UpdateManager")
+	if um and not um.server_url.is_empty():
+		var status_msg = "⚡ جاري البحث عن الغرفة #%s في السيرفر..." % current_room_code
+		connection_status_updated.emit(status_msg)
+		var cur_scene = get_tree().current_scene
+		if cur_scene and "status_label" in cur_scene and cur_scene.status_label:
+			cur_scene.status_label.text = status_msg
+			cur_scene.status_label.modulate = Color(0.2, 0.9, 1.0)
+			
+		var http = HTTPRequest.new()
+		http.timeout = 1.0
+		add_child(http)
+		http.request_completed.connect(func(res: int, code_resp: int, _h: PackedStringArray, body: PackedByteArray):
+			http.queue_free()
+			if res == HTTPRequest.RESULT_SUCCESS and code_resp == 200:
+				var j = JSON.new()
+				if j.parse(body.get_string_from_utf8()) == OK and typeof(j.data) == TYPE_DICTIONARY:
+					if j.data.get("active", false):
+						var h_ip = str(j.data.get("host_ip", "")).strip_edges()
+						var c_ips = j.data.get("candidate_ips", [])
+						var r_port = int(j.data.get("port", port))
+						_connecting_port = r_port
+						
+						if not h_ip.is_empty() and not _joining_candidates.has(h_ip):
+							_joining_candidates.append(h_ip)
+						if typeof(c_ips) == TYPE_ARRAY:
+							for cip in c_ips:
+								var s_ip = str(cip).strip_edges()
+								if not s_ip.is_empty() and not _joining_candidates.has(s_ip):
+									_joining_candidates.append(s_ip)
+									
+						print("⚡ Found active room #%s on server! Connecting immediately to: " % current_room_code, _joining_candidates)
+						_start_next_candidate_connection()
+						return
+			_populate_fallback_candidates_and_start()
+		)
+		var endpoint = um.server_url.trim_suffix("/") + "/api/rooms/check?code=" + current_room_code
+		var err = http.request(endpoint)
+		if err != OK:
+			http.queue_free()
+			_populate_fallback_candidates_and_start()
+	else:
+		_populate_fallback_candidates_and_start()
+		
+	return OK
+
+func _populate_fallback_candidates_and_start() -> void:
 	var decoded_ip = decode_room_code_to_ip(current_room_code)
 	if not decoded_ip.is_empty() and not _joining_candidates.has(decoded_ip):
 		_joining_candidates.append(decoded_ip)
 	
-	# Hotspot / Bluetooth host gateway
 	var gw_ip = get_bluetooth_or_hotspot_host_ip()
 	if not _joining_candidates.has(gw_ip):
 		_joining_candidates.append(gw_ip)
 	
-	# Local network interfaces candidate IPs
 	for ip in get_all_local_ips():
 		if not _joining_candidates.has(ip):
 			_joining_candidates.append(ip)
 	
 	if not _joining_candidates.has("127.0.0.1"):
 		_joining_candidates.append("127.0.0.1")
-	
-	# 3. Query server asynchronously for candidate IPs reported by host
-	_query_server_for_room_candidates(current_room_code)
-	
-	# 4. Start fast waterfall connection attempt (1.4s per candidate)
+		
 	_start_next_candidate_connection()
-	return OK
 
 func _query_server_for_room_candidates(code: String) -> void:
 	var um = get_node_or_null("/root/UpdateManager")

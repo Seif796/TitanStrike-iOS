@@ -1,13 +1,15 @@
 {
-  "version": "1.3.8",
-  "version_code": 14,
+  "version": "1.3.9",
+  "version_code": 15,
   "release_date": "2026-10-27",
-  "title": "تأكيد جاهزية السيرفر واستقرار النظام",
+  "title": "نظام الدخول السريع بكود الغرفة المباشر بدون IP",
   "changelog": [
-    "أعتقد أن كل حاجة تمام في السيرفر"
+    "تحديث مباشر وفوري عبر السيرفر لجميع الأجهزة",
+    "إضافة زر الطلبات (Requests) وزر تيليجرام بوت في القائمة الرئيسية",
+    "تحسين استقرار المحرك على أندرويد وآيفون"
   ],
   "download_url": "/downloads/update.pck",
-  "file_size_bytes": 9236032,
-  "sha256": "a6795b4f6a06dfc144811f8297f4fd6ec6e37cb8ea9c02ce1376c3e7cff5098b",
+  "file_size_bytes": 9236736,
+  "sha256": "27536b8ca644012e7aaeda1cf109bcbdbd2313cb3ddbbb08a0d19dc45904d690",
   "mandatory": true
 }

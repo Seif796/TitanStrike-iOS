@@ -67,7 +67,7 @@ func _ready() -> void:
 	
 	if multiplayer.is_server():
 		room_title.text = "👑 SQUAD ROOM HOST (أنت صاحب الغرفة)"
-		code_banner.text = "🔑 كود الغرفة: #%s   |   🌐 عناوين الدخول: %s" % [r_code, ips_str]
+		code_banner.text = "🔑 كود الغرفة: #%s (أعطِ هذا الكود لأصدقائك للانضمام فوراً!)" % r_code
 		if start_btn:
 			start_btn.visible = true
 			start_btn.disabled = false
